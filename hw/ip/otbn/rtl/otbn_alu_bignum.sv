@@ -39,27 +39,43 @@
  *
  * Blanking is employed on the ALU data paths. This holds unused data paths to 0 to reduce side
  * channel leakage. The lower-case 'b' on the diagram below indicates points in the data path that
- * get blanked. Note that Adder X is never used in isolation, it is always combined with Adder Y so
- * there is no need for blanking between Adder X and Adder Y.
+ * get blanked.
+ * Notes:
+ * - Adder X is never used in isolation, it is always combined with Adder Y so
+ *   there is no need for blanking between Adder X and Adder Y.
+ * - There is no need to blank the "packing" as it only reordering wires.
+ *   The two MUXs are pre-decoded to reduce toggle rates and to avoid mixing vector elements.
+ * - The unpacking must be blanked as otherwise the shifter/packed result is mixed with the
+ *   unpacked result in the final output multiplexer.
  *
- *     A       B        A   B
- *     |       |        |   |
- *     b       b        b   b   shift_amt
- *     |       |        |   |   |
- *   +-----------+    +-----------+
- *   |  Adder X  |    |  Shifter  |
- *   +-----------+    +-----------+
- *         |                |
- *   +-----|-----+     +----|
- *   |     |     |     |    |
- *   |  X result |     | Shifter result
- *   |           |     |
- *   |         A |     |
- *   |         | |     |     +-----------+
- *   |         b |     b +---|  MOD WSR  |
- *   |         | |     | |   +-----------+
- *   |       \-----/ \-----/
- *   |        \---/   \---/
+ *     A       B            A     B
+ *     |       |            |     |
+ *     |       |            b     b
+ *     |       |            |     |
+ *     |       |       +----|     |----+
+ *     |       |       |    |     |    |
+ *     |       |       |  +---------+  |
+ *     |       |       |  | Packing |  |
+ *     |       |       |  +---------+  |
+ *     |       |       |   |       |   |
+ *     |       |       |   |       |   |
+ *     |       |     \-------/   \-------/
+ *     b       b      \-----/     \-----/
+ *     |       |         |           |
+ *   +-----------+    +-----------------+
+ *   |  Adder X  |    |     Shifter     | <-- shift_amt
+ *   +-----------+    +-----------------+
+ *         |                   |
+ *   +-----|-----+     +-------|-------------------+--- Shifter / packed result
+ *   |     |     |     |                           |
+ *   |  X result |     |                           |
+ *   |           |     |                           b
+ *   |         A |     |                           |
+ *   |         | |     |     +-----------+   +-----------+
+ *   |         b |     b +---|  MOD WSR  |   | Unpacking |
+ *   |         | |     | |   +-----------+   +-----------+
+ *   |       \-----/ \-----/                       |
+ *   |        \---/   \---/                 unpacked result
  *   |          |       |
  *   |          |       |
  *   |        +-----------+
@@ -574,14 +590,18 @@ module otbn_alu_bignum
     |{expected_ispr_rd_en_onehot != ispr_predec_bignum_i.ispr_rd_en,
       expected_ispr_wr_en_onehot != ispr_predec_bignum_i.ispr_wr_en};
 
-  /////////////
-  // Shifter //
-  /////////////
+  ///////////////////////
+  // Shifter & Packing //
+  ///////////////////////
 
-  logic [WLEN-1:0]   shifter_in_upper, shifter_in_lower;
-  logic [WLEN-1:0]   shifter_res, unused_shifter_out_upper;
-  logic [WLEN-1:0]   shifter_operand_a_blanked;
-  logic [WLEN-1:0]   shifter_operand_b_blanked;
+  logic [WLEN-1:0] shifter_in_upper, shifter_in_lower;
+  logic [WLEN-1:0] shifter_res, unused_shifter_out_upper;
+  logic [WLEN-1:0] shifter_operand_a_blanked;
+  logic [WLEN-1:0] shifter_operand_b_blanked;
+  logic [8*24-1:0] operand_a_dense;
+  logic [8*24-1:0] operand_b_dense;
+  logic [WLEN-1:0] operand_a_packed;
+  logic [WLEN-1:0] operand_b_packed;
 
   // SEC_CM: DATA_REG_SW.SCA
   prim_blanker #(.Width(WLEN)) u_shifter_operand_a_blanker (
@@ -597,10 +617,23 @@ module otbn_alu_bignum
     .out_o(shifter_operand_b_blanked)
   );
 
-  // Operand A is only used for BN.RSHI, otherwise the upper input is 0. For all instructions other
-  // than BN.RHSI alu_predec_bignum_i.shifter_a_en will be 0, resulting in 0 for the upper input.
-  assign shifter_in_upper = shifter_operand_a_blanked;
-  assign shifter_in_lower = shifter_operand_b_blanked;
+  // Pack both operands into a 8 * 24-bit dense format by truncating upper 8 bits per element.
+  for (genvar i = 0; i < 8; i++) begin : gen_packing
+    assign operand_a_dense[i*24+:24] = shifter_operand_a_blanked[i*32+:24];
+    assign operand_b_dense[i*24+:24] = shifter_operand_b_blanked[i*32+:24];
+  end
+
+  // Extend to 256 bits. The lower dense vector is placed at the upper part such that the
+  // shifting can operate on the concatenated dense vectors.
+  assign operand_a_packed = {64'd0, operand_a_dense};
+  assign operand_b_packed = {operand_b_dense, 64'd0};
+
+  // Operand A is only used for BN.RSHI and BN.PACK, otherwise the upper input is 0. For all
+  // other instructions alu_predec_bignum_i.shifter_a_en will be 0, resulting in 0 for the upper input.
+  assign shifter_in_upper = alu_predec_bignum_i.shift_pack_sel ? shifter_operand_a_blanked
+                                                               : operand_a_packed;
+  assign shifter_in_lower = alu_predec_bignum_i.shift_pack_sel ? shifter_operand_b_blanked
+                                                               : operand_b_packed;
 
   otbn_vec_shifter u_vec_shifter (
     .shifter_in_upper_i(shifter_in_upper),
@@ -610,6 +643,22 @@ module otbn_alu_bignum
     .vector_mask_i     ({8{alu_predec_bignum_i.shift_mask}}),
     .shifter_res_o     (shifter_res)
   );
+
+  // Unpack the shifted result. Zero extend the 24-bit elements from the lower 8*24 bits
+  // to 32-bit elements.
+  logic [8*24-1:0] shifter_res_blanked;
+  logic [WLEN-1:0] unpacked_res;
+
+  // SEC_CM: DATA_REG_SW.SCA
+  prim_blanker #(.Width(WLEN-8*8)) u_shifter_res_blanker (
+    .in_i (shifter_res[8*24-1:0]),
+    .en_i (alu_predec_bignum_i.unpack_shifter_en),
+    .out_o(shifter_res_blanked)
+  );
+
+  for (genvar i = 0; i < 8; i++) begin : gen_unpacking
+    assign unpacked_res[i*32+:32] = {8'b0, shifter_res_blanked[i*24+:24]};
+  end
 
   //////////////////
   // Adders X & Y //
@@ -751,6 +800,8 @@ module otbn_alu_bignum
   logic expected_vec_mod_selector_en;
   logic expected_trn_en;
   logic expected_trn_is_trn1;
+  logic expected_shift_pack_sel;
+  logic expected_unpack_shifter_en;
 
   always_comb begin
     // We use a vectorized adder which supports 32b, 256b elements stored in a WDR.
@@ -782,6 +833,9 @@ module otbn_alu_bignum
     expected_vec_mod_is_subtraction = 1'b0;
     expected_trn_en                 = 1'b0;
     expected_trn_is_trn1            = 1'b0;
+
+    expected_shift_pack_sel         = 1'b1;
+    expected_unpack_shifter_en      = 1'b0;
 
     unique case (operation_i.op)
       AluOpBignumAdd: begin
@@ -975,6 +1029,18 @@ module otbn_alu_bignum
         expected_shifter_b_en = 1'b1;
         expected_shift_right  = operation_i.shift_right;
       end
+      AluOpBignumPack: begin
+        expected_shift_pack_sel = 1'b0;
+        expected_shifter_a_en   = 1'b1;
+        expected_shifter_b_en   = 1'b1;
+        expected_shift_right    = 1'b1;
+      end
+      AluOpBignumUnpk: begin
+        expected_unpack_shifter_en = 1'b1;
+        expected_shifter_a_en      = 1'b1;
+        expected_shifter_b_en      = 1'b1;
+        expected_shift_right       = 1'b1;
+      end
       // No operation, do nothing.
       AluOpBignumNone: ;
       default: ;
@@ -1021,7 +1087,9 @@ module otbn_alu_bignum
       expected_vec_mod_is_subtraction != alu_predec_bignum_i.vec_mod_is_subtraction,
       expected_shift_mask != alu_predec_bignum_i.shift_mask,
       expected_trn_en != alu_predec_bignum_i.trn_en,
-      expected_trn_is_trn1 != alu_predec_bignum_i.trn_is_trn1};
+      expected_trn_is_trn1 != alu_predec_bignum_i.trn_is_trn1,
+      expected_shift_pack_sel != alu_predec_bignum_i.shift_pack_sel,
+      expected_unpack_shifter_en != alu_predec_bignum_i.unpack_shifter_en};
 
   ////////////////////////
   // Logical operations //
@@ -1162,8 +1230,13 @@ module otbn_alu_bignum
         adder_y_res_used = 1'b0;
       end
 
-      AluOpBignumShv: begin
+      AluOpBignumShv,
+      AluOpBignumPack: begin
         operation_result_o = shifter_res;
+        adder_y_res_used = 1'b0;
+      end
+      AluOpBignumUnpk: begin
+        operation_result_o = unpacked_res;
         adder_y_res_used = 1'b0;
       end
       default: ;
@@ -1260,6 +1333,11 @@ module otbn_alu_bignum
   `ASSERT(BlankingBignumAluVecTrn_A,
           !expected_trn_en
           |-> (vec_transposer_op_a_blanked == '0 && vec_transposer_op_b_blanked == '0),
+          clk_i, !rst_ni || alu_predec_error_o || !operation_commit_i)
+
+  // Vector unpack related blanking
+  `ASSERT(BlankingBignumAluVecUnpk_A,
+          !(expected_unpack_shifter_en) |-> unpacked_res == '0,
           clk_i, !rst_ni || alu_predec_error_o || !operation_commit_i)
 
   // MOD ISPR Blanking

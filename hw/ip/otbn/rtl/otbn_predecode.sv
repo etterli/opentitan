@@ -56,6 +56,8 @@ module otbn_predecode
   logic alu_bignum_shift_right;
   logic [$clog2(WLEN)-1:0] alu_bignum_shift_amt;
   logic alu_bignum_shift_mod_sel;
+  logic alu_bignum_shift_pack_sel;
+  logic alu_bignum_unpack_shifter_en;
   logic alu_bignum_logic_a_en;
   logic alu_bignum_logic_shifter_en;
   logic [3:0] alu_bignum_logic_res_sel;
@@ -182,10 +184,13 @@ module otbn_predecode
   logic [$clog2(WLEN)-1:0] shift_amt_s_type_bignum;
   // Shift amount for BN.SHV
   logic [$clog2(WLEN)-1:0] shift_amt_shv_bignum;
+  // Shift amount for BN.UNPK and BN.PACK
+  logic [$clog2(WLEN)-1:0] shift_amt_pack_bignum;
 
   assign shift_amt_a_type_bignum = {imem_rdata_i[29:25], 3'b0};
   assign shift_amt_s_type_bignum = {imem_rdata_i[31:25], imem_rdata_i[14]};
   assign shift_amt_shv_bignum    = {1'b0, imem_rdata_i[28:27], imem_rdata_i[19:15]};
+  assign shift_amt_pack_bignum   = {imem_rdata_i[28:27], 6'b0};
 
   assign flag_group     = imem_rdata_i[31];
   assign flag_group_sel = {(flag_group == 1'b1), (flag_group == 1'b0)};
@@ -221,6 +226,8 @@ module otbn_predecode
     alu_bignum_shift_right            = 1'b0;
     alu_bignum_shift_amt              = shift_amt_a_type_bignum;
     alu_bignum_shift_mod_sel          = 1'b1;
+    alu_bignum_shift_pack_sel         = 1'b1;
+    alu_bignum_unpack_shifter_en      = 1'b0;
     alu_bignum_logic_a_en             = 1'b0;
     alu_bignum_logic_shifter_en       = 1'b0;
     alu_bignum_logic_res_sel          = '0;
@@ -530,10 +537,25 @@ module otbn_predecode
                 mac_bignum_mul_type = MacMulVecModLane;
               end
             end
+            3'b110: begin
+              // 3'b110 is BN.PACK/BN.UNPK
+              rf_ren_a_bignum           = 1'b1;
+              rf_ren_b_bignum           = 1'b1;
+              rf_we_bignum              = 1'b1;
+              alu_bignum_shifter_a_en   = 1'b1;
+              alu_bignum_shifter_b_en   = 1'b1;
+              alu_bignum_shift_right    = 1'b1;
+              alu_bignum_shift_amt      = shift_amt_pack_bignum;
+
+              if (imem_rdata_i[30]) begin // BN.PACK
+                alu_bignum_shift_pack_sel = 1'b0;
+              end else begin // BN.UNPK
+                alu_bignum_unpack_shifter_en = 1'b1;
+              end
+            end
             default: ;
               // 3'b001 reserved for future use
               // 3'b010 reserved for future use
-              // 3'b110 reserved for future use
           endcase
         end
 
@@ -770,6 +792,8 @@ module otbn_predecode
   assign alu_predec_bignum_o.shift_amt              = alu_bignum_shift_amt;
   assign alu_predec_bignum_o.shift_mask             = alu_bignum_shift_mask;
   assign alu_predec_bignum_o.shift_mod_sel          = alu_bignum_shift_mod_sel;
+  assign alu_predec_bignum_o.shift_pack_sel         = alu_bignum_shift_pack_sel;
+  assign alu_predec_bignum_o.unpack_shifter_en      = alu_bignum_unpack_shifter_en;
   assign alu_predec_bignum_o.logic_a_en             = alu_bignum_logic_a_en;
   assign alu_predec_bignum_o.logic_shifter_en       = alu_bignum_logic_shifter_en;
   assign alu_predec_bignum_o.logic_res_sel          = alu_bignum_logic_res_sel;
