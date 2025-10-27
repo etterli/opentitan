@@ -92,7 +92,9 @@ module otbn_mac_bignum
   input  logic [ExtWLEN-1:0] ispr_acc_wr_data_intg_i,
   input  logic               ispr_acc_wr_en_i,
 
-  input  logic [ExtWLEN-1:0] ispr_mod_intg_i
+  input  logic [ExtWLEN-1:0] ispr_mod_intg_i,
+
+  output logic state_err_o
 );
   localparam int HWLEN    = WLEN / 2;
   localparam int ExtHWLEN = HWLEN * 39 / 32;
@@ -680,6 +682,9 @@ module otbn_mac_bignum
   logic expected_mul_merger_en;
   logic expected_add_res_en;
 
+  logic state_err;
+  assign state_err_o = state_err;
+
   /**
    * The MAC module implements the following types of MAC:
    * - Regular 64b multiplication with accumulation in ACC
@@ -733,6 +738,8 @@ module otbn_mac_bignum
     expected_mul_shift_en  = 1'b0;
     expected_mul_merger_en = 1'b0;
     expected_add_res_en    = 1'b0;
+
+    state_err = 1'b0;
 
     // TODO: Merge similar cases
     unique case (mac_state_q)
@@ -928,8 +935,14 @@ module otbn_mac_bignum
         mac_state_d         = MacRegular;
         operation_valid_raw = 1'b1;
       end
-      MacError: mac_state_d = MacError; // TODO: trigger alarm
-      default: mac_state_d = MacError; // Consider triggering an error or alert in this case.
+      MacError: begin
+        state_err = 1'b1; // trigger alarm and lock FSM
+        mac_state_d = MacError;
+      end
+      default: begin
+        state_err = 1'b1; // trigger alarm and lock FSM
+        mac_state_d = MacError;
+      end
     endcase
     // Reset assigned state change if we are not allowed to advance except in error case
     if (!do_advance && (mac_state_d != MacError)) begin
