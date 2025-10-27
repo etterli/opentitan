@@ -225,6 +225,7 @@ package otbn_pkg;
     InsnOpcodeBignumMisc     = 7'h0B,
     InsnOpcodeBignumArith    = 7'h2B,
     InsnOpcodeBignumMulqacc  = 7'h3B,
+    InsnOpcodeBignumVec      = 7'h5B,
     InsnOpcodeBignumBaseMisc = 7'h7B
   } insn_opcode_e;
 
@@ -242,21 +243,29 @@ package otbn_pkg;
     AluOpBaseSll
   } alu_op_base_e;
 
-  typedef enum logic [3:0] {
+  typedef enum logic [4:0] {
     AluOpBignumAdd,
     AluOpBignumAddc,
     AluOpBignumAddm,
+    AluOpBignumAddv,
+    AluOpBignumAddvm,
 
     AluOpBignumSub,
     AluOpBignumSubb,
     AluOpBignumSubm,
+    AluOpBignumSubv,
+    AluOpBignumSubvm,
 
     AluOpBignumRshi,
+    AluOpBignumShv,
 
     AluOpBignumXor,
     AluOpBignumOr,
     AluOpBignumAnd,
     AluOpBignumNot,
+
+    AluOpBignumTrn1,
+    AluOpBignumTrn2,
 
     AluOpBignumNone
   } alu_op_bignum_e;
@@ -320,13 +329,6 @@ package otbn_pkg;
     TrnElen64  = 2'b01,
     TrnElen128 = 2'b10
   } trn_elen_e;
-
-  // Shift amount select for bignum ISA
-  typedef enum logic [1:0] {
-    ShamtSelBignumA,
-    ShamtSelBignumS,
-    ShamtSelBignumZero
-  } shamt_sel_bignum_e;
 
   // Regfile write data selection
   typedef enum logic [2:0] {
@@ -469,17 +471,24 @@ package otbn_pkg;
     logic                    b_inc;           // Increment source register index b in base register
                                               // file
 
+    // TODO: generate onehot signals in decoder or locally where it is required?
+    logic [NELEN_ALU-1:0]    alu_elen_onehot;
+    logic [NELEN_TRN-1:0]    trn_elen_onehot;
+    // TODO: Generate adder specific signal in BN ALU? It depends on the ELEN.
+    logic [NVecProc-1:0]     alu_vec_adder_carry_sel;
     // Shifting only applies to a subset of ALU operations
     logic [$clog2(WLEN)-1:0] alu_shift_amt;   // Shift amount
     logic                    alu_shift_right; // Shift right if set otherwise left
+    // Shift mask for vectorized shifting. Replicated for all chunks.
+    logic [VChunkLEN-1:0]    alu_shift_mask;
 
     flag_group_t             alu_flag_group;
     flag_e                   alu_sel_flag;
     logic                    alu_flag_en;
-    logic                    mac_flag_en;
     alu_op_bignum_e          alu_op;
     op_b_sel_e               alu_op_b_sel;
 
+    logic                    mac_flag_en;
     logic [1:0]              mac_op_a_qw_sel;
     logic [1:0]              mac_op_b_qw_sel;
     logic                    mac_wr_hw_sel_upper;
@@ -503,18 +512,31 @@ package otbn_pkg;
   } rf_predec_bignum_t;
 
   typedef struct packed {
+    // ALU
+    logic [NELEN_ALU-1:0]    alu_elen_onehot;
     logic                    adder_x_en;
     logic                    x_res_operand_a_sel;
     logic                    adder_y_op_a_en;
     logic                    shift_mod_sel;
     logic                    adder_y_op_shifter_en;
+    logic [NVecProc-1:0]     vec_adder_carry_sel;
+    logic                    vec_mod_selector_en;
+    logic                    vec_mod_is_subtraction;
+    // Shifter
     logic                    shifter_a_en;
     logic                    shifter_b_en;
     logic                    shift_right;
     logic [$clog2(WLEN)-1:0] shift_amt;
+    logic [VChunkLEN-1:0]    shift_mask;
+    // Logic
     logic                    logic_a_en;
     logic                    logic_shifter_en;
     logic [3:0]              logic_res_sel;
+    // Vector transposer
+    logic [NELEN_TRN-1:0]    trn_elen_onehot;
+    logic                    trn_en;
+    logic                    trn_is_trn1;
+    // Flags
     logic [NFlagGroups-1:0]  flag_group_sel;
     flags_t                  flag_sel;
     logic [NFlagGroups-1:0]  flags_keep;
@@ -559,8 +581,12 @@ package otbn_pkg;
     alu_op_bignum_e op;
     logic [WLEN-1:0]         operand_a;
     logic [WLEN-1:0]         operand_b;
+    logic [NELEN_ALU-1:0]    alu_elen_onehot;
+    logic [NELEN_TRN-1:0]    trn_elen_onehot;
+    logic [NVecProc-1:0]     vec_adder_carry_sel;
     logic                    shift_right;
     logic [$clog2(WLEN)-1:0] shift_amt;
+    logic [VChunkLEN-1:0]    shift_mask;
     flag_group_t             flag_group;
     flag_e                   sel_flag;
     logic                    alu_flag_en;
