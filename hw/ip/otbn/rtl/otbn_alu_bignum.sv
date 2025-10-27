@@ -1196,9 +1196,6 @@ module otbn_alu_bignum
   // -indicated by operation_commit_i port- as OTBN does not guarantee blanking in the case
   // of an error.
 
-  // TODO: Create assertion that carries_out_y are blanked for ADDV or SUBV
-  // TODO: Create assertion that adder_y_res is blanked towards the mod selector for ADD, ADDV, SUB, SUBV
-
   // adder_x_res related blanking
   `ASSERT(BlankingBignumAluXOp_A,
           !expected_adder_x_en |->
@@ -1213,13 +1210,24 @@ module otbn_alu_bignum
           !expected_adder_y_op_shifter_en |-> adder_y_op_shifter_res_blanked == '0,
           clk_i, !rst_ni || alu_predec_error_o || !operation_commit_i)
 
-  // Adder Y must be blanked when its result is not used, with one exception: For `BN.SUBM` with
-  // `a >= b` (thus the result of Adder X has the carry bit set), the result of Adder Y is not used
-  // but it cannot be blanked solely based on the carry bit.
+  // Adder Y must be blanked when its result is not used, with one exception: For `BN.SUBM` and
+  // `BN.SUBVM` with `a >= b` (thus the result of Adder X has the carry bit set), the result of
+  // Adder Y is not used but it cannot be blanked solely based on the carry bit.
   `ASSERT(BlankingBignumAluYResUsed_A,
           !adder_y_res_used &&
-          !(operation_i.op == AluOpBignumSubm && adder_x_carries_out[NVecProc-1])
+          !((operation_i.op == AluOpBignumSubm || operation_i.op == AluOpBignumSubvm)
+            && !mod_op_res_adder_y_used)
           |-> {x_res_operand_a_mux_out, shift_mod_mux_out} == '0,
+          clk_i, !rst_ni || alu_predec_error_o || !operation_commit_i)
+
+  // The result of Y may not be propagated into the MOD result selector for non-modulo instructions
+  `ASSERT(BlankingBignumAluYResModSel_A,
+          !expected_vec_mod_selector_en |-> adder_y_res_blanked == '0,
+          clk_i, !rst_ni || alu_predec_error_o || !operation_commit_i)
+
+  // The carries of adder Y must be blanked for non-modulo instructions
+  `ASSERT(BlankingBignumAluYCarries_A,
+          !expected_vec_mod_selector_en |-> adder_y_carries_out_blanked == '0,
           clk_i, !rst_ni || alu_predec_error_o || !operation_commit_i)
 
   // shifter_res related blanking
@@ -1248,6 +1256,11 @@ module otbn_alu_bignum
           !(expected_logic_a_en || expected_logic_shifter_en) |-> logical_res == '0,
           clk_i, !rst_ni || alu_predec_error_o || !operation_commit_i)
 
+  // Vector transposer related blanking
+  `ASSERT(BlankingBignumAluVecTrn_A,
+          !expected_trn_en
+          |-> (vec_transposer_op_a_blanked == '0 && vec_transposer_op_b_blanked == '0),
+          clk_i, !rst_ni || alu_predec_error_o || !operation_commit_i)
 
   // MOD ISPR Blanking
   `ASSERT(BlankingIsprMod_A,
