@@ -74,15 +74,6 @@ module otbn_decoder
 
   comparison_op_base_e comparison_operator_base;
 
-
-  logic [1:0] mac_op_a_qw_sel_bignum;
-  logic [1:0] mac_op_b_qw_sel_bignum;
-  logic       mac_wr_hw_sel_upper_bignum;
-  logic [1:0] mac_pre_acc_shift_bignum;
-  logic       mac_zero_acc_bignum;
-  logic       mac_shift_out_bignum;
-  logic       mac_en_bignum;
-
   logic rf_ren_a_base;
   logic rf_ren_b_base;
 
@@ -196,12 +187,38 @@ module otbn_decoder
   assign loop_bodysize_base  = insn[31:20];
   assign loop_immediate_base = insn[12];
 
+  // Bignum MAC decoding signals
+  logic [1:0]          mac_op_a_qw_sel_bignum;
+  logic [1:0]          mac_op_b_qw_sel_bignum;
+  logic                mac_wr_hw_sel_upper_bignum;
+  logic [1:0]          mac_pre_acc_shift_bignum;
+  logic                mac_zero_acc_bignum;
+  logic                mac_shift_out_bignum;
+  logic                mac_en_bignum;
+  logic                mac_is_vec_bignum;
+  logic                mac_is_mod_bignum;
+  mac_mul_type_e       mac_mul_type_bignum;
+  logic                mac_vec_elen_raw_bignum;
+  logic [NVecProc-1:0] mac_adder_carry_sel_bignum;
+  logic                mac_is_lane_bignum;
+  logic [2:0]          mac_lane_index_bignum;
+
   assign mac_op_a_qw_sel_bignum     = insn[26:25];
   assign mac_op_b_qw_sel_bignum     = insn[28:27];
   assign mac_wr_hw_sel_upper_bignum = insn[29];
   assign mac_pre_acc_shift_bignum   = insn[14:13];
   assign mac_zero_acc_bignum        = insn[12];
   assign mac_shift_out_bignum       = insn[30];
+  assign mac_vec_elen_raw_bignum    = insn[25];
+  assign mac_is_lane_bignum         = insn[27];
+  assign mac_lane_index_bignum      = insn[30:28];
+
+  // The ISA foresees 2 types of vector element lengths (16 and 32 bits) for vectorized
+  // multiplication. However, only 32 bit is implemented. However, the hardware is shared with the
+  // regular 64 bit multiplication and thus we need a 64b type to signal "regular" operation.
+  mac_elen_e            mac_elen_bignum;
+  // The MAC hardware requires a special control signal to select the ELEN.
+  logic [NELEN_MAC-1:0] mac_elen_ctrl_bignum;
 
   logic d_inc_bignum;
   logic a_inc_bignum;
@@ -287,6 +304,12 @@ module otbn_decoder
     mac_zero_acc:            mac_zero_acc_bignum,
     mac_shift_out:           mac_shift_out_bignum,
     mac_en:                  mac_en_bignum,
+    mac_is_vec:              mac_is_vec_bignum,
+    mac_is_mod:              mac_is_mod_bignum,
+    mac_mul_type:            mac_mul_type_bignum,
+    mac_elen_ctrl:           mac_elen_ctrl_bignum,
+    mac_adder_carry_sel:     mac_adder_carry_sel_bignum,
+    mac_lane_index:          mac_lane_index_bignum,
     rf_we:                   rf_we_bignum,
     rf_wdata_sel:            rf_wdata_sel_bignum,
     rf_ren_a:                rf_ren_a_bignum,
@@ -328,6 +351,10 @@ module otbn_decoder
     alu_elen_bignum        = AluElen256; // Regular bignum instructions operate on 256 bits
     trn_elen_bignum        = TrnElen32;
     mac_en_bignum          = 1'b0;
+    mac_is_vec_bignum      = 1'b0;
+    mac_is_mod_bignum      = 1'b0;
+    mac_mul_type_bignum    = MacMulRegular;
+    mac_elen_bignum        = MacElen64; // Default is regular 64-bit multiplication
 
     rf_a_indirect_bignum   = 1'b0;
     rf_b_indirect_bignum   = 1'b0;
@@ -600,11 +627,45 @@ module otbn_decoder
             endcase
           end
           3'b011: begin
-            // BN.MULV/BN.MULVL - not implemented
-            illegal_insn = 1'b1;
+            // BN.MULV/BN.MULVL
+            insn_subset         = InsnSubsetBignum;
+            rf_ren_a_bignum     = 1'b1;
+            rf_ren_b_bignum     = 1'b1;
+            rf_we_bignum        = 1'b1;
+            rf_wdata_sel_bignum = RfWdSelMac;
+            mac_en_bignum       = 1'b1;
+            mac_is_vec_bignum   = 1'b1;
+
+            unique case (mac_vec_elen_raw_bignum)
+              1'b1:    mac_elen_bignum = MacElen32;
+              default: illegal_insn    = 1'b1; // 16 bit version is not implemented
+            endcase
+
+            mac_mul_type_bignum = MacMulVec;
+            if (mac_is_lane_bignum) begin
+              mac_mul_type_bignum = MacMulVecLane;
+            end
           end
           3'b100: begin
-            // BN.MULVM/BN.MULVML - not implemented
+            // BN.MULVM/BN.MULVML
+            insn_subset         = InsnSubsetBignum;
+            rf_ren_a_bignum     = 1'b1;
+            rf_ren_b_bignum     = 1'b1;
+            rf_we_bignum        = 1'b1;
+            rf_wdata_sel_bignum = RfWdSelMac;
+            mac_en_bignum       = 1'b1;
+            mac_is_vec_bignum   = 1'b1;
+            mac_is_mod_bignum   = 1'b1;
+
+            unique case (mac_vec_elen_raw_bignum)
+              1'b1:    mac_elen_bignum = MacElen32;
+              default: illegal_insn    = 1'b1; // 16 bit version is not implemented
+            endcase
+
+            mac_mul_type_bignum = MacMulVecMod;
+            if (mac_is_lane_bignum) begin
+              mac_mul_type_bignum = MacMulVecModLane;
+            end
           end
           // unused / illegal instructions
           3'b001, // reserved for future use
@@ -813,6 +874,37 @@ module otbn_decoder
       rf_we_base   = 1'b0;
       rf_we_bignum = 1'b0;
     end
+  end
+
+  ////////////////////////////////
+  // Control signals for BN MAC //
+  ////////////////////////////////
+
+  // The vectorized multiplier requires a special control signal with the encoding:
+  // - 2'b11: 64b multiplication
+  // - 2'b01: 32b multiplication
+  // - 2'b00: all blankers are disabled. Result is all zero and no leakage is generated.
+  // - All other cases are invalid. These produce an invalid result and GENERATE LEAKAGE.
+  always_comb begin
+    mac_elen_ctrl_bignum = 2'b00;
+    unique case (mac_elen_bignum)
+      MacElen32: mac_elen_ctrl_bignum = 2'b01;
+      MacElen64: mac_elen_ctrl_bignum = 2'b11;
+      default:   mac_elen_ctrl_bignum = 2'b00;
+    endcase
+  end
+
+  // Set the carry propagation for the vectorized adder in the modulo reduction path.
+  // The adder is 256b wide and operats on different widths depending on the ELEN.
+  // Modulo reduction for 32b elements: Adder operates on two 64b elements in parallel
+  // Regular 64b multiplication: Adder operates on 256b to accumulate the ACC value.
+  always_comb begin
+    mac_adder_carry_sel_bignum = '1; // Per default do the least amount of bit mixing.
+    unique case (mac_elen_bignum)
+      MacElen32: mac_adder_carry_sel_bignum = {4{2'b01}};
+      MacElen64: mac_adder_carry_sel_bignum = 8'd1;
+      default:   mac_adder_carry_sel_bignum = '1;
+    endcase
   end
 
   /////////////////////////////

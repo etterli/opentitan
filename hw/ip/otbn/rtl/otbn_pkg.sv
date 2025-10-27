@@ -330,6 +330,26 @@ package otbn_pkg;
     TrnElen128 = 2'b10
   } trn_elen_e;
 
+  // Number of BN MAC ELENs
+  parameter int NELEN_MAC = 2;
+
+  // Vector element length type for bignum vec ISA implemented in BN MAC
+  // The instructions supported by BN MAC support 2 types: vectorized 32-bit elements and the
+  // regular 64-bit multiplication.
+  typedef enum logic {
+    MacElen32 = 1'b0,
+    MacElen64 = 1'b1
+  } mac_elen_e;
+
+  // The supported types of multiplications
+  typedef enum logic [2:0] {
+    MacMulRegular,
+    MacMulVec,
+    MacMulVecLane,
+    MacMulVecMod,
+    MacMulVecModLane
+  } mac_mul_type_e;
+
   // Regfile write data selection
   typedef enum logic [2:0] {
     RfWdSelEx,
@@ -496,6 +516,13 @@ package otbn_pkg;
     logic                    mac_zero_acc;
     logic                    mac_shift_out;
     logic                    mac_en;
+    logic                    mac_is_vec;
+    logic                    mac_is_mod;
+    mac_mul_type_e           mac_mul_type;
+    logic [NELEN_MAC-1:0]    mac_elen_ctrl;
+    // TODO: Generate redundandcy signal in BN MAC?
+    logic [NVecProc-1:0]     mac_adder_carry_sel;
+    logic [2:0]              mac_lane_index;
 
     logic                    rf_we;
     rf_wd_sel_e              rf_wdata_sel;
@@ -552,8 +579,18 @@ package otbn_pkg;
   } ispr_predec_bignum_t;
 
   typedef struct packed {
-    logic op_en;
-    logic acc_rd_en;
+    logic                 op_en;
+    logic                 is_vec;
+    logic                 is_mod;
+    mac_mul_type_e        mul_type; // is predecoding required?
+    logic [NELEN_MAC-1:0] elen_ctrl;
+    logic [NVecProc-1:0]  adder_carry_sel;
+    logic [2:0]           lane_index; // is predecoding required?
+    logic                 mul_shift_en;
+    logic                 mul_merger_en;
+    logic                 add_res_en;
+    logic                 acc_add_en;
+    // TODO: pre-decode control signals which currently are produced by the BN MAC FSM.
   } mac_predec_bignum_t;
 
   typedef struct packed {
@@ -594,14 +631,20 @@ package otbn_pkg;
   } alu_bignum_operation_t;
 
   typedef struct packed {
-    logic [WLEN-1:0] operand_a;
-    logic [WLEN-1:0] operand_b;
-    logic [1:0]      operand_a_qw_sel;
-    logic [1:0]      operand_b_qw_sel;
-    logic            wr_hw_sel_upper;
-    logic [1:0]      pre_acc_shift_imm;
-    logic            zero_acc;
-    logic            shift_acc;
+    logic [WLEN-1:0]      operand_a;
+    logic [WLEN-1:0]      operand_b;
+    logic [1:0]           operand_a_qw_sel;
+    logic [1:0]           operand_b_qw_sel;
+    logic                 wr_hw_sel_upper;
+    logic [1:0]           pre_acc_shift_imm;
+    logic                 zero_acc;
+    logic                 shift_acc;
+    logic                 is_vec;
+    logic                 is_mod;
+    mac_mul_type_e        mul_type;
+    logic [NELEN_MAC-1:0] elen_ctrl;
+    logic [NVecProc-1:0]  adder_carry_sel;
+    logic [2:0]           lane_index;
   } mac_bignum_operation_t;
 
   // Encoding generated with:

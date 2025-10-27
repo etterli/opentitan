@@ -115,8 +115,23 @@ module otbn_predecode
   logic alu_bignum_trn_en;
   logic alu_bignum_trn_is_trn1;
 
-  logic mac_bignum_op_en;
-  logic mac_bignum_acc_rd_en;
+  // BN MAC control
+  logic                 mac_bignum_op_en;
+  logic                 mac_bignum_is_vec;
+  logic                 mac_bignum_is_mod;
+  mac_mul_type_e        mac_bignum_mul_type;
+  logic                 mac_bignum_vec_elen_raw;
+  logic [NVecProc-1:0]  mac_bignum_adder_carry_sel;
+  logic                 mac_bignum_is_lane;
+  logic [2:0]           mac_bignum_lane_index;
+  // BN MAC blankers
+  logic                 mac_bignum_mul_shift_en;
+  logic                 mac_bignum_mul_merger_en;
+  logic                 mac_bignum_add_res_en;
+  logic                 mac_bignum_acc_add_en;
+
+  mac_elen_e            mac_bignum_elen;
+  logic [NELEN_MAC-1:0] mac_bignum_elen_ctrl;
 
   logic ispr_rd_en;
   logic ispr_wr_en;
@@ -181,6 +196,11 @@ module otbn_predecode
 
   assign flags_keep = ~(flags_adder_update | flags_logic_update | flags_mac_update | flags_ispr_wr);
 
+  // BN MAC parsing
+  assign mac_bignum_vec_elen_raw = imem_rdata_i[25];
+  assign mac_bignum_is_lane      = imem_rdata_i[27];
+  assign mac_bignum_lane_index   = imem_rdata_i[30:28];
+
   always_comb begin
     rf_ren_a_base   = 1'b0;
     rf_ren_b_base   = 1'b0;
@@ -218,8 +238,17 @@ module otbn_predecode
     flags_mac_update   = '0;
     flags_ispr_wr      = '0;
 
-    mac_bignum_op_en     = 1'b0;
-    mac_bignum_acc_rd_en = 1'b0;
+    mac_bignum_op_en           = 1'b0;
+    mac_bignum_is_vec          = 1'b0;
+    mac_bignum_is_mod          = 1'b0;
+    mac_bignum_mul_type        = MacMulRegular;
+    mac_bignum_elen            = MacElen64;
+    mac_bignum_elen_ctrl       = 2'b00;
+    mac_bignum_mul_shift_en    = 1'b0;
+    mac_bignum_mul_merger_en   = 1'b0;
+    mac_bignum_add_res_en      = 1'b0;
+    mac_bignum_acc_add_en      = 1'b0;
+    mac_bignum_adder_carry_sel = '1;
 
     ispr_rd_en = 1'b0;
     ispr_wr_en = 1'b0;
@@ -459,10 +488,47 @@ module otbn_predecode
               endcase
             end
             3'b011: begin
-              // 3'b011 is BN.MULV/BN.MULVL - not implemented
+              // 3'b011 is BN.MULV/BN.MULVL
+              rf_ren_a_bignum          = 1'b1;
+              rf_ren_b_bignum          = 1'b1;
+              rf_we_bignum             = 1'b1;
+              mac_bignum_op_en         = 1'b1;
+              mac_bignum_is_vec        = 1'b1;
+              mac_bignum_is_mod        = 1'b0;
+              mac_bignum_mul_merger_en = 1'b1;
+
+              // An invalid choice will raise an illegal insn error in the decoder.
+              // Predecode invalid choices as default ELEN.
+              unique case (mac_bignum_vec_elen_raw)
+                1'b1:    mac_bignum_elen = MacElen32;
+                default: mac_bignum_elen = MacElen64;
+              endcase
+
+              mac_bignum_mul_type = MacMulVec;
+              if (mac_bignum_is_lane) begin
+                mac_bignum_mul_type = MacMulVecLane;
+              end
             end
             3'b100: begin
-              // 3'b100 is BN.MULVM/BN.MULVML - not implemented
+              // 3'b100 is BN.MULVM/BN.MULVML
+              rf_ren_a_bignum     = 1'b1;
+              rf_ren_b_bignum     = 1'b1;
+              rf_we_bignum        = 1'b1;
+              mac_bignum_op_en    = 1'b1;
+              mac_bignum_is_vec   = 1'b1;
+              mac_bignum_is_mod   = 1'b1;
+
+              // An invalid choice will raise an illegal insn error in the decoder.
+              // Predecode invalid choices as default ELEN.
+              unique case (mac_bignum_vec_elen_raw)
+                1'b1:    mac_bignum_elen = MacElen32;
+                default: mac_bignum_elen = MacElen64;
+              endcase
+
+              mac_bignum_mul_type = MacMulVecMod;
+              if (mac_bignum_is_lane) begin
+                mac_bignum_mul_type = MacMulVecModLane;
+              end
             end
             default: ;
               // 3'b001 reserved for future use
@@ -592,9 +658,12 @@ module otbn_predecode
         ////////////////////////////////////////////
 
         InsnOpcodeBignumMulqacc: begin
-          rf_ren_a_bignum  = 1'b1;
-          rf_ren_b_bignum  = 1'b1;
-          mac_bignum_op_en = 1'b1;
+          rf_ren_a_bignum         = 1'b1;
+          rf_ren_b_bignum         = 1'b1;
+          mac_bignum_op_en        = 1'b1;
+          mac_bignum_mul_type     = MacMulRegular;
+          mac_bignum_mul_shift_en = 1'b1;
+          mac_bignum_add_res_en   = 1'b1;
 
           // BN.MULQACC.WO/BN.MULQACC.SO
           if (imem_rdata_i[30] == 1'b1 || imem_rdata_i[29] == 1'b1) begin
@@ -604,7 +673,7 @@ module otbn_predecode
 
           if (imem_rdata_i[12] == 1'b0) begin
             // zero_acc not set
-            mac_bignum_acc_rd_en = 1'b1;
+            mac_bignum_acc_add_en = 1'b1;
           end
         end
 
@@ -634,6 +703,29 @@ module otbn_predecode
           alu_bignum_shift_mask          = {32{1'b1}};
         end
       endcase
+
+        // The vectorized multiplier requires a special control signal with the encoding:
+        // - 2'b11: 64b multiplication
+        // - 2'b01: 32b multiplication
+        // - 2'b00: all blankers are disabled. Result is all zero and no leakage is generated.
+        // - All other cases are invalid. These produce an invalid result and GENERATE LEAKAGE.
+        mac_bignum_elen_ctrl = 2'b00;
+        unique case (mac_bignum_elen)
+          MacElen32: mac_bignum_elen_ctrl = 2'b01;
+          MacElen64: mac_bignum_elen_ctrl = 2'b11;
+          default:   mac_bignum_elen_ctrl = 2'b00;
+        endcase
+
+        // Set the carry propagation for the vectorized adder in the modulo reduction path.
+        // The adder is 256b wide and operats on different widths depending on the ELEN.
+        // Modulo reduction for 32b elements: Adder operates on two 64b elements in parallel
+        // Regular 64b multiplication: Adder operates on 256b to accumulate the ACC value.
+        unique case (mac_bignum_elen)
+          MacElen32: mac_bignum_adder_carry_sel = {4{2'b01}};
+          MacElen64: mac_bignum_adder_carry_sel = 8'd1;
+          default:   mac_bignum_adder_carry_sel = '1;
+        endcase
+
     end
   end
 
@@ -692,8 +784,17 @@ module otbn_predecode
   assign alu_predec_bignum_o.flags_mac_update       = flags_mac_update;
   assign alu_predec_bignum_o.flags_ispr_wr          = flags_ispr_wr;
 
-  assign mac_predec_bignum_o.op_en     = mac_bignum_op_en;
-  assign mac_predec_bignum_o.acc_rd_en = mac_bignum_acc_rd_en;
+  assign mac_predec_bignum_o.op_en           = mac_bignum_op_en;
+  assign mac_predec_bignum_o.is_vec          = mac_bignum_is_vec;
+  assign mac_predec_bignum_o.is_mod          = mac_bignum_is_mod;
+  assign mac_predec_bignum_o.mul_type        = mac_bignum_mul_type;
+  assign mac_predec_bignum_o.elen_ctrl       = mac_bignum_elen_ctrl;
+  assign mac_predec_bignum_o.adder_carry_sel = mac_bignum_adder_carry_sel;
+  assign mac_predec_bignum_o.lane_index      = mac_bignum_lane_index;
+  assign mac_predec_bignum_o.mul_shift_en    = mac_bignum_mul_shift_en;
+  assign mac_predec_bignum_o.mul_merger_en   = mac_bignum_mul_merger_en;
+  assign mac_predec_bignum_o.add_res_en      = mac_bignum_add_res_en;
+  assign mac_predec_bignum_o.acc_add_en      = mac_bignum_acc_add_en;
 
   assign insn_rs1 = imem_rdata_i[19:15];
   assign insn_rs2 = imem_rdata_i[24:20];
