@@ -10,7 +10,7 @@ from .isa import (OTBNInsn, RV32RegReg, RV32RegImm,
                   RV32ImmShift, BnVecVecAdd, BnVecVecMul, BnVecVecTrn,
                   insn_for_mnemonic, logical_byte_shift,
                   extract_quarter_word, extract_element_length, extract_sub_word,
-                  logical_bit_shift, montgomery_mul_no_cond_subtraction)
+                  logical_bit_shift, montgomery_mul)
 from .state import OTBNState
 
 
@@ -1536,10 +1536,6 @@ class BNMULVM(BnVecVecMul):
         # Cycle 2:  Reg(Tmp) = [Tmp*R]_d,   Reg(C) = a*b
         # Cycle 3:  Output   = c + (Tmp)*q mod q = [c + (Tmp)*q]^d (-q)
         #
-        # In addition, the conditional subtraction is not implemented in hardware to gain area and
-        # timing. For a correct result this conditional subtraction must be performed with a
-        # software instruction (BN.ADDVM).
-        #
         # The required constants q and R are expected to be in the MOD WSR at following locations:
         # For  16b: q @ [15:0], R @ [47:32]
         # For  32b: q @ [31:0], R @ [63:32]
@@ -1563,7 +1559,7 @@ class BNMULVM(BnVecVecMul):
             assert (mod_q > 0) and (mod_q < 2**size)
 
             # Montgomery computation
-            elem_c = montgomery_mul_no_cond_subtraction(elem_a, elem_b, mod_q, mod_R, size)
+            elem_c = montgomery_mul(elem_a, elem_b, mod_q, mod_R, size)
 
             elem_c = elem_c & ((1 << size) - 1)
             result = (result << size) | elem_c
@@ -1635,7 +1631,7 @@ class BNMULVML(BnVecVecMul):
             assert (mod_q > 0) and (mod_q < 2**size)
 
             # Montgomery computation
-            elem_c = montgomery_mul_no_cond_subtraction(elem_a, lane_elem, mod_q, mod_R, size)
+            elem_c = montgomery_mul(elem_a, lane_elem, mod_q, mod_R, size)
 
             elem_c = elem_c & ((1 << size) - 1)
             result = (result << size) | elem_c

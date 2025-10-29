@@ -277,3 +277,22 @@ def montgomery_mul_no_cond_subtraction(a: int, b: int, q: int, R: int, size: int
     # if r >= q:
     #     r -= q
     return r
+
+
+def montgomery_mul(a: int, b: int, q: int, R: int, size: int) -> int:
+    '''Performs a Montgomery multiplication.
+    The inputs a and b are in Montgomery space.
+    The result is also in Montgomery space.
+
+    Algorithm (where []_d are the lower d bits, []^d are the higher d bits):
+       r = [c + [[c]_d * R]_d * q]^d
+       return r
+    '''
+    reg_c = a * b
+    reg_tmp = lower_d_bits(reg_c, size)
+    reg_tmp = lower_d_bits(reg_tmp * R, size)
+    r = upper_d_bits(reg_c + reg_tmp * q, size)
+    if r >= q:
+        r -= q
+    return r
+
