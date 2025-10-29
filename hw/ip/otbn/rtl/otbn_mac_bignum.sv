@@ -533,14 +533,36 @@ module otbn_mac_bignum
                                      adder_result_mod[95:64],
                                      adder_result_mod[31:0]};
 
-  // Critical path optimization
-  // We do not perform the conditional subtraction in the MAC to improve the critical path.
-  // The conditional subtraction can be performed in one cycle for all four 64b chunks by using
-  // bn.addvm with zero as one input. This requires one cycle more in addition to the 12 cycles
-  // spent here. However, we can reduce the critical path and save the area of a 64b vectorized
-  // adder.
+  // Perform subtraction if r >= q then r = r - q else r = r
+  // Minuend - Subtrahend = Difference
+  logic [QWLEN-1:0] sub_minuend;
+  logic [QWLEN-1:0] sub_subtrahend;
+  logic [QWLEN-1:0] sub_difference;
+  logic [1:0]       sub_carries_out;
   logic [QWLEN-1:0] montg_r_cor;
-  assign montg_r_cor = montg_r;
+
+  assign sub_minuend    = montg_r;
+  assign sub_subtrahend = mod_q;
+
+  // Subtraction is performed by using: a - b = a + ~b + 1
+  otbn_vec_adder #(
+    .LVLEN(QWLEN),
+    .LVChunkLEN(VChunkLEN)
+  ) u_vec_subtractor (
+    .operand_a_i       (sub_minuend),
+    .operand_b_i       (sub_subtrahend),
+    .operand_b_invert_i(1'b1),
+    .carries_in_i      ('1),
+    .use_ext_carry_i   ('1),
+    .sum_o             (sub_difference),
+    .carries_out_o     (sub_carries_out)
+  );
+
+  // No blanking possible as the MUX is controlled by the subtraction result.
+  // But also not required as the difference anyway depends on montg_r.
+  assign montg_r_cor =
+    {sub_carries_out[1] ? sub_difference[32*1+:32] : montg_r[32*1+:32],
+     sub_carries_out[0] ? sub_difference[32*0+:32] : montg_r[32*0+:32]};
 
   ///////////////////////////////////////////
   // ACC merging for vectorized operations //
