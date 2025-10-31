@@ -68,6 +68,19 @@ class otbn_env_cov extends cip_base_env_cov #(.CFG_T(otbn_env_cfg));
   `DEF_MNEM(mnem_bn_movr,       "bn.movr");
   `DEF_MNEM(mnem_bn_wsrr,       "bn.wsrr");
   `DEF_MNEM(mnem_bn_wsrw,       "bn.wsrw");
+  `DEF_MNEM(mnem_bn_addv,       "bn.addv");
+  `DEF_MNEM(mnem_bn_addvm,      "bn.addvm");
+  `DEF_MNEM(mnem_bn_subv,       "bn.subv");
+  `DEF_MNEM(mnem_bn_subvm,      "bn.subvm");
+  `DEF_MNEM(mnem_bn_mulv,       "bn.mulv");
+  `DEF_MNEM(mnem_bn_mulvl,      "bn.mulvl");
+  `DEF_MNEM(mnem_bn_mulvm,      "bn.mulvm");
+  `DEF_MNEM(mnem_bn_mulvml,     "bn.mulvml");
+  `DEF_MNEM(mnem_bn_trn1,       "bn.trn1");
+  `DEF_MNEM(mnem_bn_trn2,       "bn.trn2");
+  `DEF_MNEM(mnem_bn_shv,        "bn.shv");
+  `DEF_MNEM(mnem_bn_pack,       "bn.pack");
+  `DEF_MNEM(mnem_bn_unpk,       "bn.unpk");
   // A fake mnemonic, used for bits that don't decode to a real instruction
   `DEF_MNEM(mnem_dummy,         "dummy-insn");
   // A fake mnemonic, used for invalid IMEM data (after a failed integrity check)
@@ -80,34 +93,41 @@ class otbn_env_cov extends cip_base_env_cov #(.CFG_T(otbn_env_cfg));
 `define DEF_MNEM_BIN(NAME) bins NAME = {`"NAME`"}
 
   // Generate a bin for each mnemonic except ECALL
-`define DEF_MNEM_BINS_EXCEPT_ECALL                                     \
-    `DEF_MNEM_BIN(mnem_add); `DEF_MNEM_BIN(mnem_addi);                 \
-    `DEF_MNEM_BIN(mnem_lui); `DEF_MNEM_BIN(mnem_sub);                  \
-    `DEF_MNEM_BIN(mnem_sll); `DEF_MNEM_BIN(mnem_slli);                 \
-    `DEF_MNEM_BIN(mnem_srl); `DEF_MNEM_BIN(mnem_srli);                 \
-    `DEF_MNEM_BIN(mnem_sra); `DEF_MNEM_BIN(mnem_srai);                 \
-    `DEF_MNEM_BIN(mnem_and); `DEF_MNEM_BIN(mnem_andi);                 \
-    `DEF_MNEM_BIN(mnem_or); `DEF_MNEM_BIN(mnem_ori);                   \
-    `DEF_MNEM_BIN(mnem_xor); `DEF_MNEM_BIN(mnem_xori);                 \
-    `DEF_MNEM_BIN(mnem_lw); `DEF_MNEM_BIN(mnem_sw);                    \
-    `DEF_MNEM_BIN(mnem_beq); `DEF_MNEM_BIN(mnem_bne);                  \
-    `DEF_MNEM_BIN(mnem_jal); `DEF_MNEM_BIN(mnem_jalr);                 \
-    `DEF_MNEM_BIN(mnem_csrrs); `DEF_MNEM_BIN(mnem_csrrw);              \
-    `DEF_MNEM_BIN(mnem_loop); `DEF_MNEM_BIN(mnem_loopi);               \
-    `DEF_MNEM_BIN(mnem_bn_add); `DEF_MNEM_BIN(mnem_bn_addc);           \
-    `DEF_MNEM_BIN(mnem_bn_addi); `DEF_MNEM_BIN(mnem_bn_addm);          \
-    `DEF_MNEM_BIN(mnem_bn_mulqacc); `DEF_MNEM_BIN(mnem_bn_mulqacc_wo); \
-    `DEF_MNEM_BIN(mnem_bn_mulqacc_so);                                 \
-    `DEF_MNEM_BIN(mnem_bn_sub); `DEF_MNEM_BIN(mnem_bn_subb);           \
-    `DEF_MNEM_BIN(mnem_bn_subi); `DEF_MNEM_BIN(mnem_bn_subm);          \
-    `DEF_MNEM_BIN(mnem_bn_and); `DEF_MNEM_BIN(mnem_bn_or);             \
-    `DEF_MNEM_BIN(mnem_bn_not); `DEF_MNEM_BIN(mnem_bn_xor);            \
-    `DEF_MNEM_BIN(mnem_bn_rshi);                                       \
-    `DEF_MNEM_BIN(mnem_bn_sel);                                        \
-    `DEF_MNEM_BIN(mnem_bn_cmp); `DEF_MNEM_BIN(mnem_bn_cmpb);           \
-    `DEF_MNEM_BIN(mnem_bn_lid); `DEF_MNEM_BIN(mnem_bn_sid);            \
-    `DEF_MNEM_BIN(mnem_bn_mov); `DEF_MNEM_BIN(mnem_bn_movr);           \
-    `DEF_MNEM_BIN(mnem_bn_wsrr); `DEF_MNEM_BIN(mnem_bn_wsrw);
+`define DEF_MNEM_BINS_EXCEPT_ECALL                                      \
+  `DEF_MNEM_BIN(mnem_add);           `DEF_MNEM_BIN(mnem_addi);          \
+  `DEF_MNEM_BIN(mnem_lui);           `DEF_MNEM_BIN(mnem_sub);           \
+  `DEF_MNEM_BIN(mnem_sll);           `DEF_MNEM_BIN(mnem_slli);          \
+  `DEF_MNEM_BIN(mnem_srl);           `DEF_MNEM_BIN(mnem_srli);          \
+  `DEF_MNEM_BIN(mnem_sra);           `DEF_MNEM_BIN(mnem_srai);          \
+  `DEF_MNEM_BIN(mnem_and);           `DEF_MNEM_BIN(mnem_andi);          \
+  `DEF_MNEM_BIN(mnem_or);            `DEF_MNEM_BIN(mnem_ori);           \
+  `DEF_MNEM_BIN(mnem_xor);           `DEF_MNEM_BIN(mnem_xori);          \
+  `DEF_MNEM_BIN(mnem_lw);            `DEF_MNEM_BIN(mnem_sw);            \
+  `DEF_MNEM_BIN(mnem_beq);           `DEF_MNEM_BIN(mnem_bne);           \
+  `DEF_MNEM_BIN(mnem_jal);           `DEF_MNEM_BIN(mnem_jalr);          \
+  `DEF_MNEM_BIN(mnem_csrrs);         `DEF_MNEM_BIN(mnem_csrrw);         \
+  `DEF_MNEM_BIN(mnem_loop);          `DEF_MNEM_BIN(mnem_loopi);         \
+  `DEF_MNEM_BIN(mnem_bn_add);        `DEF_MNEM_BIN(mnem_bn_addc);       \
+  `DEF_MNEM_BIN(mnem_bn_addi);       `DEF_MNEM_BIN(mnem_bn_addm);       \
+  `DEF_MNEM_BIN(mnem_bn_mulqacc);    `DEF_MNEM_BIN(mnem_bn_mulqacc_wo); \
+  `DEF_MNEM_BIN(mnem_bn_mulqacc_so);                                    \
+  `DEF_MNEM_BIN(mnem_bn_sub);        `DEF_MNEM_BIN(mnem_bn_subb);       \
+  `DEF_MNEM_BIN(mnem_bn_subi);       `DEF_MNEM_BIN(mnem_bn_subm);       \
+  `DEF_MNEM_BIN(mnem_bn_and);        `DEF_MNEM_BIN(mnem_bn_or);         \
+  `DEF_MNEM_BIN(mnem_bn_not);        `DEF_MNEM_BIN(mnem_bn_xor);        \
+  `DEF_MNEM_BIN(mnem_bn_rshi);                                          \
+  `DEF_MNEM_BIN(mnem_bn_sel);                                           \
+  `DEF_MNEM_BIN(mnem_bn_cmp);        `DEF_MNEM_BIN(mnem_bn_cmpb);       \
+  `DEF_MNEM_BIN(mnem_bn_lid);        `DEF_MNEM_BIN(mnem_bn_sid);        \
+  `DEF_MNEM_BIN(mnem_bn_mov);        `DEF_MNEM_BIN(mnem_bn_movr);       \
+  `DEF_MNEM_BIN(mnem_bn_wsrr);       `DEF_MNEM_BIN(mnem_bn_wsrw);       \
+  `DEF_MNEM_BIN(mnem_bn_addv);       `DEF_MNEM_BIN(mnem_bn_addvm);      \
+  `DEF_MNEM_BIN(mnem_bn_subv);       `DEF_MNEM_BIN(mnem_bn_subvm);      \
+  `DEF_MNEM_BIN(mnem_bn_mulv);       `DEF_MNEM_BIN(mnem_bn_mulvl);      \
+  `DEF_MNEM_BIN(mnem_bn_mulvm);      `DEF_MNEM_BIN(mnem_bn_mulvml);     \
+  `DEF_MNEM_BIN(mnem_bn_trn1);       `DEF_MNEM_BIN(mnem_bn_trn2);       \
+  `DEF_MNEM_BIN(mnem_bn_shv);                                           \
+  `DEF_MNEM_BIN(mnem_bn_pack);       `DEF_MNEM_BIN(mnem_bn_unpk);
 
   // Equivalents of DEF_MNEM and DEF_MNEM_BINp, but for external CSRs. Again, we want to use the CSR
   // names as bins in coverpoints and need sized literals.

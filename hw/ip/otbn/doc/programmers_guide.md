@@ -353,6 +353,48 @@ The outlined technique can be extended to arbitrary bit widths but requires unro
 
 Code snippets giving examples of 256x256 and 384x384 multiplies can be found in `sw/otbn/code-snippets/mul256.s` and `sw/otbn/code-snippets/mul384.s`.
 
+### Packing and unpacking 24-bit element vectors
+The vectorized subset of Bignum instructions enable SIMD computation on 32-bit elements.
+However, some PQC algorithms operate on smaller values.
+To optimize the memory footprint of such programs, vectors can compressed and then be stored and loaded in memory in a compressed 24-bit format.
+The instructions `bn.pack` and `bn.unpack` convert 32-bit vectors into a dense 24-bit representation and vice-versa as described in the [ISA manual](./isa.md).
+These packed vectors can then be stored in the memory as shown below.
+
+<img src="./pack_instruction.svg" width="780"/>
+
+To pack vectors one can use the following snippet:
+```
+/*
+ * Assume we have 4 vectors with 8 32-bit elements currently in WDRs w0-w3
+ * which we want to store in the packed format.
+ * The color in the image corresponds to the WDRs as follows:
+ * w0: Red vector
+ * w1: Yellow vector
+ * w2: Green vector
+ * w3: Blue vector
+ */
+
+/* Pack the vectors into temporary WDRs */
+bn.pack w10, w1, w0, 64
+bn.pack w11, w2, w1, 128
+bn.pack w12, w3, w2, 192
+
+/* Store packed vectors to memory */
+...
+```
+
+And to unpack vectors:
+```
+/* load packed vectors from memory into WDRs w10-w12*/
+...
+
+/* Unpack vectors */
+bn.unpk w0, w11, w10, 0   /* unpack the red vector to w0 */
+bn.unpk w1, w11, w10, 192 /* unpack the yellow vector to w1 */
+bn.unpk w2, w12, w11, 128 /* unpack the green vector to w2 */
+bn.unpk w3, wXX, w12, 64  /* unpack the blue vector to w3, wXX represents that any WDR can be used */
+```
+
 ## Device Interface Functions (DIFs)
 
 - [Device Interface Functions](../../../../sw/device/lib/dif/dif_otbn.h)

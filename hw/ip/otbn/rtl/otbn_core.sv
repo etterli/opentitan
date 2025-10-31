@@ -207,6 +207,7 @@ module otbn_core
 
   mac_bignum_operation_t mac_bignum_operation;
   logic [WLEN-1:0]       mac_bignum_operation_result;
+  logic                  mac_bignum_operation_valid;
   flags_t                mac_bignum_operation_flags;
   flags_t                mac_bignum_operation_flags_en;
   logic                  mac_bignum_en;
@@ -226,6 +227,7 @@ module otbn_core
   logic [ExtWLEN-1:0]          ispr_acc_intg;
   logic [ExtWLEN-1:0]          ispr_acc_wr_data_intg;
   logic                        ispr_acc_wr_en;
+  logic [ExtWLEN-1:0]          ispr_mod_intg;
   logic                        ispr_init;
 
   logic            rnd_req;
@@ -282,6 +284,7 @@ module otbn_core
   logic rf_bignum_predec_error, alu_bignum_predec_error, ispr_predec_error, mac_bignum_predec_error;
   logic controller_predec_error;
   logic rd_predec_error, predec_error;
+  logic mac_bignum_state_error;
 
   logic req_sec_wipe_urnd_keys_q;
 
@@ -517,6 +520,7 @@ module otbn_core
     // To/from bignum MAC
     .mac_bignum_operation_o       (mac_bignum_operation),
     .mac_bignum_operation_result_i(mac_bignum_operation_result),
+    .mac_bignum_operation_valid_i (mac_bignum_operation_valid),
     .mac_bignum_en_o              (mac_bignum_en),
     .mac_bignum_commit_o          (mac_bignum_commit),
 
@@ -603,6 +607,7 @@ module otbn_core
                            predec_error,
                            insn_addr_err,
                            rf_base_spurious_we_err,
+                           mac_bignum_state_error,
                            mubi_err},
     reg_intg_violation:  |{controller_err_bits.reg_intg_violation,
                            non_controller_reg_intg_violation},
@@ -639,7 +644,7 @@ module otbn_core
                   mubi4_bool_to_mubi(|{start_stop_fatal_error, urnd_all_zero, predec_error,
                                        rf_base_intg_err, rf_base_spurious_we_err, lsu_rdata_err,
                                        insn_fetch_err, non_controller_reg_intg_violation,
-                                       insn_addr_err}));
+                                       insn_addr_err, mac_bignum_state_error}));
 
   assign controller_recov_escalate_en =
       mubi4_bool_to_mubi(|{rnd_rep_err, rnd_fips_err});
@@ -649,6 +654,7 @@ module otbn_core
       mubi4_or_hi(escalate_en_i,
                   mubi4_bool_to_mubi(|{urnd_all_zero, rf_base_intg_err, rf_base_spurious_we_err,
                                        predec_error, lsu_rdata_err, insn_fetch_err,
+                                       mac_bignum_state_error,
                                        controller_fatal_err, insn_addr_err}));
 
   // Signal error if MuBi input signals take on invalid values as this means something bad is
@@ -846,6 +852,8 @@ module otbn_core
     .ispr_acc_wr_data_intg_o(ispr_acc_wr_data_intg),
     .ispr_acc_wr_en_o       (ispr_acc_wr_en),
 
+    .ispr_mod_intg_o(ispr_mod_intg),
+
     .reg_intg_violation_err_o(alu_bignum_reg_intg_violation_err),
 
     .sec_wipe_mod_urnd_i(sec_wipe_mod_urnd),
@@ -870,6 +878,7 @@ module otbn_core
 
     .operation_i                    (mac_bignum_operation),
     .operation_result_o             (mac_bignum_operation_result),
+    .operation_valid_o              (mac_bignum_operation_valid),
     .operation_flags_o              (mac_bignum_operation_flags),
     .operation_flags_en_o           (mac_bignum_operation_flags_en),
     .operation_intg_violation_err_o (mac_bignum_reg_intg_violation_err),
@@ -879,15 +888,23 @@ module otbn_core
 
     .urnd_data_i        (urnd_data),
     .sec_wipe_acc_urnd_i(sec_wipe_acc_urnd),
+    .sec_wipe_tmp_urnd_i(sec_wipe_acc_urnd), // TODO: Create a separate signal and urnd_data?
+    .sec_wipe_c_urnd_i  (sec_wipe_acc_urnd), // TODO: Create a separate signal and urnd_data?
     .sec_wipe_running_i (secure_wipe_running_o),
     .sec_wipe_err_o     (mac_bignum_sec_wipe_err),
 
     .mac_en_i    (mac_bignum_en),
     .mac_commit_i(mac_bignum_commit),
 
+    // Also overwrites the other two auxilary registers
+    // TODO: Separate the registers?
     .ispr_acc_intg_o        (ispr_acc_intg),
     .ispr_acc_wr_data_intg_i(ispr_acc_wr_data_intg),
-    .ispr_acc_wr_en_i       (ispr_acc_wr_en)
+    .ispr_acc_wr_en_i       (ispr_acc_wr_en),
+
+    .ispr_mod_intg_i(ispr_mod_intg),
+
+    .state_err_o(mac_bignum_state_error)
   );
 
   otbn_rnd #(

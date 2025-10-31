@@ -53,6 +53,15 @@ package otbn_pkg;
   // _DmemScratchSizeBytes in util/shared/mem_layout.py
   parameter int DmemScratchSizeByte = 1024;
 
+  // Width of vector, in bits
+  parameter int VLEN = WLEN;
+
+  // Width of the smallest vector chunk we operate on, in bits
+  parameter int VChunkLEN = 32;
+
+  // Number of vector chunk processing elements
+  parameter int NVecProc = VLEN / VChunkLEN;
+
   // Toplevel constants ============================================================================
 
   parameter int AlertFatal = 0;
@@ -216,6 +225,7 @@ package otbn_pkg;
     InsnOpcodeBignumMisc     = 7'h0B,
     InsnOpcodeBignumArith    = 7'h2B,
     InsnOpcodeBignumMulqacc  = 7'h3B,
+    InsnOpcodeBignumVec      = 7'h5B,
     InsnOpcodeBignumBaseMisc = 7'h7B
   } insn_opcode_e;
 
@@ -233,21 +243,32 @@ package otbn_pkg;
     AluOpBaseSll
   } alu_op_base_e;
 
-  typedef enum logic [3:0] {
+  typedef enum logic [4:0] {
     AluOpBignumAdd,
     AluOpBignumAddc,
     AluOpBignumAddm,
+    AluOpBignumAddv,
+    AluOpBignumAddvm,
 
     AluOpBignumSub,
     AluOpBignumSubb,
     AluOpBignumSubm,
+    AluOpBignumSubv,
+    AluOpBignumSubvm,
 
     AluOpBignumRshi,
+    AluOpBignumShv,
 
     AluOpBignumXor,
     AluOpBignumOr,
     AluOpBignumAnd,
     AluOpBignumNot,
+
+    AluOpBignumTrn1,
+    AluOpBignumTrn2,
+
+    AluOpBignumPack,
+    AluOpBignumUnpk,
 
     AluOpBignumNone
   } alu_op_bignum_e;
@@ -288,12 +309,49 @@ package otbn_pkg;
     ImmBaseBX
   } imm_b_sel_base_e;
 
-  // Shift amount select for bignum ISA
+  // Number of ALU ELENs
+  parameter int NELEN_ALU = 2;
+
+  // Vector element length type for bignum vec ISA implemented in BN ALU for
+  // bn.addv(m), bn.subv(m) and bn.shv.
+  // The ISA forsees only 4 types (16 to 128 bits). However, only a subset is implemented.
+  // In addtion, vectorized instructions share the hardware and thus we need a 256b type
+  // to signal "regular" 256b operation.
+  typedef enum logic {
+    AluElen32  = 1'h0,
+    AluElen256 = 1'h1
+  } alu_elen_e;
+
+  // Number of transpose ELENs
+  parameter int NELEN_TRN = 3;
+
+  // Vector element length type for bignum vec ISA bn.trn1 and bn.trn2
+  // The ISA forsees 4 types (16 to 128 bits). However, only a subset is implemented.
   typedef enum logic [1:0] {
-    ShamtSelBignumA,
-    ShamtSelBignumS,
-    ShamtSelBignumZero
-  } shamt_sel_bignum_e;
+    TrnElen32  = 2'b00,
+    TrnElen64  = 2'b01,
+    TrnElen128 = 2'b10
+  } trn_elen_e;
+
+  // Number of BN MAC ELENs
+  parameter int NELEN_MAC = 2;
+
+  // Vector element length type for bignum vec ISA implemented in BN MAC
+  // The instructions supported by BN MAC support 2 types: vectorized 32-bit elements and the
+  // regular 64-bit multiplication.
+  typedef enum logic {
+    MacElen32 = 1'b0,
+    MacElen64 = 1'b1
+  } mac_elen_e;
+
+  // The supported types of multiplications
+  typedef enum logic [2:0] {
+    MacMulRegular,
+    MacMulVec,
+    MacMulVecLane,
+    MacMulVecMod,
+    MacMulVecModLane
+  } mac_mul_type_e;
 
   // Regfile write data selection
   typedef enum logic [2:0] {
@@ -436,17 +494,24 @@ package otbn_pkg;
     logic                    b_inc;           // Increment source register index b in base register
                                               // file
 
+    // TODO: generate onehot signals in decoder or locally where it is required?
+    logic [NELEN_ALU-1:0]    alu_elen_onehot;
+    logic [NELEN_TRN-1:0]    trn_elen_onehot;
+    // TODO: Generate adder specific signal in BN ALU? It depends on the ELEN.
+    logic [NVecProc-1:0]     alu_vec_adder_carry_sel;
     // Shifting only applies to a subset of ALU operations
     logic [$clog2(WLEN)-1:0] alu_shift_amt;   // Shift amount
     logic                    alu_shift_right; // Shift right if set otherwise left
+    // Shift mask for vectorized shifting. Replicated for all chunks.
+    logic [VChunkLEN-1:0]    alu_shift_mask;
 
     flag_group_t             alu_flag_group;
     flag_e                   alu_sel_flag;
     logic                    alu_flag_en;
-    logic                    mac_flag_en;
     alu_op_bignum_e          alu_op;
     op_b_sel_e               alu_op_b_sel;
 
+    logic                    mac_flag_en;
     logic [1:0]              mac_op_a_qw_sel;
     logic [1:0]              mac_op_b_qw_sel;
     logic                    mac_wr_hw_sel_upper;
@@ -454,6 +519,13 @@ package otbn_pkg;
     logic                    mac_zero_acc;
     logic                    mac_shift_out;
     logic                    mac_en;
+    logic                    mac_is_vec;
+    logic                    mac_is_mod;
+    mac_mul_type_e           mac_mul_type;
+    logic [NELEN_MAC-1:0]    mac_elen_ctrl;
+    // TODO: Generate redundandcy signal in BN MAC?
+    logic [NVecProc-1:0]     mac_adder_carry_sel;
+    logic [2:0]              mac_lane_index;
 
     logic                    rf_we;
     rf_wd_sel_e              rf_wdata_sel;
@@ -470,18 +542,33 @@ package otbn_pkg;
   } rf_predec_bignum_t;
 
   typedef struct packed {
+    // ALU
+    logic [NELEN_ALU-1:0]    alu_elen_onehot;
     logic                    adder_x_en;
     logic                    x_res_operand_a_sel;
     logic                    adder_y_op_a_en;
     logic                    shift_mod_sel;
+    logic                    shift_pack_sel;
+    logic                    unpack_shifter_en;
     logic                    adder_y_op_shifter_en;
+    logic [NVecProc-1:0]     vec_adder_carry_sel;
+    logic                    vec_mod_selector_en;
+    logic                    vec_mod_is_subtraction;
+    // Shifter
     logic                    shifter_a_en;
     logic                    shifter_b_en;
     logic                    shift_right;
     logic [$clog2(WLEN)-1:0] shift_amt;
+    logic [VChunkLEN-1:0]    shift_mask;
+    // Logic
     logic                    logic_a_en;
     logic                    logic_shifter_en;
     logic [3:0]              logic_res_sel;
+    // Vector transposer
+    logic [NELEN_TRN-1:0]    trn_elen_onehot;
+    logic                    trn_en;
+    logic                    trn_is_trn1;
+    // Flags
     logic [NFlagGroups-1:0]  flag_group_sel;
     flags_t                  flag_sel;
     logic [NFlagGroups-1:0]  flags_keep;
@@ -497,8 +584,18 @@ package otbn_pkg;
   } ispr_predec_bignum_t;
 
   typedef struct packed {
-    logic op_en;
-    logic acc_rd_en;
+    logic                 op_en;
+    logic                 is_vec;
+    logic                 is_mod;
+    mac_mul_type_e        mul_type; // is predecoding required?
+    logic [NELEN_MAC-1:0] elen_ctrl;
+    logic [NVecProc-1:0]  adder_carry_sel;
+    logic [2:0]           lane_index; // is predecoding required?
+    logic                 mul_shift_en;
+    logic                 mul_merger_en;
+    logic                 add_res_en;
+    logic                 acc_add_en;
+    // TODO: pre-decode control signals which currently are produced by the BN MAC FSM.
   } mac_predec_bignum_t;
 
   typedef struct packed {
@@ -526,8 +623,12 @@ package otbn_pkg;
     alu_op_bignum_e op;
     logic [WLEN-1:0]         operand_a;
     logic [WLEN-1:0]         operand_b;
+    logic [NELEN_ALU-1:0]    alu_elen_onehot;
+    logic [NELEN_TRN-1:0]    trn_elen_onehot;
+    logic [NVecProc-1:0]     vec_adder_carry_sel;
     logic                    shift_right;
     logic [$clog2(WLEN)-1:0] shift_amt;
+    logic [VChunkLEN-1:0]    shift_mask;
     flag_group_t             flag_group;
     flag_e                   sel_flag;
     logic                    alu_flag_en;
@@ -535,14 +636,20 @@ package otbn_pkg;
   } alu_bignum_operation_t;
 
   typedef struct packed {
-    logic [WLEN-1:0] operand_a;
-    logic [WLEN-1:0] operand_b;
-    logic [1:0]      operand_a_qw_sel;
-    logic [1:0]      operand_b_qw_sel;
-    logic            wr_hw_sel_upper;
-    logic [1:0]      pre_acc_shift_imm;
-    logic            zero_acc;
-    logic            shift_acc;
+    logic [WLEN-1:0]      operand_a;
+    logic [WLEN-1:0]      operand_b;
+    logic [1:0]           operand_a_qw_sel;
+    logic [1:0]           operand_b_qw_sel;
+    logic                 wr_hw_sel_upper;
+    logic [1:0]           pre_acc_shift_imm;
+    logic                 zero_acc;
+    logic                 shift_acc;
+    logic                 is_vec;
+    logic                 is_mod;
+    mac_mul_type_e        mul_type;
+    logic [NELEN_MAC-1:0] elen_ctrl;
+    logic [NVecProc-1:0]  adder_carry_sel;
+    logic [2:0]           lane_index;
   } mac_bignum_operation_t;
 
   // Encoding generated with:

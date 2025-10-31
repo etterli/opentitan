@@ -304,6 +304,20 @@ For any instruction that can cause multiple errors in a single cycle, we expect 
 This is described in more detail in the per-instruction text below.
 If an instruction below doesn't describe triggering multiple errors, that means we don't think it's possible.
 
+For the vectorized instructions
+- `BN.ADDV`, `BN.ADDVM`
+- `BN.SUBV`, `BN.SUBVM`
+- `BN.MULV`, `BN.MULVL`
+- `BN.MULVM`, `BN.MULVML`
+- `BN.TRN1`, `BN.TRN2`
+- `BN.SHV`
+we expect to see:
+- Each possible element length (ELEN) setting.
+  Both the supported and unsupported ELEN.
+  For unsupported we expect to see an illegal instruction error.
+- For each supported ELEN, we require "toggle coverage" similar as already explained.
+  We want to see each of the 256 bits of that operand set and unset.
+
 ## ADD
 
 This instruction uses the `R` encoding schema, with covergroup `enc_r_cg`.
@@ -1125,3 +1139,142 @@ There is no instruction-specific covergroup.
 - Write to an invalid WSR
 
 These points are tracked with `wsr_cross` in `enc_wcsr_cg`.
+
+## BN.ADDV
+
+This instruction uses the `bnva` encoding schema, with covergroup X.
+The instruction-specific covergroup is X.
+
+- Cross the three possible signs (negative, zero, positive) for each input element (9 points per element pair).
+  Tracked as X.
+- See the element-wise addition overflow to test the carry propagation logic (it should not propagate between separate vector elements).
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.ADDVM
+
+This instruction uses the `bnva` encoding schema, with covergroup X.
+The instruction-specific covergroup is X.
+
+- Cross the three possible signs (negative, zero, positive) for each input element (9 points per element pair).
+  Tracked as X.
+- See the element-wise modulo overflow to test the reduction logic.
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.SUBV
+
+This instruction uses the `bnva` encoding schema, with covergroup X.
+The instruction-specific covergroup is X.
+
+- Cross the three possible signs (negative, zero, positive) for each input element (9 points per element pair).
+  Tracked as X.
+- See the element-wise subtraction underflow to test the carry propagation logic (it should not propagate between separate vector elements).
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.SUBVM
+
+This instruction uses the `bnva` encoding schema, with covergroup X.
+The instruction-specific covergroup is X.
+
+- Cross the three possible signs (negative, zero, positive) for each input element (9 points per element pair).
+  Tracked as X.
+- See the element-wise modulo underflow to test the reduction logic.
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.MULV
+This instruction uses the `bnvm` encoding schema.
+The immediate `lane` of this encoding is unused and is treated as dont't care.
+The instruction-specific covergroup is X.
+
+- See that the destination WDR is only updated when the instructions retires (correct multi-cycle handling).
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.MULVL
+This instruction uses the `bnvm` encoding schema.
+The instruction-specific covergroup is X.
+
+- See all options of the `lane` selection to make sure the right vector element is selected.
+  Tracked as X.
+- See that the destination WDR is only updated when the instructions retires (correct multi-cycle handling).
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.MULVM
+
+This instruction uses the `bnvm` encoding schema.
+The instruction-specific covergroup is X.
+
+- See that the destination WDR is only updated when the instructions retires (correct multi-cycle handling).
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.MULVML
+
+This instruction uses the `bnvm` encoding schema.
+The instruction-specific covergroup is X.
+
+- See that the destination WDR is only updated when the instructions retires (correct multi-cycle handling).
+  Tracked as X.
+- See all options of the `lane` selection to make sure the right vector element is selected.
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.TRN1
+
+This instruction uses the `bnvtrn` encoding schema.
+The instruction-specific covergroup is X.
+
+No special coverage.
+
+TODO: Link covergroups
+
+## BN.TRN2
+
+This instruction uses the `bnvtrn` encoding schema.
+The instruction-specific covergroup is X.
+
+No special coverage.
+
+TODO: Link covergroups
+
+## BN.SHV
+
+This instruction uses the `bnvsh` encoding schema.
+The instruction-specific covergroup is X.
+
+No special coverage.
+
+TODO: Link covergroups
+
+## BN.PACK
+
+This instruction uses the `bnpk` encoding schema.
+The instruction-specific covergroup is X.
+This instruction operates only on 32-bit vector elements.
+
+- See that the elements are trucnated correctly. I.e., the highest byte of the 32-bit element is discarded correctly.
+
+TODO: Link covergroups
+
+## BN.UNPK
+
+This instruction uses the `bnpk` encoding schema.
+The instruction-specific covergroup is X.
+This instruction operates only on 32-bit vector elements.
+
+- See that the unpacked elements are zero extended correctly.
+- See the correct unpacking of a vector split over two WDRs.
+
+TODO: Link covergroups
