@@ -267,6 +267,9 @@ package otbn_pkg;
     AluOpBignumTrn1,
     AluOpBignumTrn2,
 
+    AluOpBignumPack,
+    AluOpBignumUnpk,
+
     AluOpBignumNone
   } alu_op_bignum_e;
 
@@ -545,6 +548,8 @@ package otbn_pkg;
     logic                    x_res_operand_a_sel;
     logic                    adder_y_op_a_en;
     logic                    shift_mod_sel;
+    logic                    shift_pack_sel;
+    logic                    unpack_shifter_en;
     logic                    adder_y_op_shifter_en;
     logic [NVecProc-1:0]     vec_adder_carry_sel;
     logic                    vec_mod_selector_en;

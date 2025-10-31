@@ -105,19 +105,24 @@ module otbn_decoder
   logic [$clog2(WLEN)-1:0] shift_amt_s_type_bignum;
   // Shift amount for BN.SHV
   logic [$clog2(WLEN)-1:0] shift_amt_shv_bignum;
+  // Shift amount for BN.UNPK and BN.PACK
+  logic [$clog2(WLEN)-1:0] shift_amt_pack_bignum;
 
   assign shift_amt_a_type_bignum = {insn[29:25], 3'b0};
   assign shift_amt_s_type_bignum = {insn[31:25], insn[14]};
   assign shift_amt_shv_bignum    = {1'b0, insn[28:27], insn[19:15]}; // convert 7b to 8b
+  assign shift_amt_pack_bignum   = {insn[28:27], 6'b0};
 
   // Bignum vectorized instruction options
   logic alu_is_modulo_vec_bignum;
   logic alu_is_trn1_bignum;
   logic alu_is_subtraction_vec_bignum;
+  logic alu_is_pack_bignum;
 
   assign alu_is_modulo_vec_bignum      =  insn[28];
   assign alu_is_trn1_bignum            = ~insn[30];
   assign alu_is_subtraction_vec_bignum =  insn[30];
+  assign alu_is_pack_bignum            =  insn[30];
 
   // The ISA foresees 4 types of vector element lengths (16, 32, 64 and 128 bits). However, not all
   // options are implemented. In addition, some regular and vectorized instructions share hardware
@@ -667,10 +672,16 @@ module otbn_decoder
               mac_mul_type_bignum = MacMulVecModLane;
             end
           end
+          3'b110: begin
+            // BN.PACK/BN.UNPK
+            insn_subset         = InsnSubsetBignum;
+            rf_ren_a_bignum     = 1'b1;
+            rf_ren_b_bignum     = 1'b1;
+            rf_we_bignum        = 1'b1;
+          end
           // unused / illegal instructions
           3'b001, // reserved for future use
-          3'b010, // reserved for future use
-          3'b110: illegal_insn = 1'b1; // reserved for future use
+          3'b010: illegal_insn = 1'b1; // reserved for future use
           default: illegal_insn = 1'b1;
         endcase
       end
@@ -1114,10 +1125,15 @@ module otbn_decoder
             alu_operator_bignum     = AluOpBignumShv;
             alu_op_b_mux_sel_bignum = OpBSelRegister;
           end
+          3'b110: begin
+            // BN.PACK/ BN.UNPK
+            alu_shift_amt_bignum    = shift_amt_pack_bignum;
+            alu_operator_bignum     = alu_is_pack_bignum ? AluOpBignumPack : AluOpBignumUnpk;
+            alu_op_b_mux_sel_bignum = OpBSelRegister;
+          end
           default: ;
             // 3'b001 forseen for BN.ADDVI/BN.SUBVI
             // 3'b010 reserved for future use
-            // 3'b110 reserved for future use
         endcase
       end
 
