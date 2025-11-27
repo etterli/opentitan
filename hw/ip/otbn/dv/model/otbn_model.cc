@@ -561,6 +561,11 @@ int OtbnModel::set_software_errs_fatal(unsigned char new_val) {
   return 0;
 }
 
+int OtbnModel::tolerate_result_mismatch() {
+  OtbnTraceChecker::get().TolerateResultMismatch();
+  return 0;
+}
+
 int OtbnModel::set_no_sec_wipe_chk() {
   OtbnTraceChecker::get().set_no_sec_wipe_chk();
   return 0;
@@ -1027,6 +1032,11 @@ int otbn_model_set_software_errs_fatal(OtbnModel *model,
                                        unsigned char new_val) {
   assert(model);
   return model->set_software_errs_fatal(new_val);
+}
+
+int otbn_model_tolerate_result_mismatch(OtbnModel *model) {
+  assert(model);
+  return model->tolerate_result_mismatch();
 }
 
 int otbn_set_no_sec_wipe_chk(OtbnModel *model) {
