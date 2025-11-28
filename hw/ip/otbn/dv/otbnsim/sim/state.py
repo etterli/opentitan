@@ -110,6 +110,7 @@ class OTBNState:
 
         self._err_bits = 0
         self.pending_halt = False
+        self._pending_err_bits = 0
 
         self._urnd_client = EdnClient()
 
@@ -540,9 +541,26 @@ class OTBNState:
         Any bits set in err_bits will be set in the ERR_BITS register when
         we're done.
 
+        Some errors are delayed by one cycle to match the RTL's behaviour.
         '''
+        # Delay certain errors due to the registering of escalation signals
+        if err_bits & ErrBits.DMEM_INTG_VIOLATION:
+            err_bits &= ~ErrBits.DMEM_INTG_VIOLATION
+            self._pending_err_bits |= ErrBits.DMEM_INTG_VIOLATION
+            # Do not stop if there are no other error bits set
+            if err_bits == 0:
+                return
+
+        # Any other stop request (with or without errors) happens immediately
         self._err_bits |= err_bits
         self.pending_halt = True
+
+    def take_pending_err_bits(self) -> None:
+        '''Apply any pending error bits'''
+        if self._pending_err_bits:
+            self._err_bits |= self._pending_err_bits
+            self._pending_err_bits = 0
+            self.pending_halt = True
 
     def invalidate_imem(self) -> None:
         self._time_to_imem_invalidation = 2
