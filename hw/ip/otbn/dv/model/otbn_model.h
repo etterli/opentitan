@@ -90,9 +90,9 @@ class OtbnModel {
   // error. Returns 0 on success; -1 on failure.
   int invalidate_dmem();
 
-  // Tell the model to tolerate mismatches between RTL and ISS trace entries
-  // for the next comparison. Required for tests covering FI countermeasures
-  // with delayed escalation.
+  // Tell the model to tolerate the next occurring mismatch between RTL and ISS
+  // trace entries. Required for tests covering FI countermeasures with delayed
+  // escalation.
   int tolerate_result_mismatch();
 
   // Set software_errs_fatal bit in ISS model.
