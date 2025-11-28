@@ -444,7 +444,14 @@ class OTBNSim:
             self.state.lock_after_wipe = True
 
         # Zero INSN_CNT once if we're going to lock after wipe.
-        self._delayed_insn_cnt_zero(1)
+        # We must delay this by one cycle when we are in WIPE state to match
+        # the cycles: escalation happens, OTBN locks, INSN_CNT is reset.
+        # However, if there is an escalation which causes us to lock during pre-wipe,
+        # then there is no delay to the INSN_CNT reset.
+        if self.state.old_state == FsmState.PRE_WIPE:
+            self._delayed_insn_cnt_zero(0)
+        else:
+            self._delayed_insn_cnt_zero(1)
 
         if self.state.wipe_cycles == 1:
             # This is the penultimate clock cycle of a wipe round. We want to
