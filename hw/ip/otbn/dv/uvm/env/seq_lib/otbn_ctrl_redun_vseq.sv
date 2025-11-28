@@ -309,9 +309,18 @@ class otbn_ctrl_redun_vseq extends otbn_single_vseq;
         `uvm_fatal(`gfn, "issue with randomization")
       end
     endcase
+
+    // Due to the delayed escalation, the faulted instruction still commits but with wrong values.
+    // We must signal to the ISS that the result can be off.
+    cfg.model_agent_cfg.vif.tolerate_result_mismatch();
+
+    // Handle any SW error during the delayed escalation
+    handle_delayed_escalation();
+
     `uvm_info(`gfn, "injecting bad internal state error into ISS", UVM_HIGH)
     have_injected_error = 1'b1;
     cfg.model_agent_cfg.vif.send_err_escalation(err_val);
+
     `DV_WAIT(cfg.model_agent_cfg.vif.status == otbn_pkg::StatusLocked)
     `DV_CHECK_FATAL(uvm_hdl_release(err_path) == 1);
     reset_if_locked();
