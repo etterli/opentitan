@@ -268,6 +268,9 @@ bool OtbnTraceChecker::MatchPair() {
       rtl_entry_.print("    ", std::cerr);
       std::cerr << "  ISS entry is:\n";
       iss_entry_.print("    ", std::cerr);
+
+      std::cerr << "INFO: No longer tolerating RTL/ISS mismatches.\n";
+      tolerate_result_mismatch_ = false;
     } else {
       std::cerr << "ERROR: Mismatch between RTL and ISS trace entries: "
                 << err_desc << "\n  RTL entry is:\n";
@@ -281,11 +284,6 @@ bool OtbnTraceChecker::MatchPair() {
       }
     }
   }
-  // We tolerate a mismatch only for one comparison.
-  if (tolerate_result_mismatch_) {
-    std::cerr << "INFO: No longer tolerating RTL/ISS mismatches.\n";
-  }
-  tolerate_result_mismatch_ = false;
 
   // We've got a matching pair of entries. Move the ISS data out of the (now
   // defunct) iss_entry_ and into last_data_.
