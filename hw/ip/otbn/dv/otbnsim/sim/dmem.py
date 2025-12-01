@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import struct
+import sys
 from typing import Dict, List, Sequence, Optional, Tuple
 
 from shared.mem_layout import get_memory_layout
@@ -258,6 +259,7 @@ class Dmem:
         self.trace = []
 
     def invalidate_dmem(self) -> None:
+        print("invalidate_dmem called", file=sys.stderr)
         for idx in range(len(self.data)):
             u32, _ = self.data[idx]
             self.data[idx] = (u32, False)

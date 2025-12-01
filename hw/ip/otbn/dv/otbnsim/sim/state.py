@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from enum import IntEnum
+import sys
 from typing import Dict, List, Optional
 
 from shared.mem_layout import get_memory_layout
@@ -290,6 +291,7 @@ class OTBNState:
         return self._fsm_state == FsmState.WIPING
 
     def stop_if_pending_halt(self) -> bool:
+        print(f"Called stop_if_pending_halt with: {self.pending_halt}", file=sys.stderr, flush=True)
         if self.pending_halt:
             self.stop()
             return True
@@ -396,6 +398,7 @@ class OTBNState:
         might have had an error escalation signal after starting the wipe. In
         this case, there's nothing to do except possibly to update ERR_BITS.
         '''
+        print("state.stop() called", file=sys.stderr, flush=True)
 
         # If we were running an instruction and something went wrong then it
         # might have updated state (either registers, memory or
@@ -429,6 +432,7 @@ class OTBNState:
             # check that the RTL and model match. The flag will be cleared
             # again on the next cycle.
             if self._fsm_state == FsmState.EXEC:
+                print(f"Transition from EXEC to PRE_WIPE, Should we lock after wipe? - {'yes' if should_lock else 'no'}", file=sys.stderr, flush=True)
                 # Make the final PC visible. This isn't currently in the RTL,
                 # but is useful in simulations that want to track whether we
                 # stopped where we expected to stop.
@@ -442,6 +446,7 @@ class OTBNState:
                 self.lock_after_wipe = should_lock
                 self.wipe_rounds_done = 0
             elif self._fsm_state in [FsmState.PRE_WIPE, FsmState.WIPING]:
+                print(f"stop() called in state {self._fsm_state.name}. Set lock_after_wipe to True", file=sys.stderr, flush=True)
                 assert should_lock
                 self.lock_after_wipe = True
             elif self._init_sec_wipe_state in [InitSecWipeState.IN_PROGRESS]:
@@ -502,12 +507,14 @@ class OTBNState:
 
     def post_insn(self, loop_warps: Dict[int, int]) -> None:
         '''Update state after running an instruction but before commit'''
+        print("post_insn called", file=sys.stderr)
         self.ext_regs.increment_insn_cnt()
         self.loop_step(loop_warps)
         self.gprs.post_insn()
 
         self._err_bits |= self.gprs.err_bits() | self.loop_stack.err_bits()
         if self._err_bits:
+            print(f"setting pending halt in post_insn due to error bits 0x{self._err_bits:08x}", file=sys.stderr)
             self.pending_halt = True
 
         # Check that the next PC is valid, but only if we're not stopping
@@ -521,6 +528,7 @@ class OTBNState:
         # anyway).
         if not self.is_pc_valid(self.get_next_pc()) and not self.pending_halt:
             self._err_bits |= ErrBits.BAD_INSN_ADDR
+            print(f"setting pending halt in post_insn due invalid PC", file=sys.stderr)
             self.pending_halt = True
 
     def read_csr(self, idx: int) -> int:
@@ -543,20 +551,24 @@ class OTBNState:
 
         Some errors are delayed by one cycle to match the RTL's behaviour.
         '''
+        print(f"stop_at_end_of_cycle called with err_bits=0x{err_bits:08x}", file=sys.stderr)
         # Delay certain errors due to the registering of escalation signals
         if err_bits & ErrBits.DMEM_INTG_VIOLATION:
             err_bits &= ~ErrBits.DMEM_INTG_VIOLATION
             self._pending_err_bits |= ErrBits.DMEM_INTG_VIOLATION
+            print("pending DMEM_INTG_VIOLATION detected", file=sys.stderr)
             # Do not stop if there are no other error bits set
             if err_bits == 0:
                 return
 
         # Any other stop request (with or without errors) happens immediately
+        print(f"setting error bits: 0x{err_bits:08x}", file=sys.stderr)
         self._err_bits |= err_bits
         self.pending_halt = True
 
     def take_pending_err_bits(self) -> None:
         '''Apply any pending error bits'''
+        print("Checking for pending error bits", file=sys.stderr)
         if self._pending_err_bits:
             self._err_bits |= self._pending_err_bits
             self._pending_err_bits = 0
@@ -578,6 +590,8 @@ class OTBNState:
 
     def take_injected_err_bits(self) -> None:
         '''Apply any injected errors, stopping at the end of the cycle'''
+        print("Checking for injected error bits", file=sys.stderr, flush=True)
         if self.injected_err_bits != 0:
+            print("Injected error bits detected: 0x{:08x}".format(self.injected_err_bits), file=sys.stderr, flush=True)
             self.stop_at_end_of_cycle(self.injected_err_bits)
             self.injected_err_bits = 0

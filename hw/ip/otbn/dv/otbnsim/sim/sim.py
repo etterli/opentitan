@@ -10,6 +10,7 @@ from .isa import OTBNInsn
 from .state import OTBNState, FsmState
 from .stats import ExecutionStats
 from .trace import Trace
+import sys
 
 # A dictionary that defines a function of the form "address -> from -> to". If
 # PC is the current PC and cnt is the count for the innermost loop then
@@ -98,6 +99,7 @@ class OTBNSim:
                   verbose: bool,
                   fetch_next: bool) -> List[Trace]:
         '''This is run on a stall cycle'''
+        print("On stall, check pending halt", file=sys.stderr, flush=True)
         self.state.stop_if_pending_halt()
         changes = self.state.changes()
         self.state.commit(sim_stalled=True)
@@ -120,7 +122,9 @@ class OTBNSim:
         if self.stats is not None:
             self.stats.record_insn(insn, self.state)
 
+        print("On retire, check pending halt", file=sys.stderr, flush=True)
         halting = self.state.stop_if_pending_halt()
+        print(f"On retire, check pending halt resulted in {halting}", file=sys.stderr, flush=True)
         changes = self.state.changes()
 
         # Program counter before commit
@@ -145,17 +149,22 @@ class OTBNSim:
         This is delayed by delay_if_locking (using state.time_to_insn_cnt_zero)
         to match the timing in the RTL.
         '''
+        print(f"    In delayed_insn_cnt_zero with delay_if_locking = {delay_if_locking} and self.state.time_to_insn_cnt_zero = {self.state.time_to_insn_cnt_zero}", file=sys.stderr, flush=True)
         assert self.state.get_fsm_state() in [FsmState.PRE_WIPE,
                                               FsmState.WIPING]
 
         # Only zero instruction count if we're wiping before lock
         if not self.state.lock_after_wipe:
+            print("    Not locking after wipe, skipping zeroing INSN_CNT", file=sys.stderr, flush=True)
             return
 
         # We don't print "INSN_CNT=0" on every cycle of the wipe, so we should
         # only do something if the current value is nonzero.
         if self.state.ext_regs.read('INSN_CNT', True) == 0:
+            print("    INSN_CNT is already zero, skipping zeroing", file=sys.stderr, flush=True)
             return
+
+        print("    Locking after wipe, proceeding to start count down to zero INSN_CNT", file=sys.stderr, flush=True)
 
         # In this case, we know we want to zero INSN_CNT. There might be an
         # operation to do so that has already been enqueued. If not (or if it
@@ -165,15 +174,18 @@ class OTBNSim:
             self.state.time_to_insn_cnt_zero = delay_if_locking
         count = min(self.state.time_to_insn_cnt_zero, delay_if_locking)
 
+        print(f"    Current count is {count}", file=sys.stderr, flush=True)
         if count == 0:
             # If _time_to_insn_cnt_zero is now zero, it means that this is the
             # cycle to update insn_cnt.
             self.state.ext_regs.write('INSN_CNT', 0, True)
             self.state.time_to_insn_cnt_zero = None
+            print("    Zeroed INSN_CNT", file=sys.stderr, flush=True)
         else:
             # If _time_to_insn_cnt_zero isn't zero, we should decrement it
             # (maybe we'll update insn_cnt next cycle).
             self.state.time_to_insn_cnt_zero = count - 1
+            print(f"    Decremented time_to_insn_cnt_zero to {self.state.time_to_insn_cnt_zero}", file=sys.stderr, flush=True)
 
     def step(self, verbose: bool) -> StepRes:
         '''Run a single cycle.
@@ -183,6 +195,9 @@ class OTBNSim:
         returns no instruction and no changes.
 
         '''
+
+        print(f"------------ Stepping ISS @ INSN_CNT = {self.state.ext_regs.read('INSN_CNT', True):#x} in state {self.state.get_fsm_state().name} -----------------------", file=sys.stderr, flush=True)
+
         fsm_state = self.state.get_fsm_state()
         # Pairs: (stepper, handles_injected_err). If handles_injected_err is
         # False then the generic code here will deal with any pending errors in
@@ -206,6 +221,7 @@ class OTBNSim:
 
     def _step_idle(self, verbose: bool) -> StepRes:
         '''Step the simulation when OTBN is IDLE or LOCKED'''
+        print("step_idle", file=sys.stderr, flush=True)
         self.state.stop_if_pending_halt()
 
         is_locked = self.state.get_fsm_state() == FsmState.LOCKED
@@ -268,6 +284,7 @@ class OTBNSim:
 
     def _step_ext_wipe(self, verbose: bool) -> StepRes:
         '''Step the simulation DMEM/IMEM wipe operation'''
+        print("step ext wipe", file=sys.stderr, flush=True)
         self.state.stop_if_pending_halt()
         changes = self.state.changes()
         self.state.commit(sim_stalled=True)
@@ -297,6 +314,7 @@ class OTBNSim:
 
     def _step_exec(self, verbose: bool) -> StepRes:
         '''Step the simulation when executing code'''
+        print("step exec..", file=sys.stderr, flush=True)
 
         # The initial secure wipe *must* be done when executing code.
         assert self.state.init_sec_wipe_is_done()
@@ -375,6 +393,7 @@ class OTBNSim:
 
     def _step_pre_wipe(self, verbose: bool) -> StepRes:
         '''Step the simulation when waiting for a URND seed for wipe'''
+        print("step pre wiping..", file=sys.stderr, flush=True)
 
         # This is a bit of a hack to model a bug in the design where the STATUS
         # register has a value of 0xff for a single cycle before it becomes
@@ -405,6 +424,7 @@ class OTBNSim:
             self.state.ext_regs.write('WIPE_START', 0, True)
 
         # Zero INSN_CNT once if we're going to lock after wipe.
+        print("  Call delayed zeroing_insn_cnt_zero in pre-wipe", file=sys.stderr, flush=True)
         self._delayed_insn_cnt_zero(0)
 
         if self.state.wsrs.URND.running:
@@ -413,7 +433,7 @@ class OTBNSim:
                  [Status.BUSY_SEC_WIPE_INT, Status.LOCKED])):
                 self.state.ext_regs.write('STATUS',
                                           Status.BUSY_SEC_WIPE_INT, True)
-
+            print("  URND completed, moving to WIPING state", file=sys.stderr, flush=True)
             self.state.set_fsm_state(FsmState.WIPING)
 
         return (None, self._on_stall(verbose, fetch_next=False))
@@ -421,6 +441,7 @@ class OTBNSim:
     def _step_wiping(self, verbose: bool) -> StepRes:
         '''Step the simulation when wiping'''
         assert self.state.wipe_cycles >= 0
+        print("step wiping..", file=sys.stderr, flush=True)
 
         # Keep track of whether there was actually a wipe operation in progress
         # (rather than us waiting for a URND seed for the next round). If there
@@ -449,9 +470,12 @@ class OTBNSim:
         # the cycles: escalation happens, OTBN locks, INSN_CNT is reset.
         # However, if there is an escalation which causes us to lock during pre-wipe,
         # then there is no delay to the INSN_CNT reset.
+        print("  Call _delayed_insn_cnt_zero in wiping", file=sys.stderr, flush=True)
         if self.state.old_state == FsmState.PRE_WIPE:
+            print("    Previous state was PRE_WIPE, so delay is 0", file=sys.stderr, flush=True)
             self._delayed_insn_cnt_zero(0)
         else:
+            print("    Previous state was not PRE_WIPE, so delay is 1", file=sys.stderr, flush=True)
             self._delayed_insn_cnt_zero(1)
 
         if self.state.wipe_cycles == 1:

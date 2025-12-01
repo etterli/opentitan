@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
 from typing import Dict, Iterator, Optional
 
 from .constants import ErrBits
@@ -246,6 +247,7 @@ class LW(OTBNInsn):
         # perform the load itself, returning the result.
         #
         # On the second cycle, we write the result to the destination register.
+        print("LW: starting execute", file=sys.stderr)
 
         base = state.gprs.get_reg(self.grs1).read_unsigned()
         if state.gprs.call_stack_err:
@@ -262,8 +264,10 @@ class LW(OTBNInsn):
 
         # Stall for a single cycle for memory to respond
         yield None
+        print("LW: 2nd cycle", file=sys.stderr)
 
         if result is None or not valid:
+            print("LW: invalid memory read at address 0x{:08x}".format(addr), file=sys.stderr)
             state.stop_at_end_of_cycle(ErrBits.DMEM_INTG_VIOLATION)
 
         state.gprs.get_reg(self.grd).write_unsigned(result)
@@ -1045,6 +1049,7 @@ class BNLID(OTBNInsn):
         # address, compute the load address and check it for correctness,
         # increment any GPRs, then perform the load itself. On the second
         # cycle, update the WDR with the result.
+        print("BN.LID: starting execute", file=sys.stderr)
 
         if self.grs1_inc and self.grd_inc:
             state.stop_at_end_of_cycle(ErrBits.ILLEGAL_INSN)
@@ -1087,8 +1092,10 @@ class BNLID(OTBNInsn):
 
         # Stall for a single cycle for memory to respond
         yield None
+        print("BN.LID: 2nd cycle", file=sys.stderr)
 
         if value is None or not valid:
+            print("BN.LID: invalid memory read at address 0x{:08x}".format(addr), file=sys.stderr)
             state.stop_at_end_of_cycle(ErrBits.DMEM_INTG_VIOLATION)
 
         state.wdrs.get_reg(wrd).write_unsigned(value)
