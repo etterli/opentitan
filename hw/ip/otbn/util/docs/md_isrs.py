@@ -43,11 +43,24 @@ def print_isr(indent: str, isr: Isr, add_anchors: bool) -> None:
     if isr.bits:
         doc_lines += ['<table>',
                       '  <thead>',
-                      '    <tr><th>Bit</th><th>Description</th></tr>',
+                      '    <tr><th>Bits</th><th>Description</th></tr>',
                       '  </thead>',
                       '  <tbody>']
-        for k, v in isr.bits.items():
-            doc_lines.append(f'    <tr><td>{k}</td><td>{v}</td></tr>')
+        for idx, doc in isr.bits.items():
+            if isinstance(idx, int):
+                # We have a single bit
+                doc_lines.append(f'    <tr><td>{idx}</td><td>{doc}</td></tr>')
+            elif isinstance(idx, str) and ':' in idx:
+                # We have a bit field
+                field = f'    <tr><td>{idx}</td><td>'
+                field += doc['doc']
+                if 'values' in doc:
+                    field += '\n\nValues:'
+                    # Lets build a list of the allowed values.
+                    for value, desc in doc['values'].items():
+                        field += f'\n- {value}: {desc}'
+                field += '</td></tr>'
+                doc_lines.append(field)
         doc_lines += ['  </tbody>', '</table>']
 
     for line in doc_lines:

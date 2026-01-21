@@ -34,10 +34,29 @@ class Isr:
         if not isinstance(pre_bits, dict):
             raise ValueError(f'bits field of ISR {name:!r} is not a dict.')
         bits = {}  # type: Dict[int, str]
-        for k, v in pre_bits.items():
-            k_int = check_int(k, 'address of ISR bit')
-            v_str = check_str(v, f'description of ISR bit {k}')
-            bits[k_int] = v_str
+        for idx, desc in pre_bits.items():
+            # An entry in the bit section can either describe a single bit or a bit field.
+            # A single bit is described as "integer: string".
+            # A bit field is described with a range of bits (2:3), a description and optionally a
+            # list of allowed values.
+            if isinstance(idx, int):
+                # We have a single bit
+                desc = check_str(desc, f'description of ISR bit {idx}')
+            elif isinstance(idx, str) and ':' in idx:
+                # We have a bit field. Check if the doc is there. Check the optional list of 
+                # values.
+                desc = check_keys(desc, f'bit field {idx} of ISR {name!r}',
+                                  ['doc'], ['values'])
+                # If there is a values section, check it.
+                if 'values' in desc:
+                    # Check if the values is a dict with integer keys and string descriptions.
+                    for k, v in desc['values'].items():
+                        check_int(k, f'value index of ISR {name!r} is not an integer.')
+                        check_str(v, f'description of value {v} in bit field of ISR {name!r} is '
+                                  'not a string.')
+            else:
+                raise ValueError(f'Invalid bit index {idx!r} in bits section of ISR {name!r}.')
+            bits[idx] = desc
 
         return Isr(name, address, doc, read_only, bits)
 
