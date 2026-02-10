@@ -205,3 +205,10 @@
   bits:
     7-0: ERROR_CODE contains the error code coming directly from the KMAC HWIP.
     31-8: Reserved. Always reads as 0. Any write is ignored.
+
+- name: insn_cnt
+  address: 0xfe1
+  read-only: true
+  doc: |
+    This CSR exposes the `INSN_CNT` register such that it can be used by OTBN software for security related checks.
+    Is reset to zero when an OTBN execution is started.

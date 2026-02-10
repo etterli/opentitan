@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Any, Callable, Dict, List, Optional
+from .ext_regs import OTBNExtRegs
 from .flags import FlagGroups
 from .ispr import DumbISPR
 from .kmac_ispr import (
@@ -47,7 +48,7 @@ class WrapperCSR:
 
 class CSRFile:
     '''A model of the CSR file'''
-    def __init__(self, wsrs: WSRFile) -> None:
+    def __init__(self, wsrs: WSRFile, ext_regs: OTBNExtRegs) -> None:
         self.flags = FlagGroups()
         self.RND_PREFETCH = WrapperCSR(
             write_func=lambda val: wsrs.RND.request_value()
@@ -62,6 +63,7 @@ class CSRFile:
         self.URND = WrapperCSR(read_func=wsrs.URND.read_u32)
         self.KMAC_CMD = KmacCommandCSR('KMAC_CMD', write_mask=0x3f)
         self.KMAC_BYTE_STROBE = DumbISPR('KMAC_BYTE_STROBE', width=32)
+        self.INSN_CNT = WrapperCSR(read_func=ext_regs.read_insn_cnt())
 
         self._known_indices = {
             0x7c0,  # FG0
@@ -79,6 +81,7 @@ class CSRFile:
             0xfc1,  # URND
             0xfc2,  # KMAC_STATUS
             0xfc3,  # KMAC_ERROR
+            0xfe1,  # INSN_CNT
         }
 
         self._idx_to_csr: Dict[int, Any] = {
@@ -96,6 +99,7 @@ class CSRFile:
             0xfc1: self.URND,
             0xfc2: self.KMAC_STATUS,
             0xfc3: self.KMAC_ERROR,
+            0xfe1: self.INSN_CNT,
         }
 
     @staticmethod
@@ -140,6 +144,10 @@ class CSRFile:
         csr = self._idx_to_csr.get(idx)
         if csr is not None:
             csr.write_unsigned(value)
+            return
+
+        if idx == 0xfe1:
+            # INSN_CNT register (which ignores writes)
             return
 
         raise RuntimeError('Unknown CSR index: {:#x}'.format(idx))

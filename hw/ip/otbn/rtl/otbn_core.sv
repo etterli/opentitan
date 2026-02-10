@@ -903,6 +903,7 @@ module otbn_core
 
     .rnd_data_i (rnd_data),
     .urnd_data_i(urnd_data),
+    .insn_cnt_i (insn_cnt),
 
     .sideload_key_shares_i,
 

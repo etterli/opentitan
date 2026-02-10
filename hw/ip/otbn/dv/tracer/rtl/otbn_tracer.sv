@@ -50,6 +50,16 @@ module otbn_tracer (
     return data_str;
   endfunction
 
+  function automatic string otbn_ispr_access_str(ispr_e ispr, logic [WLEN-1:0] data);
+    string data_str;
+
+    data_str = (otbn_ispr_size(ispr) == WLEN) ?
+      otbn_wlen_data_str(data) :
+      $sformatf("0x%08x", data[31:0]);
+
+    return $sformatf("%s: %s", otbn_ispr_name_str(ispr), data_str);
+  endfunction
+
   // Produce trace output string for dmem writes. For a 256-bit write, the address and full data is
   // output. For 32-bit writes (determined by looking at the mask) only the relevant 32-bit chunk is
   // output along with the address modified so it refers to that chunk.
@@ -90,7 +100,20 @@ module otbn_tracer (
       IsprRnd: return "RND";
       IsprFlags: return "FLAGS";
       IsprUrnd: return "URND";
+      IsprInsnCnt: return "INSN_CNT";
       default: return "UNKNOWN_ISPR";
+    endcase
+  endfunction
+
+  function automatic int otbn_ispr_size(ispr_e ispr);
+    unique case (ispr)
+      IsprMod,
+      IsprAcc,
+      IsprUrnd,
+      IsprRnd: return WLEN;
+      IsprFlags,
+      IsprInsnCnt: return 32;
+      default: return -1;
     endcase
   endfunction
 
@@ -190,17 +213,18 @@ module otbn_tracer (
           end
         end
       end else begin
-        // For all other ISPRs just dump out the full 256-bits of data being read/written
+        // For all other ISPRs just dump out the full 256-bits or 32-bits of data being
+        // read/written
         if (otbn_trace.ispr_read[i_ispr]) begin
           work = output_trace(work, RegReadPrefix,
-                              $sformatf("%s: %s", otbn_ispr_name_str(ispr_e'(i_ispr)),
-                                        otbn_wlen_data_str(otbn_trace.ispr_read_data[i_ispr])));
+                              otbn_ispr_access_str(ispr_e'(i_ispr),
+                                                   otbn_trace.ispr_read_data[i_ispr]));
         end
 
         if (otbn_trace.ispr_write[i_ispr]) begin
           work = output_trace(work, RegWritePrefix,
-                              $sformatf("%s: %s", otbn_ispr_name_str(ispr_e'(i_ispr)),
-                                        otbn_wlen_data_str(otbn_trace.ispr_write_data[i_ispr])));
+                              otbn_ispr_access_str(ispr_e'(i_ispr),
+                                                   otbn_trace.ispr_write_data[i_ispr]));
         end
       end
     end

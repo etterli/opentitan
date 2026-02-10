@@ -109,6 +109,7 @@ module otbn_alu_bignum
 
   input  logic [WLEN-1:0]             rnd_data_i,
   input  logic [WLEN-1:0]             urnd_data_i,
+  input  logic [31:0]                 insn_cnt_i,
 
   input  logic [1:0][SideloadKeyWidth-1:0] sideload_key_shares_i,
 
@@ -462,6 +463,8 @@ module otbn_alu_bignum
   assign ispr_rdata_no_intg_mux_in[IsprKeyS1H] = {{(WLEN - (SideloadKeyWidth - 256)){1'b0}},
                                                   sideload_key_shares_i[1][SideloadKeyWidth-1:256]};
 
+  assign ispr_rdata_no_intg_mux_in[IsprInsnCnt] = {{(WLEN - 32){1'b0}}, insn_cnt_i};
+
   logic [WLEN-1:0]    ispr_rdata_no_intg;
   logic [ExtWLEN-1:0] ispr_rdata_intg_calc;
 
@@ -493,7 +496,8 @@ module otbn_alu_bignum
   assign ispr_rdata_intg_mux_sel[IsprAccIntg] = ispr_bignum_predec_i.ispr_rd_en[IsprAcc];
 
   assign ispr_rdata_intg_mux_sel[IsprNoIntg]  =
-    |{ispr_bignum_predec_i.ispr_rd_en[IsprKeyS1H:IsprKeyS0L],
+    |{ispr_bignum_predec_i.ispr_rd_en[IsprInsnCnt],
+      ispr_bignum_predec_i.ispr_rd_en[IsprKeyS1H:IsprKeyS0L],
       ispr_bignum_predec_i.ispr_rd_en[IsprUrnd],
       ispr_bignum_predec_i.ispr_rd_en[IsprFlags],
       ispr_bignum_predec_i.ispr_rd_en[IsprRnd]};
