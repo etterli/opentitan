@@ -284,6 +284,7 @@ module otbn_core
   logic rf_bignum_predec_error, alu_bignum_predec_error, ispr_predec_error, mac_bignum_predec_error;
   logic controller_predec_error;
   logic rd_predec_error, predec_error_d, predec_error;
+  logic mac_bignum_state_error_d, mac_bignum_state_error;
 
   logic req_sec_wipe_urnd_keys_q;
 
@@ -632,6 +633,7 @@ module otbn_core
       lsu_rdata_err                     <= '0;
       non_controller_reg_intg_violation <= '0;
       insn_addr_err                     <= '0;
+      mac_bignum_state_error            <= '0;
     end else begin
       urnd_all_zero                     <= urnd_all_zero_d;
       predec_error                      <= predec_error_d;
@@ -639,6 +641,7 @@ module otbn_core
       lsu_rdata_err                     <= lsu_rdata_err_d;
       non_controller_reg_intg_violation <= non_controller_reg_intg_violation_d;
       insn_addr_err                     <= insn_addr_err_d;
+      mac_bignum_state_error            <= mac_bignum_state_error_d;
     end
   end
 
@@ -651,6 +654,7 @@ module otbn_core
                            predec_error,
                            insn_addr_err,
                            rf_base_spurious_we_err,
+                           mac_bignum_state_error,
                            mubi_err},
     reg_intg_violation:  |{controller_err_bits.reg_intg_violation,
                            non_controller_reg_intg_violation},
@@ -688,7 +692,7 @@ module otbn_core
                   mubi4_bool_to_mubi(|{start_stop_fatal_error, urnd_all_zero, predec_error,
                                        rf_base_spurious_we_err, lsu_rdata_err,
                                        insn_fetch_err, non_controller_reg_intg_violation,
-                                       insn_addr_err}));
+                                       insn_addr_err, mac_bignum_state_error}));
 
   assign controller_recov_escalate_en =
       mubi4_bool_to_mubi(|{rnd_rep_err, rnd_fips_err});
@@ -698,6 +702,7 @@ module otbn_core
       mubi4_or_hi(escalate_en_i,
                   mubi4_bool_to_mubi(|{urnd_all_zero, rf_base_intg_err, rf_base_spurious_we_err,
                                        predec_error, lsu_rdata_err, insn_fetch_err,
+                                       mac_bignum_state_error,
                                        controller_fatal_err, insn_addr_err}));
 
   // Signal error if MuBi input signals take on invalid values as this means something bad is
@@ -945,7 +950,9 @@ module otbn_core
     .ispr_acc_wr_data_intg_i(ispr_acc_wr_data_intg),
     .ispr_acc_wr_en_i       (ispr_acc_wr_en),
 
-    .ispr_mod_intg_i(ispr_mod_intg)
+    .ispr_mod_intg_i(ispr_mod_intg),
+
+    .state_err_o(mac_bignum_state_error_d)
   );
 
   otbn_rnd #(
