@@ -3,19 +3,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 `include "prim_assert.sv"
-
 /**
  * OTBN alu block for the bignum instruction subset
  *
- * This ALU supports all of the 'plain' arithmetic and logic bignum instructions, BN.MULQACC is
+ * This ALU supports all of the 'plain' arithmetic and logic bignum instructions and some
+ * vectorized arithmetic instructions. BN.MULQACC and its vectorized counterparts are
  * implemented in a separate block.
  *
  * One barrel shifter and two adders (X and Y) are implemented along with the logic operators
- * (AND,OR,XOR,NOT).
+ * (AND,OR,XOR,NOT) and a vector transposer.
  *
  * The adders have 256-bit operands with a carry_in and optional invert on the second operand. This
  * can be used to implement subtraction (a - b == a + ~b + 1). BN.SUBB/BN.ADDC are implemented by
- * feeding in the carry flag as carry in rather than a fixed 0 or 1.
+ * feeding in the carry flag as carry in rather than a fixed 0 or 1. These 256-bit operands can be
+ * interpreted as vectors with 32-bit elements.
  *
  * The shifter takes a 512-bit input (to implement BN.RSHI, concatenate and right shift) and shifts
  * right by up to 256-bits. The lower (256-bit) half of the input and output can be reversed to
@@ -25,9 +26,10 @@
  * The dataflow between the adders and shifter is in the diagram below. This arrangement allows the
  * implementation of the pseudo-mod (BN.ADDM/BN.SUBM) instructions in a single cycle whilst
  * minimising the critical path. The pseudo-mod instructions do not have a shifted input so X can
- * compute the initial add/sub and Y computes the pseudo-mod result. For all other add/sub
- * operations Y computes the operation with one of the inputs supplied by the shifter and the other
- * from operand_a.
+ * compute the initial add/sub and Y computes the pseudo-mod result. The result is selected based
+ * on the carries of adder X and Y. This selection is performed in a separate block. For all other
+ * add/sub operations Y computes the operation with one of the inputs supplied by the shifter and
+ * the other from operand_a.
  *
  * Both adder X and the shifter get supplied with operand_a and operand_b from the operation_i
  * input. In addition the shifter gets a shift amount (shift_amt) and can use 0 instead of
@@ -36,7 +38,7 @@
  * through operand_b simply by not performing a shift.
  *
  * Blanking is employed on the ALU data paths. This holds unused data paths to 0 to reduce side
- * channel leakage. The lower-case 'b' on the digram below indicates points in the data path that
+ * channel leakage. The lower-case 'b' on the diagram below indicates points in the data path that
  * get blanked. Note that Adder X is never used in isolation, it is always combined with Adder Y so
  * there is no need for blanking between Adder X and Adder Y.
  *
@@ -48,23 +50,31 @@
  *    |  Adder X  |   |  Shifter  |
  *    +-----------+   +-----------+
  *          |               |
- *          |----+     +----|
- *          |    |     |    |
- *      X result |     | Shifter result
- *               |     |
- *             A |     |
- *             | |     |     +-----------+
- *             b |     b +---|  MOD WSR  |
- *             | |     | |   +-----------+
- *           \-----/ \-----/
- *            \---/   \---/
- *              |       |
- *              |       |
- *            +-----------+
- *            |  Adder Y  |
- *            +-----------+
- *                  |
- *              Y result
+ *   +------|----+     +----|
+ *   |      |    |     |    |
+ *   |  X result |     | Shifter result
+ *   |           |     |
+ *   |         A |     |
+ *   |         | |     |     +-----------+
+ *   |         b |     b +---|  MOD WSR  |
+ *   |         | |     | |   +-----------+
+ *   |       \-----/ \-----/
+ *   |        \---/   \---/
+ *   |          |       |
+ *   |          |       |
+ *   |        +-----------+
+ *   |        |  Adder Y  |
+ *   |        +-----------+
+ *   |              |
+ *   |     +--b-----|
+ *   |     |        |
+ * +---------+    Y result
+ * | Vec MOD |
+ * | Result  | <-- ELEN
+ * | Select. |
+ * +---------+
+ *      |
+ *  MOD result
  */
 
 
@@ -205,6 +215,8 @@ module otbn_alu_bignum
   //////////////////
   // Flags Update //
   //////////////////
+
+  // Flags are only updated for regular 256b operations. Vectorized operations do not update the flags.
 
   // Note that the flag zeroing triggred by ispr_init_i and secure wipe is achieved by not
   // selecting any inputs in the one-hot muxes below. The instruction fetch/predecoder stage
