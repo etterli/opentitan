@@ -114,33 +114,35 @@ module otbn_decoder
   logic [$clog2(WLEN)-1:0] shift_amt_s_type_bignum;
   // Shift amount for BN.SHV
   logic [$clog2(WLEN)-1:0] shift_amt_shv_bignum;
+  // Shift amount for BN.UNPK and BN.PACK
+  logic [$clog2(WLEN)-1:0] shift_amt_pack_bignum;
 
   assign shift_amt_a_type_bignum = {insn[29:25], 3'b0};
   assign shift_amt_s_type_bignum = {insn[31:25], insn[14]};
-  assign shift_amt_shv_bignum    = {1'b0, insn[28:27], insn[19:15]}; // convert 7b to 8b
+  // Expand 5b to 8b to match shifter control signal width
+  assign shift_amt_shv_bignum    = {3'b0, insn[19:15]};
+  assign shift_amt_pack_bignum   = {insn[28:27], 6'b0};
 
   // Bignum vectorized instruction options
   logic alu_is_modulo_vec_bignum;
   logic alu_is_trn1_bignum;
   logic alu_is_subtraction_vec_bignum;
+  logic alu_is_pack_bignum;
 
   assign alu_is_modulo_vec_bignum      =  insn[28];
   assign alu_is_trn1_bignum            = ~insn[30];
   assign alu_is_subtraction_vec_bignum =  insn[30];
+  assign alu_is_pack_bignum            =  insn[30];
 
-  // The ISA foresees 4 types of vector element lengths (16, 32, 64 and 128 bits). However, not all
-  // options are implemented. In addition, some regular and vectorized instructions share hardware
-  // and thus we need a 256b type to signal "regular" 256b operation. We thus first extract the
-  // ELEN from the instruction and then depending on the instruction convert it correctly.
-  logic [1:0]           alu_elen_raw_bignum;
-  alu_elen_e            alu_elen_bignum; // The parsed vector element length incl. the 256b option
+  logic [1:0]           alu_elen_raw_bignum; // The bits from the instruction. Also used for trn.
+  alu_elen_e            alu_elen_bignum; // The parsed vector element length incl. the 256b option.
   trn_elen_e            trn_elen_bignum;
 
   assign alu_elen_raw_bignum = insn[26:25];
 
   // Control signal for the vectorized adder to propagate the carry bits depending on the element
   // length. Each bit controls one vector chunk. Is generated from the parsed vector ELEN.
-  // With only one ELEN a single bit is sufficient. It can be replicated.
+  // With only one ELEN a single bit is sufficient.
   logic alu_vec_adder_carry_sel_bignum;
 
   // Shifter
@@ -304,13 +306,17 @@ module otbn_decoder
     rf_wdata_sel_bignum    = RfWdSelEx;
     rf_we_bignum           = 1'b0;
 
-    rf_ren_a_base          = 1'b0;
-    rf_ren_b_base          = 1'b0;
-    rf_ren_a_bignum        = 1'b0;
-    rf_ren_b_bignum        = 1'b0;
-    alu_elen_bignum        = AluElen256; // Regular bignum instructions operate on 256 bits
-    trn_elen_bignum        = TrnElen32;
-    mac_en_bignum          = 1'b0;
+    rf_ren_a_base                  = 1'b0;
+    rf_ren_b_base                  = 1'b0;
+    rf_ren_a_bignum                = 1'b0;
+    rf_ren_b_bignum                = 1'b0;
+
+    alu_elen_bignum                = AluElen256; // Regular bignum instructions operate on 256 bits
+    trn_elen_bignum                = TrnElen32;
+    alu_vec_adder_carry_sel_bignum = 1'b0;
+    alu_shift_mask_bignum          = '0;
+
+    mac_en_bignum = 1'b0;
 
     rf_a_indirect_bignum   = 1'b0;
     rf_b_indirect_bignum   = 1'b0;
@@ -551,8 +557,7 @@ module otbn_decoder
             rf_ren_b_bignum = 1'b1;
 
             unique case (alu_elen_raw_bignum)
-              2'b01: alu_elen_bignum = AluElen32;
-              // 16, 64 and 128 bit are not implemented
+              2'b00: alu_elen_bignum = AluElen32;
               default: illegal_insn = 1'b1;
             endcase
           end
@@ -564,10 +569,10 @@ module otbn_decoder
             rf_ren_b_bignum = 1'b1;
 
             unique case (alu_elen_raw_bignum)
-              2'b01:   trn_elen_bignum = TrnElen32;
-              2'b10:   trn_elen_bignum = TrnElen64;
-              2'b11:   trn_elen_bignum = TrnElen128;
-              default: illegal_insn    = 1'b1; // 16 bit version is not implemented
+              2'b00:   trn_elen_bignum = TrnElen32;
+              2'b01:   trn_elen_bignum = TrnElen64;
+              2'b10:   trn_elen_bignum = TrnElen128;
+              default: illegal_insn    = 1'b1;
             endcase
           end
           3'b111: begin
@@ -577,8 +582,7 @@ module otbn_decoder
             rf_we_bignum    = 1'b1;
 
             unique case (alu_elen_raw_bignum)
-              2'b01: alu_elen_bignum = AluElen32;
-              // 16, 64 and 128 bit are not implemented
+              2'b00: alu_elen_bignum = AluElen32;
               default: illegal_insn = 1'b1;
             endcase
           end
@@ -589,10 +593,16 @@ module otbn_decoder
           3'b100: begin
             // BN.MULVM/BN.MULVML - not implemented
           end
+          3'b110: begin
+            // BN.PACK/BN.UNPK
+            insn_subset         = InsnSubsetBignum;
+            rf_ren_a_bignum     = 1'b1;
+            rf_ren_b_bignum     = 1'b1;
+            rf_we_bignum        = 1'b1;
+          end
           // unused / illegal instructions
           3'b001, // reserved for future use
-          3'b010, // reserved for future use
-          3'b110: illegal_insn = 1'b1; // reserved for future use
+          3'b010: illegal_insn = 1'b1; // reserved for future use
           default: illegal_insn = 1'b1;
         endcase
       end
@@ -760,25 +770,29 @@ module otbn_decoder
       default: illegal_insn = 1'b1;
     endcase
 
-    // Generate control signals depending on the finally selected ELEN for BN ALU.
-    // This would better fit into the BN ALU specific decoder part but verilator cannot
-    // handle signals that are set and read in different always_comb blocks. In this case the
-    // `alu_elen_bignum` signal is problematic.
+    // Generate control signals depending on the selected ELEN for BN ALU.
+    // This would better fit into the BN ALU specific decoder part but Verilator cannot
+    // handle signals that are set and read in different always_comb blocks (alu_elen_bignum).
     //
     // Vectorized adder:
-    //   Define the carry handling MUX controls depending on ELEN. A bit for each MUX.
+    //   Define the carry handling MUX control signals depending on ELEN. A bit for each MUX.
     //   If set: Select carry from previous stage. Else use the external carry.
     //   The adder 0 always takes the external carry. If we support only 1 ELEN this allows us
     //   to have only 1 bit which is replicated for the other adders.
     // Vectorized shifter:
-    //   Shift mask depending on the shift_amt and ELEN. This is required to mask out the
-    //   overflowing bits.
-    alu_vec_adder_carry_sel_bignum = '0;
-    alu_shift_mask_bignum          = '0;
+    //   Generate the mask to mask out the overflowing bits.
+    //     shift amount | shifter mask
+    //      0           | 32'b1111....1111
+    //      1           | 32'b0111....1111
+    //      2           | 32'b0011....1111
+    //      ...         | ...
+    //      29          | 32'b0000....0111
+    //      30          | 32'b0000....0011
+    //      31          | 32'b0000....0001
     unique case (alu_elen_bignum)
       AluElen32: begin
         alu_vec_adder_carry_sel_bignum = 1'b1;
-        alu_shift_mask_bignum          = (32'd1 << ( 32-alu_shift_amt_bignum)) - 32'd1;
+        alu_shift_mask_bignum          = (32'd1 << (32 - alu_shift_amt_bignum[4:0])) - 32'd1;
       end
       AluElen256: begin
         alu_vec_adder_carry_sel_bignum = 1'b0;
@@ -1006,10 +1020,14 @@ module otbn_decoder
             alu_operator_bignum     = AluOpBignumShv;
             alu_op_b_mux_sel_bignum = OpBSelRegister;
           end
+          3'b110: begin
+            // BN.PACK/ BN.UNPK
+            alu_shift_amt_bignum    = shift_amt_pack_bignum;
+            alu_operator_bignum     = alu_is_pack_bignum ? AluOpBignumPack : AluOpBignumUnpk;
+            alu_op_b_mux_sel_bignum = OpBSelRegister;
+          end
           default: ;
-            // 3'b001 forseen for BN.ADDVI/BN.SUBVI
-            // 3'b010 reserved for future use
-            // 3'b110 reserved for future use
+            // 3'b001, 3'b010 reserved for future use
         endcase
       end
 
@@ -1106,7 +1124,10 @@ module otbn_decoder
   ////////////////
   // Assertions //
   ////////////////
-
+  // Shift amount for bn.shv must be within 5 bits to ensure that the generated shifter mask
+  // matches the actual shift amount.
+  `ASSERT(BignumShvAmtLimit,
+          insn_valid_o && (alu_operator_bignum == AluOpBignumShv) |-> (alu_shift_amt_bignum < 32))
 
   // Selectors must be known/valid.
   `ASSERT(IbexRegImmAluOpBaseKnown, (opcode == InsnOpcodeBaseOpImm) |-> !$isunknown(insn[14:12]))
