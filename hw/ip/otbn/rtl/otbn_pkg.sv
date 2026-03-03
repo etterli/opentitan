@@ -8,17 +8,23 @@ package otbn_pkg;
 
   // Global Constants ==============================================================================
 
-  // Data path width for BN (wide) instructions, in bits.
-  parameter int WLEN = 256;
+  // Data path width for BN (wide) instructions, in bits. And its half and quarter size.
+  parameter int WLEN  = 256;
+  parameter int HWLEN = WLEN / 2;
+  parameter int QWLEN = WLEN / 4;
 
   // "Extended" WLEN: the size of the datapath with added integrity bits
-  parameter int ExtWLEN = WLEN * 39 / 32;
+  parameter int ExtWLEN  = WLEN  * 39 / 32;
+  parameter int ExtHWLEN = HWLEN * 39 / 32;
+  parameter int ExtQWLEN = QWLEN * 39 / 32;
 
   // Width of base (32b) data path with added integrity bits
   parameter int BaseIntgWidth = 39;
 
-  // Number of 32-bit words per WLEN
-  parameter int BaseWordsPerWLEN = WLEN / 32;
+  // Number of 32-bit words per WLEN / HWLEN / QWLEN
+  parameter int BaseWordsPerWLEN  = WLEN / 32;
+  parameter int BaseWordsPerHWLEN = HWLEN / 32;
+  parameter int BaseWordsPerQWLEN = QWLEN / 32;
 
   // Number of flag groups
   parameter int NFlagGroups = 2;
@@ -157,7 +163,8 @@ package otbn_pkg;
     logic rf_base_intg_err;
     logic rf_bignum_intg_err;
     logic mod_ispr_intg_err;
-    logic acc_ispr_intg_err;
+    // mac_ispr_intg_err includes the ACC WSR and the hidden registers for Montgomery computation
+    logic mac_ispr_intg_err;
     logic loop_stack_addr_intg_err;
     logic insn_fetch_intg_err;
   } internal_intg_err_t;
@@ -343,6 +350,25 @@ package otbn_pkg;
     TrnElen128 = 2'b10
   } trn_elen_e;
 
+  // Number of BN MAC ELENs
+  parameter int NELEN_MAC = 2;
+
+  // Vector element length type for bignum vec ISA implemented in BN MAC
+  // The instructions supported by BN MAC support 2 types: vectorized 32-bit elements and the
+  // regular 64-bit multiplication.
+  typedef enum logic {
+    MacElen32 = 1'b0,
+    MacElen64 = 1'b1
+  } mac_elen_e;
+
+  // A BN MAC internal signal exposed for predecoding reasons. Selects the input for multiplier
+  // operand B.
+  typedef enum logic [1:0] {
+    MulOpB,
+    MulOpMu,
+    MulOpq
+  } mac_mul_op_b_sel_e;
+
   // Regfile write data selection
   typedef enum logic [2:0] {
     RfWdSelEx,
@@ -507,6 +533,12 @@ package otbn_pkg;
     logic                    mac_zero_acc;
     logic                    mac_shift_out;
     logic                    mac_en;
+    logic                    mac_is_vec;
+    logic                    mac_is_mod;
+    logic                    mac_is_lane;
+    mac_elen_e               mac_elen;
+    logic [VLEN/QWLEN-1:0]   mac_adder_carry_sel;
+    logic [2:0]              mac_lane_index;
 
     logic                    rf_we;
     rf_wd_sel_e              rf_wdata_sel;
@@ -567,9 +599,46 @@ package otbn_pkg;
   } ispr_bignum_predec_t;
 
   typedef struct packed {
-    logic op_en;
-    logic acc_rd_en;
+    logic                  op_en;
+    logic                  is_vec;
+    logic                  is_mod;
+    // Decoded is_lane signal originates directly from instruction bits. We predecode it for
+    // redundancy.
+    logic                  is_lane;
+    mac_elen_e             elen;
+    logic [VLEN/QWLEN-1:0] adder_carry_sel;
+    logic [2:0]            lane_index;
+    logic                  mul_shift_en;
+    logic                  mul_merger_en;
+    logic                  add_res_en;
+    logic                  acc_add_en;
   } mac_bignum_predec_t;
+
+  // These are the predecoded control signal for BN MAC which will change during the execution of
+  // certain multi-cycle instructions.
+  typedef struct packed {
+    logic [1:0]        op_a_qw_sel;      // Both (a, b) are predecoded to optimize timing
+    logic [1:0]        op_b_qw_sel;      // Has no effect for lane mode
+    logic              mul_op_a_tmp_sel; // Predecoded to optimize timing
+    mac_mul_op_b_sel_e mul_op_b_sel;     // Predecoded to optimize timing
+    logic              mul_add_en;
+    logic              c_add_en;
+    logic              add_mod_en;
+    logic              acc_merger_en;
+  } mac_bignum_predec_dyn_t;
+
+  localparam mac_bignum_predec_dyn_t MacBignumPredecDynDefault = '{
+    // op_a_qw_sel and op_b_qw_sel depend on decoded instruction and will be updated by the
+    // predecoder.
+    op_a_qw_sel:      2'b0,
+    op_b_qw_sel:      2'b0,
+    mul_op_a_tmp_sel: 1'b1,   // Select A as it is blanked
+    mul_op_b_sel:     MulOpB,
+    mul_add_en:       1'b0,
+    c_add_en:         1'b0,
+    add_mod_en:       1'b0,
+    acc_merger_en:    1'b0
+  };
 
   typedef struct packed {
     logic call_stack_pop;
@@ -609,14 +678,20 @@ package otbn_pkg;
   } alu_bignum_operation_t;
 
   typedef struct packed {
-    logic [WLEN-1:0] operand_a;
-    logic [WLEN-1:0] operand_b;
-    logic [1:0]      operand_a_qw_sel;
-    logic [1:0]      operand_b_qw_sel;
-    logic            wr_hw_sel_upper;
-    logic [1:0]      pre_acc_shift_imm;
-    logic            zero_acc;
-    logic            shift_acc;
+    logic [WLEN-1:0]       operand_a;
+    logic [WLEN-1:0]       operand_b;
+    logic [1:0]            operand_a_qw_sel;
+    logic [1:0]            operand_b_qw_sel;
+    logic                  wr_hw_sel_upper;
+    logic [1:0]            pre_acc_shift_imm;
+    logic                  zero_acc;
+    logic                  shift_acc;
+    logic                  is_vec;
+    logic                  is_mod;
+    logic                  is_lane;
+    mac_elen_e             elen;
+    logic [VLEN/QWLEN-1:0] adder_carry_sel;
+    logic [2:0]            lane_index;
   } mac_bignum_operation_t;
 
   // Encoding generated with:
