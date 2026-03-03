@@ -304,6 +304,16 @@ For any instruction that can cause multiple errors in a single cycle, we expect 
 This is described in more detail in the per-instruction text below.
 If an instruction below doesn't describe triggering multiple errors, that means we don't think it's possible.
 
+For the vectorized instructions
+- `BN.ADDV`, `BN.ADDVM`
+- `BN.SUBV`, `BN.SUBVM`
+- `BN.MULV`, `BN.MULVL`
+- `BN.MULVM`, `BN.MULVML`
+- `BN.TRN1`, `BN.TRN2`
+- `BN.SHV`
+we expect to see each possible element length (ELEN) setting and require a "toggle coverage" similar as already explained.
+We want to see each of the 256 bits of that operand set and unset.
+
 ## ADD
 
 This instruction uses the `R` encoding schema, with covergroup `enc_r_cg`.
@@ -1125,3 +1135,141 @@ There is no instruction-specific covergroup.
 - Write to an invalid WSR
 
 These points are tracked with `wsr_cross` in `enc_wcsr_cg`.
+
+## BN.ADDV
+
+This instruction uses the `bnva` encoding schema, with covergroup `enc_bnva_cg`.
+The instruction-specific covergroup is X.
+
+- Execute with input operands which lead to an overflow for each vector element separately.
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.ADDVM
+
+This instruction uses the `bnva` encoding schema, with covergroup `enc_bnva_cg`.
+The instruction-specific covergroup is X.
+In the following `MOD` refers to `MOD[ELEN-1:0]` as only these bits are used as modulus and it is replicated for each vector element.
+
+For each vector element:
+- Execute with the two extreme values of `MOD` (zero and all ones)
+  Tracked as `mod_cp`.
+- Don't perform a subtraction (because the sum is less than `MOD`) when `MOD` is nonzero.
+  Tracked as `sum_lt_cp`.
+- A calculation where the sum exactly equals a nonzero `MOD`
+  Tracked as `sum_eq_cp`.
+- A calculation where the sum is greater than a nonzero `MOD`.
+  Tracked as `sum_gt_cp`.
+- Perform a subtraction where the sum is at least twice a nonzero value of `MOD`.
+  Tracked as `sum_gt2_cp`.
+- A calculation where the intermediate sum is greater than `2^ELEN-1`, crossed with whether the subtraction of `MOD` results in a value that will wrap.
+  Tracked as `overflow_wrap_cross`.
+
+TODO: Link covergroups
+
+## BN.SUBV
+
+This instruction uses the `bnva` encoding schema, with covergroup `enc_bnva_cg`.
+The instruction-specific covergroup is X.
+
+- See the element-wise subtraction underflow to test the carry propagation logic (it should not propagate between separate vector elements).
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.SUBVM
+
+This instruction uses the `bnva` encoding schema, with covergroup `enc_bnva_cg`.
+The instruction-specific covergroup is X.
+
+- See the element-wise modulo underflow to test the reduction logic.
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.MULV
+This instruction uses the `bnvm` encoding schema, with covergroup `enc_bnvm_cg`.
+The immediate `lane` of this encoding is unused and is treated as dont't care.
+The instruction-specific covergroup is X.
+
+- See that the destination WDR is only updated when the instructions retires (correct multi-cycle handling).
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.MULVL
+This instruction uses the `bnvm` encoding schema, with covergroup `enc_bnvm_cg`.
+The instruction-specific covergroup is X.
+
+- See all options of the `lane` selection to make sure the right vector element is selected.
+  Tracked as X.
+- See that the destination WDR is only updated when the instructions retires (correct multi-cycle handling).
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.MULVM
+
+This instruction uses the `bnvm` encoding schema, with covergroup `enc_bnvm_cg`.
+The instruction-specific covergroup is X.
+
+- See that the destination WDR is only updated when the instructions retires (correct multi-cycle handling).
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.MULVML
+
+This instruction uses the `bnvm` encoding schema, with covergroup `enc_bnvm_cg`.
+The instruction-specific covergroup is X.
+
+- See that the destination WDR is only updated when the instructions retires (correct multi-cycle handling).
+  Tracked as X.
+- See all options of the `lane` selection to make sure the right vector element is selected.
+  Tracked as X.
+
+TODO: Link covergroups
+
+## BN.TRN1
+
+This instruction uses the `bnvtrn` encoding schema, with covergroup `enc_bnvtrn_cg`.
+There is no instruction-specific covergroup.
+
+No special coverage.
+
+## BN.TRN2
+
+This instruction uses the `bnvtrn` encoding schema, with covergroup `enc_bnvtrn_cg`.
+There is no instruction-specific covergroup.
+
+No special coverage.
+
+## BN.SHV
+
+This instruction uses the `bnvsh` encoding schema, with covergroup `enc_bnvsh_cg`.
+There is no instruction-specific covergroup.
+
+- A shift of a nonzero value by zero.
+  Tracked as `nz_by_z_cp`.
+- A right shift is a logic shift, tested for each vector element.
+  Tracked as `srl_elemX` where `X` represents the vector element index (0-7).
+
+## BN.PACK
+
+This instruction uses the `bnpk` encoding schema, with covergroup `enc_bnpk`.
+The instruction-specific covergroup is X.
+
+- See that the elements are truncated correctly. I.e., the highest byte of the 32-bit element is discarded correctly.
+
+TODO: Link covergroups
+
+## BN.UNPK
+
+This instruction uses the `bnpk` encoding schema, with covergroup `enc_bnpk`.
+The instruction-specific covergroup is X.
+
+- See that the unpacked elements are zero extended correctly.
+- See the correct unpacking of a vector split over two WDRs.
+
+TODO: Link covergroups
