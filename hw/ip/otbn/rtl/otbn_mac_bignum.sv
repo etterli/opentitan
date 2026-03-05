@@ -35,7 +35,7 @@
  * The Montgomery multiplication requires 3 multiplications per vector chunk. These are also
  * pipelined on the 64-bit multiplier and the final result is constructed in the ACC WSR. Both
  * vectorized instructions clear the ACC WSR at the end of the instruction using random data
- * supplied externally.
+ * supplied externally. See below.
  *
  * Montgomery implementation details:
  * The Montgomery algorithm efficiently computes a multiplication and reduction by converting
@@ -75,10 +75,27 @@
  *
  * These two hidden registers are cleared with randomness after each vector chunk (i.e., every 3
  * cycles).
+ *
+ * Register clearing details:
+ * As described, the ACC WSR and the two hidden registers are cleared using randomness. The ACC WSR
+ * is directly cleared by writing the current value of URND to it. The two hidden registers are
+ * cleared with a permutation of URND as shown below. The permutation is based on a netlist secret.
+ *
+ *              +-------------+
+ * URND --+---->| Permutation |-----+----------+
+ *        |     +-------------+     |          |
+ *        |                      [127:0]   [192:128]
+ *        v                         v          v
+ *     +-----+                   +-----+    +-----+
+ *     | ACC |                   |  C  |    | TMP |
+ *     +-----+                   +-----+    +-----+
  */
 module otbn_mac_bignum
   import otbn_pkg::*;
-(
+#(
+  // Compile-time permutation for URND permutation
+  parameter bn_mac_urnd_perm_t RndCnstBnMacUrndPerm = RndCnstBnMacUrndPermDefault
+) (
   input logic clk_i,
   input logic rst_ni,
 
@@ -116,6 +133,23 @@ module otbn_mac_bignum
   output logic state_err_o
 );
   import prim_util_pkg::vbits;
+
+  // URND permutations for register clearing
+  logic [WLEN-1:0]  urnd_permutation;
+  logic             unused_urnd_permutation;
+  logic [WLEN-1:0]  acc_clear_data;
+  logic [HWLEN-1:0] c_clear_data;
+  logic [QWLEN-1:0] tmp_clear_data;
+
+  for (genvar i = 0; i < WLEN; i++) begin : gen_urnd_perm
+    assign urnd_permutation[i] = urnd_data_i[RndCnstBnMacUrndPerm[i]];
+  end
+
+  assign acc_clear_data = urnd_data_i;
+  assign c_clear_data   = urnd_permutation[HWLEN-1:0];
+  assign tmp_clear_data = urnd_permutation[HWLEN+:QWLEN];
+
+  assign unused_urnd_permutation = ^urnd_permutation[HWLEN + QWLEN +: QWLEN];
 
   //////////////////
   // ACC Register //
@@ -156,7 +190,6 @@ module otbn_mac_bignum
   logic [ExtHWLEN-1:0]            c_intg_d;
   logic [ExtHWLEN-1:0]            c_intg_q;
   logic [HWLEN-1:0]               c_new_value;
-  logic [HWLEN-1:0]               c_clear_data;
   logic [HWLEN-1:0]               c_no_intg_d;
   logic [HWLEN-1:0]               c_no_intg_q;
   logic [2*BaseWordsPerHWLEN-1:0] c_intg_err;
@@ -174,9 +207,6 @@ module otbn_mac_bignum
     );
     assign c_no_intg_q[i_word * 32 +: 32] = c_intg_q[i_word * 39 +: 32];
   end
-
-  // TODO: generate permutation of URND based upon netlist secret
-  assign c_clear_data = urnd_data_i[HWLEN-1:0];
 
   always_comb begin
     c_no_intg_d = '0;
@@ -200,7 +230,6 @@ module otbn_mac_bignum
   logic [ExtQWLEN-1:0]            tmp_intg_d;
   logic [ExtQWLEN-1:0]            tmp_intg_q;
   logic [QWLEN-1:0]               tmp_new_value;
-  logic [QWLEN-1:0]               tmp_clear_data;
   logic [QWLEN-1:0]               tmp_no_intg_d;
   logic [QWLEN-1:0]               tmp_no_intg_q;
   logic [2*BaseWordsPerQWLEN-1:0] tmp_intg_err;
@@ -218,9 +247,6 @@ module otbn_mac_bignum
     );
     assign tmp_no_intg_q[i_word * 32 +: 32] = tmp_intg_q[i_word * 39 +: 32];
   end
-
-  // TODO: generate permutation of URND based upon netlist secret
-  assign tmp_clear_data = urnd_data_i[QWLEN-1:0];
 
   always_comb begin
     tmp_no_intg_d = '0;
@@ -577,7 +603,7 @@ module otbn_mac_bignum
     unique case (1'b1)
       // Non-encoded inputs have to be encoded before writing to the register.
       (sec_wipe_urnd_i | acc_clear_en): begin
-        acc_no_intg_d = urnd_data_i;
+        acc_no_intg_d = acc_clear_data;
         acc_intg_d    = acc_intg_calc;
       end
       default: begin
