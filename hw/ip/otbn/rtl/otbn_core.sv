@@ -125,8 +125,6 @@ module otbn_core
   ispr_bignum_predec_t      ispr_bignum_predec;
   mac_bignum_predec_t       mac_bignum_predec;
   mac_bignum_predec_dyn_t   mac_bignum_predec_dyn;
-  mac_bignum_predec_dyn_t   mac_bignum_predec_dyn_next;
-  logic                     mac_bignum_predec_dyn_next_valid;
   logic                     lsu_addr_en_predec;
 
   logic [NWdr-1:0] rf_bignum_rd_a_indirect_onehot;
@@ -380,8 +378,6 @@ module otbn_core
     .ispr_bignum_predec_o              (ispr_bignum_predec),
     .mac_bignum_predec_o               (mac_bignum_predec),
     .mac_bignum_predec_dyn_o           (mac_bignum_predec_dyn),
-    .mac_bignum_predec_dyn_next_i      (mac_bignum_predec_dyn_next),
-    .mac_bignum_predec_dyn_next_valid_i(mac_bignum_predec_dyn_next_valid),
     .lsu_addr_en_predec_o              (lsu_addr_en_predec),
 
     .rf_bignum_rd_a_indirect_onehot_i(rf_bignum_rd_a_indirect_onehot),
@@ -398,6 +394,7 @@ module otbn_core
 
     .sec_wipe_wdr_en_i  (sec_wipe_wdr_d),
     .sec_wipe_wdr_addr_i(sec_wipe_addr),
+    .sec_wipe_mac_urnd_i(sec_wipe_mac_urnd),
 
     .zero_flags_i(zero_flags)
   );
@@ -947,8 +944,6 @@ module otbn_core
 
     .predec_i               (mac_bignum_predec),
     .predec_dyn_i           (mac_bignum_predec_dyn),
-    .predec_dyn_next_o      (mac_bignum_predec_dyn_next),
-    .predec_dyn_next_valid_o(mac_bignum_predec_dyn_next_valid),
     .predec_error_o         (mac_bignum_predec_error),
 
     .urnd_data_i       (urnd_data),

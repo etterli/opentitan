@@ -11,31 +11,31 @@
  * - bn.mulqacc: Regular 64-bit multiplication with result shifting and accumulation capabilities
  *     (see instruction description). The 64-bit multiplication operands can be selected from the
  *     input WDRs. Executes in one cycle.
- * - bn.mulv(l): Vectorized multiplication of 32-bit elements from a 256-bit vector (WDR). Operates
+ * - bn.mulv(l): Vectorized multiplication of 32-bit elements from 256-bit vectors (WDRs). Operates
  *     either vector-element-wise or multiples each element of vector A with a fixed element of
  *     vector B. The later mode is referred to as lane-wise multiplication. Performs two 32-bit
- *     multiplications in parallel and takes 4 cycles to process a full 256-bit vector.
- * - bn.mulvm(l): Vectorized Montgomery multiplication of 32-bit elements from a 256-bit vector
- *     (WDR). Also supports the lane mode. Performs two Montgomery multiplications in parallel
- *     over the duration of 3 cycles. It takes 3 * 4 = 12 cycles to process a full 256-bit vector.
+ *     multiplications in parallel and takes 4 cycles to process the 256-bit vectors.
+ * - bn.mulvm(l): Vectorized Montgomery multiplication of 32-bit elements from 256-bit vectors
+ *     (WDRs). Also supports the lane mode. Performs two Montgomery multiplications in parallel
+ *     over the duration of 3 cycles. It takes 3 * 4 = 12 cycles to process the 256-bit vectors.
  *     The final conditional subtraction step of the Montgomery algorithm is neglected to optimize
  *     area and timing. See below for more details about the Montgomery implementation.
  *
  * The multi-cycle instructions stall the OTBN pipeline by keeping the operation_valid_o flag low
- * until the computation has finished. This multi-cycle logic is controlled by an internal FSM.
- * This FSM does also set the internal data path control signals. It also forwards control signals
- * to the otbn_predecode module for SCA countermeasure control signals which require predecoding.
+ * until the computation has finished. This multi-cycle logic is controlled by an internal FSM
+ * which controls the data path. It operates in tandem with a duplicate in the instruction fetch
+ * stage. This duplicate generates the predecoded signals which are compared here to the locally
+ * generated signals.
  *
  * The main components of this module are a vectorized 64-bit multiplier capable of computing
  * either 1 64-bit or 2 32-bit multiplications at once, a vectorized 256-bit adder as well as the
  * 256-bit wide ACC WSR. These components allow to implement the regular 64-bit multiplication with
  * accumulation in a single cycle. For the vectorized multiplications, the multiplications are
- * pipelined on the vectorized multiplier to save area. Per cycle one 64-bit chunk of the vector
- * is processed and the partial results are combined to a full 256-bit vector using the ACC WSR.
- * The Montgomery multiplication requires 3 multiplications per vector chunk. These are also
- * pipelined on the 64-bit multiplier and the final result is constructed in the ACC WSR. Both
- * vectorized instructions clear the ACC WSR at the end of the instruction using random data
- * supplied externally. See below.
+ * pipelined on the vectorized multiplier to save area. The partial results are combined to a full
+ * 256-bit vector using the ACC WSR. As the Montgomery multiplication requires 3 multiplications
+ * these are also pipelined on the vectorized multiplier and the final result is constructed in the
+ * ACC WSR. Both vectorized instructions clear the ACC WSR at the end of the instruction using
+ * random data supplied externally. See below.
  *
  * Montgomery implementation details:
  * The Montgomery algorithm efficiently computes a multiplication and reduction by converting
@@ -68,7 +68,7 @@
  *
  * As the 3 multiplications are pipelined onto the multiplier it requires two additional registers
  * for intermediate values named "TMP" and "C". These registers hold the following intermediate
- * values when processing a vector chunk:
+ * values when computing a Montgomery multiplication:
  *   Cycle 1:  Reg(TMP) = [a*b]_d,     Reg(C) = a*b
  *   Cycle 2:  Reg(TMP) = [TMP*mu]_d,  Reg(C) = a*b
  *   Cycle 3:  Output   = c + (TMP)*q mod q = [c + (TMP)*q]^d
@@ -111,8 +111,6 @@ module otbn_mac_bignum
 
   input  mac_bignum_predec_t     predec_i,
   input  mac_bignum_predec_dyn_t predec_dyn_i,
-  output mac_bignum_predec_dyn_t predec_dyn_next_o,
-  output logic                   predec_dyn_next_valid_o,
   output logic                   predec_error_o,
 
   input  logic [WLEN-1:0] urnd_data_i,
@@ -132,7 +130,7 @@ module otbn_mac_bignum
 
   output logic state_err_o
 );
-  import prim_util_pkg::vbits;
+  localparam ELEN = QWLEN/2;
 
   // URND permutations for register clearing
   logic [WLEN-1:0]  urnd_permutation;
@@ -329,17 +327,14 @@ module otbn_mac_bignum
   // Input operand quad word selection
   logic [QWLEN-1:0] qword_a;
   logic [QWLEN-1:0] qword_b;
-  logic [QWLEN-1:0] qword_b_lane;
 
-  // This MUX is predecoded to optimize timing
+  // This MUX is predecoded to optimize timing.
   assign qword_a = operand_a_blanked[predec_dyn_i.op_a_qw_sel * QWLEN +: QWLEN];
 
-  // Pick the lane index and replicate
-  assign qword_b_lane = {2{operand_b_blanked[predec_i.lane_index * 32 +: 32]}};
-
-  // These MUXs are predecoded to optimize timing
-  assign qword_b = predec_i.is_lane ? qword_b_lane :
-                                      operand_b_blanked[predec_dyn_i.op_b_qw_sel * QWLEN +: QWLEN];
+  // The qword_b MUXing is elementwise to implement the lane functionality.
+  // These 8-to-1 MUXs are predecoded to optimize timing.
+  assign qword_b[   0+:ELEN] = operand_b_blanked[predec_dyn_i.op_b_elem0_sel * ELEN +: ELEN];
+  assign qword_b[ELEN+:ELEN] = operand_b_blanked[predec_dyn_i.op_b_elem1_sel * ELEN +: ELEN];
 
   // Multiplier operand selection
   logic [QWLEN-1:0] mul_op_a;
@@ -398,7 +393,7 @@ module otbn_mac_bignum
   // SEC_CM: DATA_REG_SW.SCA
   prim_blanker #(.Width(QWLEN)) u_mul_res_merger_blanker (
     .in_i (tmp_new_value),
-    .en_i (predec_i.mul_merger_en),
+    .en_i (predec_dyn_i.mul_merger_en),
     .out_o(mul_res_merger)
   );
 
@@ -412,7 +407,7 @@ module otbn_mac_bignum
   // SEC_CM: DATA_REG_SW.SCA
   prim_blanker #(.Width(HWLEN)) u_mul_res_shift_blanker (
     .in_i (mul_res),
-    .en_i (predec_i.mul_shift_en),
+    .en_i (predec_dyn_i.mul_shift_en),
     .out_o(mul_res_pre_shifted)
   );
 
@@ -547,7 +542,7 @@ module otbn_mac_bignum
 
   prim_blanker #(.Width(WLEN)) u_add_res_blanker (
     .in_i (adder_result),
-    .en_i (predec_i.add_res_en),
+    .en_i (predec_dyn_i.add_res_en),
     .out_o(adder_result_blanked)
   );
 
@@ -642,322 +637,44 @@ module otbn_mac_bignum
   /////////////////////////
   // Multi-cycle control //
   /////////////////////////
-  /**
-   * The multi-cycle multiplications require dynamic control signals including predecoded signals.
-   * This is implemented by stalling the OTBN pipeline and generating the control signals using an
-   * internal state machine. When the final result is ready, the pipeline is un-stalled by
-   * asserting the valid flag.
-   *
-   * Any dynamic signal that requires predecoding is forwarded to the predecoder such that it can
-   * be flopped. The predecoder will then - depending on the forward request signal - select
-   * between predecoding signals based on the instruction or the forwarded signals .
-   *
-   * The following tables show the progression of the "dynamic" control signals for both
-   * multi-cycle operations. There are additional control signals which do not change during the
-   * execution. See the decoder / predecoder for how these are controlled. For any lane operation,
-   * the qword selection control signal for operand B has no effect as the operand MUX uses
-   * directly the lane index signal.
-   *
-   * Dynamic control signals for vectorized multiplication (QW = quad word = 64 bits)
-   *
-   * | Signal              |     Cycles (0-3)      | Predecoded |
-   * |---------------------|-----------------------|------------|
-   * | Step                | QW0 | QW1 | QW2 | QW3 |            |
-   * |---------------------|-----|-----|-----|-----|------------|
-   * | op_a_qw_sel         |   0 |   1 |   2 |   3 |        yes |
-   * | op_b_qw_sel         |   0 |   1 |   2 |   3 |        yes |
-   * | acc_qw_sel          |   0 |   1 |   2 |   3 |         no |
-   * | acc_wr_en_raw       |   1 |   1 |   1 |   0 |         no |
-   * | acc_clear_en        |   0 |   0 |   0 |   1 |         no |
-   * | acc_merger_en       |   1 |   1 |   1 |   1 |        yes |
-   * | operation_valid_raw |   0 |   0 |   0 |   1 |         no |
-   *
-   * Dynamic control signals for Montgomery multiplication (4 chunks processed over 3 cycles each)
-   *
-   * | Signal              |                       Cycles (0-11)                    | Predecoded |
-   * |---------------------|--------------------------------------------------------|------------|
-   * | Processed quad word |        QW0      ||       QW1       || QW2 ||    QW3    |            |
-   * | Montgomery cycle    |  C0 |  C1 |  C2 ||  C0 |  C1 |  C2 || ... || ... |  C2 |            |
-   * |---------------------|-----|-----|-----||-----|-----|-----||-----||-----|-----|------------|
-   * | op_a_qw_sel         |   0 |   0 |   0 ||   1 |   1 |   1 ||     ||     |   3 |        yes |
-   * | op_b_qw_sel         |   0 |   0 |   0 ||   1 |   1 |   1 ||     ||     |   3 |        yes |
-   * | mul_op_a_tmp_sel    |   A | TMP | TMP ||   A | TMP | TMP ||     ||     | TMP |        yes |
-   * | mul_op_b_sel        |   B |  Mu |   Q ||   B |  Mu |   Q ||     ||     |   Q |        yes |
-   * | tmp_wr_en_raw       |   1 |   1 |   0 ||   1 |   1 |   0 ||     ||     |   0 |         no |
-   * | tmp_clear_en        |   0 |   0 |   1 ||   0 |   0 |   1 ||     ||     |   1 |         no |
-   * | c_wr_en_raw         |   1 |   0 |   0 ||   1 |   0 |   0 ||     ||     |   0 |         no |
-   * | c_clear_en          |   0 |   0 |   1 ||   0 |   0 |   1 ||     ||     |   1 |         no |
-   * | acc_qw_sel          |   0 |   0 |   0 ||   1 |   1 |   1 ||     ||     |   3 |         no |
-   * | acc_wr_en_raw       |   0 |   0 |   1 ||   0 |   0 |   1 ||     ||     |   0 |         no |
-   * | acc_clear_en        |   0 |   0 |   0 ||   0 |   0 |   0 ||     ||     |   1 |         no |
-   * | mul_add_en          |   0 |   0 |   1 ||   0 |   0 |   1 ||     ||     |   1 |        yes |
-   * | c_add_en            |   0 |   0 |   1 ||   0 |   0 |   1 ||     ||     |   1 |        yes |
-   * | add_mod_en          |   0 |   0 |   1 ||   0 |   0 |   1 ||     ||     |   1 |        yes |
-   * | acc_merger_en       |   0 |   0 |   1 ||   0 |   0 |   1 ||     ||     |   1 |        yes |
-   * | operation_valid_raw |   0 |   0 |   0 ||   0 |   0 |   0 ||     ||     |   1 |         no |
-   *
-   * Because these control signal progressions have a repeating character, we generate for all
-   * cycles the desired control signal "combinations" in the form of an array of signals. This
-   * allows to implement the state machine as a counter which simply picks the required combination
-   * based upon the current count from the arrays. We generate the progressions for each type of
-   * multiplication (*_reg, *_vec, *_mod) and also separate the predecoded and regular control
-   * signals to simplify the forwarding to the predecoder.
-   *
-   * The predecoded combinations are also used to define the expected signals. As of this
-   *              EACH COLUMN / CYCLE MUST BE UNIQUE FOR THE PREDECODED SIGNALS
-   * per table, meaning that at least one bit must differ from any other column (only per table /
-   * type of multiplication). The reason is that if the index is faulted, we rely on the fact that
-   * we will get garbage predecoded input signals which will lead to a predecoding error. This does
-   * not apply to columns which can only be accessed if an index goes out of bounds (e.g, the
-   * unused 8 array indexes for the vectorized mul.) as an out of bound index generates also an
-   * error.
-   *
-   * In the following, the first part generates these signal combinations and checks for
-   * uniqueness. The second part then is the actual logic stepping through the cycles.
-   */
-
-  ///////////////////////////////////////////
-  // Multi-cycle control signal generation //
-  ///////////////////////////////////////////
-  localparam int unsigned LatencyVec = 4;
-  localparam int unsigned LatencyMod = 12;
-  localparam int unsigned LatencyMax = LatencyVec > LatencyMod ? LatencyVec : LatencyMod;
-
-  typedef struct packed {
-    logic       tmp_wr_en_raw;
-    logic       tmp_clear_en;
-    logic       c_wr_en_raw;
-    logic       c_clear_en;
-    logic [1:0] acc_qw_sel;
-    logic       acc_wr_en_raw;
-    logic       acc_clear_en;
-  } mac_contrl_t;
-
-  localparam mac_contrl_t ControlDefault = '0;
-
-  // The control and expected signals for a regular multiplication
-  mac_contrl_t            contrl_reg;
-  mac_bignum_predec_dyn_t expected_predec_dyn_reg;
-
-  always_comb begin
-    contrl_reg               = ControlDefault;
-    contrl_reg.acc_wr_en_raw = 1'b1;
-
-    expected_predec_dyn_reg             = MacBignumPredecDynDefault;
-    expected_predec_dyn_reg.op_a_qw_sel = operation_i.operand_a_qw_sel;
-    expected_predec_dyn_reg.op_b_qw_sel = operation_i.operand_b_qw_sel;
-  end
-
-  // The dynamic control and predecoding signals for all cycles of a vectorized multiplication.
-  // See also table above.
-  mac_contrl_t            contrl_vec[LatencyVec];
-  mac_bignum_predec_dyn_t predec_vec[LatencyVec];
-
-  always_comb begin
-    contrl_vec = '{default: ControlDefault};
-    predec_vec = '{default: MacBignumPredecDynDefault};
-
-    for (int unsigned cycle = 0; cycle < LatencyVec; cycle++) begin
-      contrl_vec[cycle].acc_qw_sel    = 2'(cycle);
-      contrl_vec[cycle].acc_wr_en_raw = 1'b1;
-      predec_vec[cycle].op_a_qw_sel   = 2'(cycle);
-      predec_vec[cycle].op_b_qw_sel   = 2'(cycle);
-      predec_vec[cycle].acc_merger_en = 1'b1;
-    end
-
-    // Disable write enable for ACC and clear ACC in last cycle
-    contrl_vec[3].acc_wr_en_raw = 1'b0;
-    contrl_vec[3].acc_clear_en  = 1'b1;
-  end
-
-  // The dynamic control and predecoding signals for the 3 Montgomery cycles as well as all 12
-  // execution cycles. See also table above.
-  localparam int unsigned LatencyMontgMul = 3;
-
-  mac_contrl_t            contrl_mod_mul[LatencyMontgMul];
-  mac_bignum_predec_dyn_t predec_mod_mul[LatencyMontgMul];
-  mac_contrl_t            contrl_mod[LatencyMod];
-  mac_bignum_predec_dyn_t predec_mod[LatencyMod];
-
-  always_comb begin
-    contrl_mod_mul = '{default: ControlDefault};
-    predec_mod_mul = '{default: MacBignumPredecDynDefault};
-
-    // First, construct the signals for the actual Montgomery multiplication. This is repeated for
-    // each vector chunk.
-    // Cycle 0
-    contrl_mod_mul[0].tmp_wr_en_raw    = 1'b1;
-    contrl_mod_mul[0].c_wr_en_raw      = 1'b1;
-    // Cycle 1
-    contrl_mod_mul[1].tmp_wr_en_raw    = 1'b1;
-    predec_mod_mul[1].mul_op_a_tmp_sel = 1'b0;
-    predec_mod_mul[1].mul_op_b_sel     = MulOpMu;
-    // Cycle 2
-    contrl_mod_mul[2].acc_wr_en_raw    = 1'b1;
-    contrl_mod_mul[2].tmp_clear_en     = 1'b1; // Clear TMP with randomness
-    contrl_mod_mul[2].c_clear_en       = 1'b1; // Clear C with randomness
-    predec_mod_mul[2].mul_op_a_tmp_sel = 1'b0;
-    predec_mod_mul[2].mul_op_b_sel     = MulOpq;
-    predec_mod_mul[2].mul_add_en       = 1'b1;
-    predec_mod_mul[2].c_add_en         = 1'b1;
-    predec_mod_mul[2].add_mod_en       = 1'b1;
-    predec_mod_mul[2].acc_merger_en    = 1'b1;
-
-    // Construct the 4 * 3 = 12 cycles and set the correct qword selection
-    for (int unsigned cycle = 0; cycle < LatencyMod; cycle++) begin
-      contrl_mod[cycle]             = contrl_mod_mul[cycle % LatencyMontgMul];
-      contrl_mod[cycle].acc_qw_sel  = 2'(cycle / LatencyMontgMul);
-      predec_mod[cycle]             = predec_mod_mul[cycle % LatencyMontgMul];
-      predec_mod[cycle].op_a_qw_sel = 2'(cycle / LatencyMontgMul);
-      predec_mod[cycle].op_b_qw_sel = 2'(cycle / LatencyMontgMul);
-    end
-
-    // Clear ACC in the last cycle with randomness
-    contrl_mod[LatencyMod - 1].acc_clear_en = 1'b1;
-  end
-
-  // Create helper 2D arrays to simplify the indexing in the actual signal selection. The first
-  // dimension is to distinguish between regular (0) vs Montgomery (1) multiplication. The second
-  // dimension represents the cycles. This allows a neat indexing using the is_mod control signal
-  // as well as one common index width. See actual logic below.
-  mac_contrl_t            contrl_multi[2][LatencyMax];
-  mac_bignum_predec_dyn_t predec_multi[2][LatencyMax];
-
-  always_comb begin
-    // Vectorized multiplication (cycles 4-11 are unused)
-    contrl_multi[0] = '{default: ControlDefault};
-    predec_multi[0] = '{default: MacBignumPredecDynDefault};
-
-    for (int unsigned cycle = 0; cycle < LatencyVec; cycle++) begin
-      contrl_multi[0][cycle] = contrl_vec[cycle];
-      predec_multi[0][cycle] = predec_vec[cycle];
-    end
-
-    // Montgomery multiplication
-    contrl_multi[1] = '{default: ControlDefault};
-    predec_multi[1] = '{default: MacBignumPredecDynDefault};
-
-    for (int unsigned cycle = 0; cycle < LatencyMod; cycle++) begin
-      contrl_multi[1][cycle] = contrl_mod[cycle];
-      predec_multi[1][cycle] = predec_mod[cycle];
-    end
-  end
-
-  // Each used column / cycle of the predecoded signals must be unique per multiplication type. For
-  // the reasoning see detailed comment above.
-  `ASSERT_INIT(UniqueCyclesPredecVecMul_A,
-      $size(predec_multi[0][0:LatencyVec-1].unique()) == $size(predec_multi[0][0:LatencyVec-1]))
-
-  `ASSERT_INIT(UniqueCyclesPredecMontgomeryMul_A,
-      $size(predec_multi[1].unique()) == $size(predec_multi[1]))
-
-  ///////////////////////////////
-  // Multi-cycle control logic //
-  ///////////////////////////////
-  // This is the actual logic controlling the execution and is based upon a cycle counter. This
-  // counter is used as index into the previously "computed" control signal sequences. The selected
-  // combination is then assigned to the actual control signals, forwarded to the predecoder or
-  // used as expected signals.
-  localparam int unsigned                CycleCountWidth = vbits(LatencyMax);
-  localparam logic [CycleCountWidth-1:0] EndCycleVec     = CycleCountWidth'(LatencyVec - 1);
-  localparam logic [CycleCountWidth-1:0] EndCycleMod     = CycleCountWidth'(LatencyMod - 1);
-
-  logic operation_valid_raw;
-  logic do_advance;
-
-  mac_contrl_t            contrl;
-  logic                   predec_dyn_next_valid_raw;
-  mac_bignum_predec_dyn_t predec_dyn_next;
+  // The multi-cycle execution is controlled by a FSM. This FSM works in tandem with a duplicate
+  // in the instruction fetch stage. The duplicate operates one cycle in advance and provides the
+  // predecoded signals. These signals are compared to the ones generated here.
+  mac_bignum_contrl_t     contrl;
   mac_bignum_predec_dyn_t expected_predec_dyn;
-  logic                   expected_mul_shift_en;
-  logic                   expected_mul_merger_en;
-  logic                   expected_add_res_en;
 
-  logic [CycleCountWidth-1:0] current_cycle;
-  logic [CycleCountWidth-1:0] next_cycle_raw;
-  logic [CycleCountWidth-1:0] next_cycle;
-  logic                       mod_finishing;
-  logic                       vec_finishing;
-  logic                       multi_finishing;
+  otbn_mac_bignum_fsm u_mac_bignum_fsm (
+    .clk_i,
+    .rst_ni,
 
-  // Evaluate whether this is the last cycle depending on type of multiplication.
-  assign mod_finishing   = current_cycle == EndCycleMod;
-  assign vec_finishing   = current_cycle == EndCycleVec;
-  assign multi_finishing = predec_i.is_mod ? mod_finishing : vec_finishing;
+    .start_i         (mac_en_i),
+    .mac_en_i        (mac_en_i),
+    // This FSM here must use the decoded signals as the counterpart operates on the predecoded
+    // signals. Otherwise both FSM would be controlled with the same control signals.
+    .is_lane_i       (operation_i.is_lane),
+    .lane_index_i    (operation_i.lane_index),
+    .op_a_qw_sel_i   (operation_i.op_a_qw_sel_raw),
+    .op_b_elem0_sel_i(operation_i.op_b_elem0_sel_raw),
+    .op_b_elem1_sel_i(operation_i.op_b_elem1_sel_raw),
+    .is_vec_i        (operation_i.is_vec),
+    .is_mod_i        (operation_i.is_mod),
 
-  // next_cycle is used to select which predecoding signals should be forwarded. The +1 would
-  // exceed the array bounds in the last cycle. For this case we take the signals of the first
-  // cycle but it does not matter because there must be no forward request in the last cycle as in
-  // the last cycle the next instruction will be predecoded. We must check this here because the
-  // predecoder does not know when BN MAC will un-stall the pipeline.
-  assign next_cycle = multi_finishing ? '0 : next_cycle_raw;
+    .sec_wipe_i(sec_wipe_urnd_i),
 
-  `ASSERT(NoPredecDynNextForwardLastCycle_A,
-          operation_valid_o |-> predec_dyn_next_valid_o == '0,
-          clk_i, !rst_ni || !do_advance)
+    .contrl_o    (contrl),
+    .predec_dyn_o(expected_predec_dyn),
+    .is_busy_o   (/* only used in predecoder */),
 
-  always_comb begin
-    // Default is the regular multiplication
-    contrl                    = contrl_reg;
-    expected_predec_dyn       = expected_predec_dyn_reg;
-    // This controls whether we will forward dynamic predecode signals to the fetch stage while
-    // progressing through multi-cycle states but does not factor in any errors.
-    predec_dyn_next_valid_raw = 1'b0;
-    predec_dyn_next           = MacBignumPredecDynDefault;
-
-    // Static blankers
-    expected_mul_shift_en  = 1'b0;
-    expected_mul_merger_en = 1'b0;
-    expected_add_res_en    = 1'b0;
-
-    if (!predec_i.is_vec) begin
-      // Regular multiplications are single cycle
-      operation_valid_raw = 1'b1;
-
-      expected_mul_shift_en = mac_en_i;
-      expected_add_res_en   = mac_en_i;
-    end else begin
-      operation_valid_raw = multi_finishing;
-      contrl              = contrl_multi[predec_i.is_mod][current_cycle];
-      expected_predec_dyn = predec_multi[predec_i.is_mod][current_cycle];
-
-      // Suppress the forward request in the last cycle.
-      predec_dyn_next_valid_raw = !multi_finishing;
-      predec_dyn_next           = predec_multi[predec_i.is_mod][next_cycle];
-
-      expected_mul_merger_en = predec_i.is_mod ? 1'b0 : mac_en_i;
-    end
-  end
+    // Any tampering on the internal state will abort the execution.
+    .state_err_o(state_err_o)
+  );
 
   // For non modulo vectorized multiplications, the blanker must be active if the instructions
   // starts and it must definitively be high if it is already ongoing.
   `ASSERT(VecMulBlankerMulMergerEn_A,
-          predec_i.is_vec && !predec_i.is_mod && ((current_cycle != '0) || mac_en_i)
-          |-> expected_mul_merger_en,
-          clk_i, !rst_ni || !do_advance)
-
-  // Only advance when instruction is committing (if there is no error). Must not factor in local
-  // errors as it would result in timing loops (errors factor into the commit signal).
-  assign do_advance = mac_en_i & mac_commit_i;
-
-  logic cycle_count_error;
-
-  prim_count #(
-    .Width(CycleCountWidth)
-  ) u_cycle_count (
-    .clk_i,
-    .rst_ni,
-    .clr_i             (operation_valid_o || sec_wipe_urnd_i),
-    .set_i             ('0),
-    .set_cnt_i         ('0),
-    .incr_en_i         (1'b1),
-    .decr_en_i         (1'b0),
-    .step_i            (CycleCountWidth'(1)),
-    .commit_i          (do_advance),
-    .cnt_o             (current_cycle),
-    .cnt_after_commit_o(next_cycle_raw),
-    .err_o             (cycle_count_error)
-  );
+          predec_i.is_vec && !predec_i.is_mod && mac_en_i
+          |-> expected_predec_dyn.mul_merger_en,
+          clk_i, !rst_ni || !mac_en_i)
 
   // We have separate control signals to have a clean separation between the control logic and data
   // flow components.
@@ -973,29 +690,6 @@ module otbn_mac_bignum
   // set.
   assign urnd_used_o = tmp_clear_en || c_clear_en || acc_clear_en;
 
-  assign predec_dyn_next_o       = predec_dyn_next;
-  assign predec_dyn_next_valid_o = predec_dyn_next_valid_raw && do_advance;
-
-  // Assert that counters are always in bounds. This is required in particular for the next_cycle
-  // index as the mux for the wrap around could potentially be faulted.
-  logic current_cycle_oob;
-  logic next_cycle_oob;
-  assign current_cycle_oob = current_cycle  >= (predec_i.is_mod ? CycleCountWidth'(LatencyMod) :
-                                                                  CycleCountWidth'(LatencyVec));
-  assign next_cycle_oob    = next_cycle_raw >= (predec_i.is_mod ? CycleCountWidth'(LatencyMod) :
-                                                                  CycleCountWidth'(LatencyVec));
-
-  // Note, these assertions must be disabled when testing the counter countermeasures as
-  // these will fire when the count is manipulated to a value out of bound.
-  `ASSERT(CurrentCycleIsInBounds_A, !current_cycle_oob, clk_i, !rst_ni || !do_advance)
-
-  `ASSERT(NextCycleIsInBounds_A, !next_cycle_oob, clk_i, !rst_ni || !do_advance)
-
-  // The prim_count enforces that there is an ERROR_TRIGGER_ALERT assertion checking that this
-  // error escalates correctly.
-  // TODO: Assert that the out of bound errors lead to alerts.
-  assign state_err_o = cycle_count_error || current_cycle_oob || next_cycle_oob;
-
   //////////////////////
   // Result selection //
   //////////////////////
@@ -1007,7 +701,7 @@ module otbn_mac_bignum
   // For a regular multiplication shift_acc only applies to the new value written to the
   // accumulator.
   assign operation_result_o = acc_merged | adder_result_blanked;
-  assign operation_valid_o  = operation_valid_raw & mac_en_i;
+  assign operation_valid_o  = predec_dyn_i.operation_valid_raw & mac_en_i;
 
   /////////////////////
   // Integrity error //
@@ -1040,36 +734,42 @@ module otbn_mac_bignum
   logic                  expected_is_vec;
   logic                  expected_is_mod;
   logic                  expected_is_lane;
+  logic [2:0]            expected_lane_index;
+  logic [1:0]            expected_op_a_qw_sel_raw;
+  logic [2:0]            expected_op_b_elem0_sel_raw;
+  logic [2:0]            expected_op_b_elem1_sel_raw;
   mac_elen_e             expected_elen;
   logic [VLEN/QWLEN-1:0] expected_adder_carry_sel;
-  logic [2:0]            expected_lane_index;
   logic                  expected_acc_add_en;
 
   // SEC_CM: CTRL.REDUN
-  assign expected_op_en           = mac_en_i;
-  assign expected_is_vec          = operation_i.is_vec;
-  assign expected_is_mod          = operation_i.is_mod;
-  assign expected_is_lane         = operation_i.is_lane;
-  assign expected_elen            = operation_i.elen;
-  assign expected_adder_carry_sel = operation_i.adder_carry_sel;
-  assign expected_lane_index      = operation_i.lane_index;
-  assign expected_acc_add_en      = ~operation_i.zero_acc & mac_en_i & !operation_i.is_vec;
+  assign expected_op_en              = mac_en_i;
+  assign expected_is_vec             = operation_i.is_vec;
+  assign expected_is_mod             = operation_i.is_mod;
+  assign expected_is_lane            = operation_i.is_lane;
+  assign expected_lane_index         = operation_i.lane_index;
+  assign expected_op_a_qw_sel_raw    = operation_i.op_a_qw_sel_raw;
+  assign expected_op_b_elem0_sel_raw = operation_i.op_b_elem0_sel_raw;
+  assign expected_op_b_elem1_sel_raw = operation_i.op_b_elem1_sel_raw;
+  assign expected_elen               = operation_i.elen;
+  assign expected_adder_carry_sel    = operation_i.adder_carry_sel;
+  assign expected_acc_add_en         = !operation_i.zero_acc & mac_en_i & !operation_i.is_vec;
 
   // Separate the predecode comparison for debugging reasons
   logic predec_error;
   logic predec_dyn_error;
 
-  assign predec_error = |{expected_op_en           != predec_i.op_en,
-                          expected_is_vec          != predec_i.is_vec,
-                          expected_is_mod          != predec_i.is_mod,
-                          expected_is_lane         != predec_i.is_lane,
-                          expected_elen            != predec_i.elen,
-                          expected_adder_carry_sel != predec_i.adder_carry_sel,
-                          expected_lane_index      != predec_i.lane_index,
-                          expected_acc_add_en      != predec_i.acc_add_en,
-                          expected_mul_shift_en    != predec_i.mul_shift_en,
-                          expected_mul_merger_en   != predec_i.mul_merger_en,
-                          expected_add_res_en      != predec_i.add_res_en};
+  assign predec_error = |{expected_op_en              != predec_i.op_en,
+                          expected_is_vec             != predec_i.is_vec,
+                          expected_is_mod             != predec_i.is_mod,
+                          expected_is_lane            != predec_i.is_lane,
+                          expected_op_a_qw_sel_raw    != predec_i.op_a_qw_sel_raw,
+                          expected_op_b_elem0_sel_raw != predec_i.op_b_elem0_sel_raw,
+                          expected_op_b_elem1_sel_raw != predec_i.op_b_elem1_sel_raw,
+                          expected_elen               != predec_i.elen,
+                          expected_adder_carry_sel    != predec_i.adder_carry_sel,
+                          expected_lane_index         != predec_i.lane_index,
+                          expected_acc_add_en         != predec_i.acc_add_en};
 
   assign predec_dyn_error = expected_predec_dyn != predec_dyn_i;
 

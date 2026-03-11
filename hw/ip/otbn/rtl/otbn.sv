@@ -1453,7 +1453,7 @@ module otbn
 
   `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT_IN(
     OtbnMacCycleCountAlertCheck_A,
-    u_otbn_core.u_otbn_mac_bignum.u_cycle_count,
+    u_otbn_core.u_otbn_mac_bignum.u_mac_bignum_fsm.u_cycle_count,
     gen_alert_tx[AlertFatalIdx].u_prim_alert_sender.alert_req_i)
 
   // Alert assertions for reg_we onehot check

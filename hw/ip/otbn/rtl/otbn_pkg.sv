@@ -526,8 +526,9 @@ package otbn_pkg;
     op_b_sel_e               alu_op_b_sel;
 
     logic                    mac_flag_en;
-    logic [1:0]              mac_op_a_qw_sel;
-    logic [1:0]              mac_op_b_qw_sel;
+    logic [1:0]              mac_op_a_qw_sel_raw;
+    logic [2:0]              mac_op_b_elem0_sel_raw;
+    logic [2:0]              mac_op_b_elem1_sel_raw;
     logic                    mac_wr_hw_sel_upper;
     logic [1:0]              mac_pre_acc_shift;
     logic                    mac_zero_acc;
@@ -605,12 +606,12 @@ package otbn_pkg;
     // Decoded is_lane signal originates directly from instruction bits. We predecode it for
     // redundancy.
     logic                  is_lane;
+    logic [2:0]            lane_index;
+    logic [1:0]            op_a_qw_sel_raw;
+    logic [2:0]            op_b_elem0_sel_raw;
+    logic [2:0]            op_b_elem1_sel_raw;
     mac_elen_e             elen;
     logic [VLEN/QWLEN-1:0] adder_carry_sel;
-    logic [2:0]            lane_index;
-    logic                  mul_shift_en;
-    logic                  mul_merger_en;
-    logic                  add_res_en;
     logic                  acc_add_en;
   } mac_bignum_predec_t;
 
@@ -618,27 +619,47 @@ package otbn_pkg;
   // certain multi-cycle instructions.
   typedef struct packed {
     logic [1:0]        op_a_qw_sel;      // Both (a, b) are predecoded to optimize timing
-    logic [1:0]        op_b_qw_sel;      // Has no effect for lane mode
+    logic [2:0]        op_b_elem0_sel;   // Operand B is mux on lane level
+    logic [2:0]        op_b_elem1_sel;
     logic              mul_op_a_tmp_sel; // Predecoded to optimize timing
     mac_mul_op_b_sel_e mul_op_b_sel;     // Predecoded to optimize timing
     logic              mul_add_en;
     logic              c_add_en;
     logic              add_mod_en;
     logic              acc_merger_en;
+    logic              mul_shift_en;
+    logic              mul_merger_en;
+    logic              add_res_en;
+    logic              operation_valid_raw;
   } mac_bignum_predec_dyn_t;
 
   localparam mac_bignum_predec_dyn_t MacBignumPredecDynDefault = '{
     // op_a_qw_sel and op_b_qw_sel depend on decoded instruction and will be updated by the
     // predecoder.
-    op_a_qw_sel:      2'b0,
-    op_b_qw_sel:      2'b0,
-    mul_op_a_tmp_sel: 1'b1,   // Select A as it is blanked
-    mul_op_b_sel:     MulOpB,
-    mul_add_en:       1'b0,
-    c_add_en:         1'b0,
-    add_mod_en:       1'b0,
-    acc_merger_en:    1'b0
+    op_a_qw_sel:         2'b0,
+    op_b_elem0_sel:      3'b0,
+    op_b_elem1_sel:      3'b0,
+    mul_op_a_tmp_sel:    1'b1,   // Select A as it is blanked
+    mul_op_b_sel:        MulOpB,
+    mul_add_en:          1'b0,
+    c_add_en:            1'b0,
+    add_mod_en:          1'b0,
+    acc_merger_en:       1'b0,
+    mul_shift_en:        1'b0,
+    mul_merger_en:       1'b0,
+    add_res_en:          1'b0,
+    operation_valid_raw: 1'b0
   };
+
+  typedef struct packed {
+    logic       tmp_wr_en_raw;
+    logic       tmp_clear_en;
+    logic       c_wr_en_raw;
+    logic       c_clear_en;
+    logic [1:0] acc_qw_sel;
+    logic       acc_wr_en_raw;
+    logic       acc_clear_en;
+  } mac_bignum_contrl_t;
 
   typedef struct packed {
     logic call_stack_pop;
@@ -680,8 +701,11 @@ package otbn_pkg;
   typedef struct packed {
     logic [WLEN-1:0]       operand_a;
     logic [WLEN-1:0]       operand_b;
-    logic [1:0]            operand_a_qw_sel;
-    logic [1:0]            operand_b_qw_sel;
+    // The raw select signals are used as input to the FSM which then computes the actual selection
+    // signals. Effectively used are the predecoded ones.
+    logic [1:0]            op_a_qw_sel_raw;
+    logic [2:0]            op_b_elem0_sel_raw;
+    logic [2:0]            op_b_elem1_sel_raw;
     logic                  wr_hw_sel_upper;
     logic [1:0]            pre_acc_shift_imm;
     logic                  zero_acc;

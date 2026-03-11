@@ -1043,20 +1043,21 @@ module otbn_controller
   assign alu_bignum_operation_valid_o  = insn_valid_i;
   assign alu_bignum_operation_commit_o = insn_executing;
 
-  assign mac_bignum_operation_o.operand_a         = rf_bignum_rd_data_a_no_intg;
-  assign mac_bignum_operation_o.operand_b         = rf_bignum_rd_data_b_no_intg;
-  assign mac_bignum_operation_o.operand_a_qw_sel  = insn_dec_bignum_i.mac_op_a_qw_sel;
-  assign mac_bignum_operation_o.operand_b_qw_sel  = insn_dec_bignum_i.mac_op_b_qw_sel;
-  assign mac_bignum_operation_o.wr_hw_sel_upper   = insn_dec_bignum_i.mac_wr_hw_sel_upper;
-  assign mac_bignum_operation_o.pre_acc_shift_imm = insn_dec_bignum_i.mac_pre_acc_shift;
-  assign mac_bignum_operation_o.zero_acc          = insn_dec_bignum_i.mac_zero_acc;
-  assign mac_bignum_operation_o.shift_acc         = insn_dec_bignum_i.mac_shift_out;
-  assign mac_bignum_operation_o.is_vec            = insn_dec_bignum_i.mac_is_vec;
-  assign mac_bignum_operation_o.is_mod            = insn_dec_bignum_i.mac_is_mod;
-  assign mac_bignum_operation_o.is_lane           = insn_dec_bignum_i.mac_is_lane;
-  assign mac_bignum_operation_o.elen              = insn_dec_bignum_i.mac_elen;
-  assign mac_bignum_operation_o.adder_carry_sel   = insn_dec_bignum_i.mac_adder_carry_sel;
-  assign mac_bignum_operation_o.lane_index        = insn_dec_bignum_i.mac_lane_index;
+  assign mac_bignum_operation_o.operand_a          = rf_bignum_rd_data_a_no_intg;
+  assign mac_bignum_operation_o.operand_b          = rf_bignum_rd_data_b_no_intg;
+  assign mac_bignum_operation_o.op_a_qw_sel_raw    = insn_dec_bignum_i.mac_op_a_qw_sel_raw;
+  assign mac_bignum_operation_o.op_b_elem0_sel_raw = insn_dec_bignum_i.mac_op_b_elem0_sel_raw;
+  assign mac_bignum_operation_o.op_b_elem1_sel_raw = insn_dec_bignum_i.mac_op_b_elem1_sel_raw;
+  assign mac_bignum_operation_o.wr_hw_sel_upper    = insn_dec_bignum_i.mac_wr_hw_sel_upper;
+  assign mac_bignum_operation_o.pre_acc_shift_imm  = insn_dec_bignum_i.mac_pre_acc_shift;
+  assign mac_bignum_operation_o.zero_acc           = insn_dec_bignum_i.mac_zero_acc;
+  assign mac_bignum_operation_o.shift_acc          = insn_dec_bignum_i.mac_shift_out;
+  assign mac_bignum_operation_o.is_vec             = insn_dec_bignum_i.mac_is_vec;
+  assign mac_bignum_operation_o.is_mod             = insn_dec_bignum_i.mac_is_mod;
+  assign mac_bignum_operation_o.is_lane            = insn_dec_bignum_i.mac_is_lane;
+  assign mac_bignum_operation_o.lane_index         = insn_dec_bignum_i.mac_lane_index;
+  assign mac_bignum_operation_o.elen               = insn_dec_bignum_i.mac_elen;
+  assign mac_bignum_operation_o.adder_carry_sel    = insn_dec_bignum_i.mac_adder_carry_sel;
 
   assign mac_bignum_en_o     = insn_valid_i & insn_dec_bignum_i.mac_en;
   assign mac_bignum_commit_o = insn_executing;
