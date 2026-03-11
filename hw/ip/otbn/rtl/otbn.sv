@@ -1451,10 +1451,11 @@ module otbn
     u_otbn_core.u_otbn_controller.u_otbn_loop_controller.loop_info_stack.u_stack_wr_ptr,
     gen_alert_tx[AlertFatalIdx].u_prim_alert_sender.alert_req_i)
 
-  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT_IN(
-    OtbnMacCycleCountAlertCheck_A,
-    u_otbn_core.u_otbn_mac_bignum.u_mac_bignum_fsm.u_cycle_count,
-    gen_alert_tx[AlertFatalIdx].u_prim_alert_sender.alert_req_i)
+  `ASSERT_ERROR_TRIGGER_ALERT_IN(
+    OtbnBnMacCycleCountAlertCheck_A,
+    u_otbn_core.u_otbn_mac_bignum.u_mac_bignum_fsm,
+    gen_alert_tx[AlertFatalIdx].u_prim_alert_sender.alert_req_i,
+    0, 2, state_err_o)
 
   // Alert assertions for reg_we onehot check
   `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT_IN(

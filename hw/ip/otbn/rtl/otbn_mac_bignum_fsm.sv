@@ -222,9 +222,9 @@ module otbn_mac_bignum_fsm
     end
   end
 
-  ///////////////////////////////
-  // Multi-cycle control logic //
-  ///////////////////////////////
+  //////////////////////////////////
+  // Multi-cycle signal selection //
+  //////////////////////////////////
   // This is the actual logic controlling the execution and is based upon a cycle counter. This
   // counter is used as index into the above "computed" static control signal sequences. The
   // selected combination is then assigned to the actual control signals, forwarded to the
@@ -248,16 +248,16 @@ module otbn_mac_bignum_fsm
     contrl_o     = contrl_reg;
     predec_dyn_o = predec_dyn_reg;
 
-    if (!is_vec_i) begin
-      // Regular multiplications are single cycle
-      predec_dyn_o.operation_valid_raw = mac_en_i;
-      predec_dyn_o.mul_shift_en        = mac_en_i;
-      predec_dyn_o.add_res_en          = mac_en_i;
-    end else begin
+    if (is_vec_i) begin
       contrl_o                         = contrl_multi[is_mod_i][current_cycle];
       predec_dyn_o                     = predec_multi[is_mod_i][current_cycle];
       predec_dyn_o.operation_valid_raw = mac_en_i & multi_finishing;
       predec_dyn_o.mul_merger_en       = is_mod_i ? 1'b0 : mac_en_i;
+    end else begin
+      // Regular multiplications are single cycle, set valid flag immediately.
+      predec_dyn_o.operation_valid_raw = mac_en_i;
+      predec_dyn_o.mul_shift_en        = mac_en_i;
+      predec_dyn_o.add_res_en          = mac_en_i;
     end
 
     // Overwrite operand b selection if in lane mode
@@ -269,39 +269,51 @@ module otbn_mac_bignum_fsm
 
   assign is_busy_o = current_cycle != 0;
 
-  // The execution starts only if mac_en_i is also set.
-  logic do_step;
-  assign do_step = mac_en_i && (start_i || is_busy_o);
-
-  logic cycle_count_error;
-  prim_count #(
-    .Width(CycleCountWidth),
-    .EnableAlertTriggerSVA(0) // TODO: replace counter with regular one.
-  ) u_cycle_count (
-    .clk_i,
-    .rst_ni,
-    .clr_i             (predec_dyn_o.operation_valid_raw || sec_wipe_i),
-    .set_i             ('0),
-    .set_cnt_i         ('0),
-    .incr_en_i         (1'b1),
-    .decr_en_i         (1'b0),
-    .step_i            (CycleCountWidth'(1)),
-    .commit_i          (do_step),
-    .cnt_o             (current_cycle),
-    .cnt_after_commit_o(),
-    .err_o             (cycle_count_error)
-  );
-
-  // Assert that counters are always in bounds. This is required in particular for the next_cycle
-  // index as the mux for the wrap around could potentially be faulted.
+  // Check that the counter is always in bounds so no undefined control signals are set.
   logic current_cycle_oob;
   assign current_cycle_oob = current_cycle  >= (is_mod_i ? CycleCountWidth'(LatencyMod) :
                                                            CycleCountWidth'(LatencyVec));
 
-  // Note, these assertions must be disabled when testing the counter countermeasures as
-  // these will fire when the count is manipulated to a value out of bound.
+  // To be disabled when testing the out of bound check alert.
   `ASSERT(CurrentCycleIsInBounds_A, !current_cycle_oob, clk_i, !rst_ni || !mac_en_i)
 
-  assign state_err_o = cycle_count_error || current_cycle_oob;
+  // There is an alert assertion in otbn.sv which checks that state_err_o triggers an alert similar
+  // to how it is checked that errors from prim blocks result in an alert. This unused signal is
+  // connected / used if such an assertion is present, ensuring the assertion is not forgotten.
+  logic unused_assert_connected;
+  assign state_err_o = current_cycle_oob;
+
+  ///////////////////
+  // Cycle counter //
+  ///////////////////
+  logic [CycleCountWidth-1:0] cycle_count_d, cycle_count_q;
+  logic cycle_do_step;
+  logic cycle_clear;
+  logic [CycleCountWidth-1:0] cycle_increment;
+
+  assign current_cycle = cycle_count_q;
+
+  assign cycle_clear     = predec_dyn_o.operation_valid_raw || sec_wipe_i;
+  assign cycle_do_step   = mac_en_i && (start_i || is_busy_o);
+  assign cycle_increment = CycleCountWidth'(1);
+
+  always_comb begin
+    cycle_count_d = cycle_count_q;
+
+    if (cycle_clear) begin
+      cycle_count_d = '0;
+    end else if (cycle_do_step) begin
+      // Wraparound should never happen but is ok.
+      cycle_count_d = cycle_count_q + cycle_increment;
+    end
+  end
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      cycle_count_q <= '0;
+    end else begin
+      cycle_count_q <= cycle_count_d;
+    end
+  end
 
 endmodule
