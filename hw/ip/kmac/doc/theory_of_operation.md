@@ -6,22 +6,29 @@
 
 The above figure shows the KMAC/SHA3 HWIP block diagram.
 The KMAC has register interfaces for SW to configure the module, initiate the hashing process, and acquire the result digest from the STATE memory region.
-It also has an interface to the KeyMgr to get the secret key (masked).
-The IP has N x [application interfaces](#application-interface), which allows other HWIPs to request any pre-defined hashing operations.
+It also has a sideload interface to the KeyMgr to get the secret key (masked).
+The IP has N x [simple application interfaces](#simple-application-interface), which allows other HWIPs to perform a pre-defined hashing operation.
+It also features M x [command-based application interfaces (CmdApp)](#command-based-application-interface), which gives other HWIPs similar control over the KMAC HWIP as the software has.
 
-As similar with HMAC, KMAC HWIP also has a message FIFO (MSG_FIFO) whose depth was determined based on a few criteria such as the register interface width, and its latency, the latency of hashing algorithm (Keccak).
-Based on the given criteria, the MSG_FIFO depth was determined to store the incoming message while the SHA3 core is in computation.
+Similar to HMAC, the KMAC HWIP also has a message FIFO (MSG_FIFO) whose depth was determined based on a few criteria such as the register interface width, and its latency, the latency of hashing algorithm (Keccak).
+Based on the given criteria, the MSG_FIFO depth was determined to store the incoming message while the SHA3 core is processing the message parts.
 
-The MSG_FIFO has a packer in front.
-It packs any partial writes into the size of internal datapath (64bit) and stores in MSG_FIFO.
-It frees the software from having to align the messages.
-It also doesn't need the message length information.
+To support partial writes, the MSG_FIFO has a packer in front which packs writes to the size of the internal datapath (64bit).It frees the software from having to align the messages and it also simplifies the app interface when the message length must be appended (for KMAC operation).
 
-The fed messages go into the KMAC core regardless of KMAC enabled or not.
+> Note that both the SW and simple application interface only support plain data, i.e., shares are not supported.
+> The command-based application interface supports shared data (2 shares) but bypasses the MSG_FIFO and the packer.
+
+The fed message data goes into the KMAC core regardless whether the hashing operation is KMAC or not.
 The KMAC core forwards the messages to SHA3 core in case KMAC hash functionality is disabled.
-KMAC core prepends the encoded secret key as described in the SHA3 Derived Functions specification.
+When performing a KMAC operation, the KMAC core prepends the encoded secret key as described in the SHA3 Derived Functions specification.
 It is expected that the software writes the encoded output length at the end of the message.
 For hashing operations triggered by an IP through the application interface, the encoded output length is appended inside the AppIntf module in the KMAC HWIP.
+
+KMAC/SHA3 HWIP has an option to receive the secret key from the KeyMgr via sideload key interface.
+The software should set [`CFG_SHADOWED.sideload`](registers.md#cfg_shadowed) to use the KeyMgr sideloaded key for the SW and CmdApp-initiated KMAC operation (or enable/configure it in the application interface configuration).
+`keymgr_pkg::hw_key_t` defines the structure of the sideloaded key.
+KeyMgr provides the sideloaded key in two-share masked form regardless of the compile-time parameter `EnMasking`.
+If `EnMasking` is not defined, the KMAC converts the shared key to the unmasked form before uses the key.
 
 The SHA3 core is the main Keccak processing module.
 It supports SHA3 hashing functions, SHAKE128, SHAKE256 extended output functions, and also cSHAKE128, cSHAKE256 functions in order to support KMAC operation.
@@ -198,49 +205,402 @@ While in an idle state or in the sponge absorbing stage, the value is zero.
 This ensures that the logic does not expose the secret key XORed with the keccak_f results of the prefix to the software.
 In addition to that, the KMAC/SHA3 blocks the software access to the Keccak state when it processes the request from KeyMgr for Key Derivation Function (KDF).
 
-### Application Interface
+### Application Interfaces
 
-![](../doc/application-interface.svg)
+The KMAC features two types of application interfaces so different hardware blocks have direct access to the KMAC core.
+- The simple application interface allows a hardware block to perform a fixed type of hashing and can only retrieve one hash.
+  The hashing configuration (type, strength, etc.) is a compile-time parameter and this interface does not support shared message data, i.e., there is only one 64-bit data path.
+  The input data is however fed through the message FIFO and its packer.
+- The command-based application interface can configure the type of hashing at runtime and allows to dispatch commands similarly how SW can control the KMAC HWIP.
+  This allows to operate the KMAC HWIP in the eXtendable-Output-Function (XOF) mode.
 
-KMAC/SHA3 HWIP has an option to receive the secret key from the KeyMgr via sideload key interface.
-The software should set [`CFG_SHADOWED.sideload`](registers.md#cfg_shadowed) to use the KeyMgr sideloaded key for the SW-initiated KMAC operation.
-`keymgr_pkg::hw_key_t` defines the structure of the sideloaded key.
-KeyMgr provides the sideloaded key in two-share masked form regardless of the compile-time parameter `EnMasking`.
-If `EnMasking` is not defined, the KMAC merges the shared key to the unmasked form before uses the key.
+#### Simple application interface
 
-The IP has N number of the application interface. The apps connected to the KMAC IP may initiate the SHA3/cSHAKE/KMAC hashing operation via the application interface `kmac_pkg::app_{req|rsp}_t`.
-The type of the hashing operation is determined in the compile-time parameter `kmac_pkg::AppCfg`.
+![](../doc/simple-application-interface.svg)
+
+The IP has N simple application interfaces.
+The apps connected to the KMAC IP may initiate the SHA3/cSHAKE/KMAC hashing operation via the application interface `kmac_pkg::app_{req|rsp}_t`.
+The type of the hashing operation is determined by the compile-time parameter `kmac_pkg::AppCfg`.
+This parameter also controls whether the prefix is defined at compile-time or the prefix should be taken from the [`PREFIX`](registers.md#prefix) CSR.
 
 | Index | App      | Algorithm | Prefix
 |:-----:|:--------:|:---------:|------------
-| 0     | KeyMgr   | KMAC      | CSR prefix
+| 0     | KeyMgr   | KMAC256   | "KMAC"
 | 1     | LC_CTRL  | cSHAKE128 | "LC_CTRL"
 | 2     | ROM_CTRL | cSHAKE256 | "ROM_CTRL"
 
 In the current version of IP, the IP has three application interfaces, which are KeyMgr, LC_CTRL, and ROM_CTRL.
-KeyMgr uses the KMAC operation with CSR prefix value.
-LC_CTRL and ROM_CTRL use the cSHAKE operation with the compile-time parameter prefixes.
+KeyMgr uses the KMAC operation and the prefix is defined by a compile-time parameter.
+LC_CTRL and ROM_CTRL use the cSHAKE operation with prefixes defined by a compile-time parameter.
 
 The app sends 64-bit data (`MsgWidth`) in a beat with the message strobe signal.
 The state machine inside the AppIntf logic starts when it receives the first valid data from any of the AppIntf.
 The AppIntf module chooses the winner based on the fixed priority.
-Then it forwards the selected App to the next stage.
+Then it forwards the selected App to the next stage and generates the required commands.
 Because this logic sees the first valid data as an initiator, the Apps cannot run the hashing operation with an empty message.
 After the logic switches to accept the message bitstream from the selected App, if the hashing operation is KMAC, the logic forces the sideloaded key to be used as a secret.
-Also it ignores the command issued from the software.
-Instead it generates the commands and sends them to the KMAC core.
+As long as an app interface is active, any command issued from the software is ignored.
 
 The last beat of the App data moves the state machine to append the encoded output length if the hashing operation is KMAC.
-The output length is the digest width, which is 256 bit always.
-It means that the logic appends `0x020100` (little-endian) to the end of the message.
-The output data from this logic goes to MSG_FIFO.
-Because the MSG_FIFO handles un-aligned data inside, KeyMgr interface logic sends the encoded output length value in a separate beat.
+The output length depends on the compile-time selected digest width and is sent in a separate beat.
+The packer in the MSG_FIFO then assembles this to a full message.
 
 After the encoded output length is pushed to the KMAC core, the interface logic issues a Process command to run the hashing logic.
 
 After hashing operation is completed, KMAC does not raise a `kmac_done` interrupt; rather it triggers the `done` status in the App response channel.
 The result digest always comes in two shares.
 If the `EnMasking` parameter is not set, the second share is always zero.
+
+In case of an error, the simple application raises the error flag of the response channel but continues operation and returns garbage data.
+This ensures the KMAC HWIP is returned into idle mode and is ready to serve the next request.
+
+### Command-based application interface
+The interface consists of a request and response channel.
+Over the request channel an application can send commands and data.
+The interface responds to the commands or sends back the digest data via the response channel.
+Both channels are valid/ready handshaked and can be fully pipelined.
+> The request and response channel are designed such that there is NO valid locked-in requirement, meaning an application can withdraw a request at any time.
+> This is required as an application sending commands can potentially crash unexpectedly, e.g., when OTBN escalates due to a detected fault.
+
+```wavejson
+{
+  signal: [
+    ['Request',
+    {name: 'req_valid',   wave: '10.'},
+    {name: 'req_ready',   wave: '101'},
+    {name: 'req_is_data', wave: '0x.'},
+    {name: 'data_s0',     wave: '3x.', data: ["CMD"]},
+    {name: 'data_s1',     wave: '3x.', data: 'data'},
+    {name: 'strb',        wave: 'x..'},
+    ],
+    {},
+    ['Response',
+    {name: 'rsp_valid',   wave: '010'},
+    {name: 'rsp_ready',   wave: '1..'},
+    {name: 'rsp_is_data', wave: 'x0x'},
+    {name: 'digest_s0',   wave: 'x3x', data: ["ACK / ERR"]},
+    {name: 'digest_s1',   wave: 'x3x', data: 'info'},
+    ],
+  ],
+  edge: [],
+  foot:{
+   tock:0
+ },
+ config:{hscale:2},
+}
+```
+
+There are the following commands available:
+- START
+  - This command is used to claim the KMAC interface and send the desired hashing configuration.
+  - The CmdApp will check the sent configuration and if it is valid will wait until the KMAC is idle.
+  - Once KMAC is claimed, the CmdApp will send an acknowledge response. The application can now send the message.
+  - If the configuration is invalid, an error response is sent back. The CmdApp won't place a claim request.
+- PROCESS
+  - Once the complete message has been transferred, the app has to send a PROCESS command.
+  - The KMAC will then compute the first hash.
+  - There is no acknowledgement response for the PROCESS command.
+  - As soon as the hash is available, the CmdApp places data responses on the response channel.
+  - It pushes the digest data until the whole rate is sent.
+- RUN
+  - The app can send a RUN command at any time after the PROCESS command.
+  - The CmdApp acknowledges a RUN command by placing a response on the response channel.
+  - The connecting app is responsible to discard any in-flight data responses until the RUN acknowledgement is received.
+    This can happen if the app did send the RUN command before it received all digest responses.
+  - While KMAC is computing the next hash part, all requests are stalled.
+- DONE
+  - At any time after the PROCESS or RUN command a DONE command releases the KMAC claim.
+  - The app is responsible to drain the response channel until it receives the ACK for the DONE command.
+
+
+The full process is shown in the following wave.
+```wavejson
+{
+  signal: [
+    {name: 'CmdApp state',wave: '222......2.2..2.2..2.2.', data: ["Idle","WaG","Aborbing","Processing","Pushing","Pushed","Squeezing","Pushing","Idle"]},
+    {},
+    ['Request',
+    {name: 'req_valid',   wave: '1........0.....10...10.'},
+    {name: 'req_ready',   wave: '101.0.1..0.1....0..1...',
+                          node: '....a.b..c.d....g..h...'},
+    {name: 'req_is_data', wave: '01......0x.....0x......'},
+    {name: 'data_s0',     wave: '32.22..23x.....3x...3x.', data: ["START", "", "", "", "", "PRC", "RUN", "DONE"]},
+    {name: 'data_s1',     wave: 'x2.22..2x..............'},
+    {name: 'strb',        wave: 'x2.....2x..............', data: '0xFF 0x01'},
+    ],
+    {},
+    ['Response',
+    {name: 'rsp_valid',   wave: '10......10.1..010..1.0.',
+                          node: '...........e..f........'},
+    {name: 'rsp_ready',   wave: '1......................'},
+    {name: 'rsp_is_data', wave: '0x......0x.1..x0x..10x.'},
+    {name: 'digest_s0',   wave: '3x......3x.222x3x..23x.', data: ["ACK", "ACK", "", "", "", "ACK", "", "ACK"]},
+    {name: 'digest_s1',   wave: 'x..........222x....2x..'},
+    ],
+  ],
+  edge: [
+    'a~b rate full', 'c~d processing', 'e~f pushing digest', 'g~h squeezing'
+  ],
+  foot:{
+   tock:0
+ },
+ config:{hscale:1},
+}
+```
+
+When sending the start command, the desired hashing configuration is sent along.
+The following configuration must be provided by the app (usually residing in CFG_SHADOWED):
+- mode: select the keccak hashing mode
+- kstrength: select the strength
+- kmac_en: If 1 prepend the key to the message / operate in kmac mode
+- en_unsupported_modestrength: In case such a configuration is desired
+- msg_mask: If 1, the message is masked if mode is KMAC. Keep it for full flexibility
+
+The following configuration must be set by SW prior the CmdApp can be used:
+- entropy_ready: Only SW because SW must set this up
+- entropy_mode: Only SW because SW must set this up
+- entropy_fast_process: Should be deactivated. Set by Ibex?
+- sideload: Whether to use the Key from the Regs or Keymgr if performing a KMAC operation. Only SW because SW must provide the key.
+- prefix (for cSHAKE or KMAC): The software must write the desired prefix to this register.
+  The prefix from the CSR is used by the CmdApp for cSHAKE operation.
+  For KMAC operations, the CmdApp uses a fixed prefix ("KMAC" and the empty customization string).
+  This avoids that we have to check the prefix for correctness as "KMAC" is required by the standard.
+
+> It is the responsibility of the SW managing the system to ensure this configuration is set prior an application makes use of the CmdApp interface.
+
+The following configuration options are irrelevant as they have no effect:
+- state_endianness: Only affects SW
+- msg_endianness: Only affects SW
+
+#### Interface details
+
+Internally, the interface has the following FSM:
+
+```mermaid
+stateDiagram-v2
+  StIdle: IDLE
+  StWaitAfterGrant: Wait after Grant
+  StAbsorbing: Absorbing
+  StProcessing: Processing
+  StPushingDigest: Pushing digest
+  StDigestPushed: Digest pushed
+  StSqueezing: Squeezing
+
+  StResponding: Responding
+  StError: Error
+
+  [*] --> StIdle
+  StIdle           --> StWaitAfterGrant: granted
+  StWaitAfterGrant --> StAbsorbing
+  StAbsorbing      --> StProcessing: cmd_i == PROCESS
+  StProcessing     --> StPushingDigest: absorbed_i
+  StPushingDigest  --> StDigestPushed: last Digest chunk sent
+  StPushingDigest  --> StSqueezing: cmd_i == RUN
+  StDigestPushed   --> StSqueezing: cmd_i == RUN
+  StPushingDigest  --> StIdle: cmd_i == DONE
+  StDigestPushed   --> StIdle: cmd_i == DONE
+  StSqueezing      --> StPushingDigest: block_processed_i
+
+  StError --> StIdle: err_processed_i
+```
+
+The `Error` state is terminal until the KMAC gets reset by SW.
+SW can clear non fatal errors by reading the error state and writing the `err_processed` bit.
+Any state can transition into the error state.
+
+The special state `Responding` handles the backpressure of the response channel as described below.
+The transitions into and out of this state are not drawn for clarity.
+
+##### Handling response backpressure
+Backpressure on the response channel can arise, for example, if an application currently cannot accept responses because the next digest part cannot yet be processed.
+In this case the CmdApp transitions into the `Responding` state and waits until the pending response is accepted.
+During this waiting state any new request is stalled.
+Once the response is handshaked, the CmdApp transitions into the next state.
+
+
+An example where the acknowledgement of the START command is delayed is shown below.
+```wavejson
+{
+  signal: [
+    {name: 'CmdApp',     wave: '22...22..', data: ["Idle","Responding","WaG","Absorbing","Pushing","Pushed","Squeezing","Pushing","Idle"]},
+    {},
+    ['Request',
+    {name: 'req_valid',   wave: '1........'},
+    {name: 'req_ready',   wave: '10....1..'},
+    {name: 'req_is_data', wave: '01.......'},
+    {name: 'data_s0',     wave: '32.....22', data: ["START"]},
+    {name: 'data_s1',     wave: 'x2.....22'},
+    {name: 'strb',        wave: 'x2.......', data: '0xFF 0x01'},
+    ],
+    {},
+    ['Response',
+    {name: 'rsp_valid',   wave: '1.....0..'},
+    {name: 'rsp_ready',   wave: '0....1...'},
+    {name: 'rsp_is_data', wave: '0.....x..'},
+    {name: 'digest_s0',   wave: '3.....x..', data: ["ACK", "ACK", "", "", "", "ACK", "", "ACK"]},
+    {name: 'digest_s1',   wave: 'x........'},
+    ],
+  ],
+  edge: [],
+  foot:{
+   tock:0
+ },
+ config:{hscale:1},
+}
+```
+
+Not all states can generate responses.
+The states capable of producing a response are:
+- Idle
+- Absorbing
+- Pushing Digest
+- Digest Pushed
+
+Most responses are sent when transitioning into the next state.
+Thus, after a delayed response is sent, the state machine can directly jump to the next state which is specified when the response is placed for the first time.
+Therefore, from the Responding state the following states are reachable:
+- Idle
+- Absorbing
+- Pushing Digest
+- Digest Pushed
+
+##### Delayed START command because KMAC is not ready
+In case the KMAC is not idle when a START command arrives the interface tries to acquire the KMAC until either the interface withdraws its request or it succeeds.
+```wavejson
+{
+  signal: [
+    {name: 'CmdApp',     wave: '2.......22..', data: ["Idle","WaG","Absorbing","Pushing","Pushed","Squeezing","Pushing","Idle"]},
+    {},
+    ['Request',
+    {name: 'req_valid',   wave: '1.0..1......'},
+    {name: 'req_ready',   wave: '0......101..'},
+    {name: 'req_is_data', wave: '0.x..0..1...'},
+    {name: 'data_s0',     wave: '3.x..3..2.22', data: ["START","START"]},
+    {name: 'data_s1',     wave: 'x.......2.22'},
+    {name: 'strb',        wave: 'x.......2...', data: '0xFF 0x01'},
+    ],
+    {},
+    ['Response',
+    {name: 'rsp_valid',   wave: '0......10...'},
+    {name: 'rsp_ready',   wave: '1...........'},
+    {name: 'rsp_is_data', wave: 'x......0xx..'},
+    {name: 'digest_s0',   wave: 'x......3x...', data: ["ACK"]},
+    {name: 'digest_s1',   wave: 'x...........'},
+    ],
+  ],
+  edge: [],
+  foot:{
+   tock:0
+ },
+ config:{hscale:1},
+}
+```
+
+##### Sending a DONE or RUN command
+When the KMAC is pushing the digest, the app can at any point in time send a DONE or RUN command.
+If this command arrives before all digest responses are handshaked, its acknowledge response is immediately sent back.
+This discards any pending data response and thus the response channel does not guarantee that the data is stable once the valid has been asserted.
+An example is shown below and in cycle 5 the `digest_s0` is changed despite a pending data response has not yet been handshaked.
+
+```wavejson
+{
+  signal: [
+    {name: 'CmdApp',     wave: '2....2..2.', data: ["Pushing","Responding","Idle","Pushing","Pushed","Squeezing","Pushing","Idle"]},
+    {},
+    ['Request',
+    {name: 'req_valid',   wave: '0....1....'},
+    {name: 'req_ready',   wave: '0....10...'},
+    {name: 'req_is_data', wave: 'x....0x...'},
+    {name: 'data_s0',     wave: 'x....3x...', data: ["DONE"]},
+    {name: 'data_s1',     wave: 'x.........'},
+    {name: 'strb',        wave: 'x.........', data: '0xFF 0x01'},
+    ],
+    {},
+    ['Response',
+    {name: 'rsp_valid',   wave: '1.......0.'},
+    {name: 'rsp_ready',   wave: '10.....1..'},
+    {name: 'rsp_is_data', wave: '1....0..x.'},
+    {name: 'digest_s0',   wave: '22...3..x.', data: ["","","ACK"]},
+    {name: 'digest_s1',   wave: '22...x....'},
+    ],
+  ],
+  edge: [],
+  foot:{
+   tock:0
+ },
+ config:{hscale:1},
+}
+```
+
+#### Error handling
+If there occurs an error, either because the CmdApp receives an invalid command or there is an internal KMAC error like an entropy problem, the CmdApp sends an error response back to the application.
+Errors caused by the application do not affect the CmdApp state.
+KMAC internal errors however will set the CmdApp into the error state and only SW can recover it.
+In this error state all commands are discarded and an error response is returned.
+
+- Application errors:
+  - The application sends a START command with invalid configuration
+    - The CmdApp responds with an error response and does not claim the KMAC hardware.
+  - The entropy is not ready when receiving a START command
+    - The CmdApp responds with an error response and does not claim the KMAC hardware.
+  - The application violates the command order.
+    - If the applications sends, e.g., a DONE command before a PROCESS command, the command is ignored and the CmdApp responds with an error.
+      The CmdApp stays in the current state.
+
+- KMAC internal errors:
+  - A fatal alert is raised:
+    - shadowed_storage_err: The configuration CSR is attacked.
+    - alert_intg_err: Register file detects an integrity error
+    - sparse_fsm_error: A FSM enters an invalid state.
+    - counter_error: Any of the internal prim counters detects an error
+    - control_integrity_error: SHA3 core detects an error on its storage (state)
+  - Other error sources which are reported to the error register and raise an error interrupt:
+    - sha3_err: Asserted if SHA3 core detects an invalid command.
+      Relevant to check because commands could be FIed.
+    - app_err:
+      - FSM error: Asserted if key from KeyMgr is used but it is not valid (StKeyMgrErrKeyNotValid).
+        Must be handled.
+      - MUX error:
+        - SW issues command when app is active.
+        - SW pushed message when not in SW state.
+        - Both errors have no effect on the correctness of the result for the app interface.
+          Thus save to ignore but still tracked as baked into app_err and fsm error must be handled.
+    - entropy_err: Asserted if there is an entropy problem like the wait timer expired or the wrong entropy mode is configured.
+      Must be handled.
+      Does not factor into any other error!
+    - errchecker_err: SW sends invalid command, prefix is wrong, configuration is invalid, or entropy not ready.
+      Has no effect on CmdApp, save to ignore.
+    - msgfifo_err: Asserted if an integrity error for the packer or fifo arises.
+      msg fifo should be bypassed / is not used for CmdApp.
+      Could be ignored but anyway factors into the fatal counter_error.
+  - Irrelevant errors:
+    - shadowed_update_err: Asserted if there is a problem when SW updates the configuration.
+      Not relevant as only triggerable by SW.
+
+Any KMAC internal error will raise the error interrupt.
+As of this, we also response all of these errors back to the application.
+Even if some of these errors could be ignored, we handle all errors to be consistent regarding the information the SW sees.
+It would be confusing if an error is not reported via the CmdApp interface but the interrupt to SW is raised and the error register shows that an error occurred.
+
+##### Error recovery
+If an error occurs, the CmdApp transitions into an error state and cannot recover the KMAC.
+Only SW can recover the KMAC and so reset the CmdApp state.
+The reasons are:
+- Some errors cannot be resolved by the CmdApp as it cannot set the key for example.
+- If an error occurs the entropy is not ready anymore.
+  It is not sensible that the CmdApp can set the entropy ready as this requires more system state information which only SW has.
+
+When the SW recovers the KMAC, the following signals are of interest to bring back the CmdApp to Idle.
+- err_processed: This signal is pulsed when SW writes to this bit to indicate that SW has read the error reason and handled accordingly.
+  It resets the state.
+- clear_after_error: kmac_app sets this when it has successfully reset the KMAC core state back to idle.
+  It resets the errchk state only.
+
+#### Recovering KMAC when application crashes
+If the application controlling the CmdApp unexpectedly crashes, the KMAC would reside for ever in the CmdApp state.
+To gracefully recover the KMAC without triggering the hardware reset, SW can take over control of KMAC by writing to the SW takeover bit.
+When this bit is written, the KMAC transfers ownership from the CmdApp to the SW.
+SW then can properly bring back the KMAC to the idle state by issuing the required commands.
 
 ### Entropy Generator
 
