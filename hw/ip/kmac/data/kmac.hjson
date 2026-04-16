@@ -215,6 +215,13 @@
       package: "kmac_pkg"
       width:   "NumAppIntf"
     }
+    { struct:  "cmd_app"
+      type:    "req_rsp"
+      name:    "cmd_app"
+      act:     "rsp"
+      package: "kmac_pkg"
+      width:   "1"
+    }
     { struct:  "edn"
       type:    "req_rsp"
       name:    "entropy"

@@ -63,6 +63,10 @@ module kmac
   input  app_req_t [NumAppIntf-1:0] app_i,
   output app_rsp_t [NumAppIntf-1:0] app_o,
 
+  // Command-based application interface
+  input  capp_req_t cmd_app_i,
+  output capp_rsp_t cmd_app_o,
+
   // EDN interface
   output edn_pkg::edn_req_t entropy_o,
   input  edn_pkg::edn_rsp_t entropy_i,
@@ -217,12 +221,32 @@ module kmac
   logic [kmac_pkg::MsgStrbW-1:0] msgfifo_strb        ;
   logic                          msgfifo_ready       ;
 
-  if (EnMasking) begin : gen_msgfifo_data_masked
-    // In Masked mode, the input message data is split into two shares.
-    // Only concern, however, here is the secret key. So message can be
-    // put into only one share and other is 0.
-    assign msgfifo_data[1] = '0;
-  end
+  // TODO: Check which information must be propagated back to the cmdapp interface.
+  // 32-bit packed STATUS and INTR_STATE words for the STATUS command response.
+  // Bit layout matches the KMAC STATUS and INTR_STATE register definitions.
+  logic [31:0] capp_status_word;
+  logic [31:0] capp_intr_state_word;
+
+  assign capp_status_word = {
+    14'b0,
+    hw2reg.status.alert_recov_ctrl_update_err.d,  // [17]
+    hw2reg.status.alert_fatal_fault.d,            // [16]
+    hw2reg.status.fifo_full.d,                    // [15]
+    hw2reg.status.fifo_empty.d,                   // [14]
+    1'b0,                                         // [13]
+    hw2reg.status.fifo_depth.d,                   // [12:8]
+    5'b0,                                         // [7:3]
+    hw2reg.status.sha3_squeeze.d,                 // [2]
+    hw2reg.status.sha3_absorb.d,                  // [1]
+    hw2reg.status.sha3_idle.d                     // [0]
+  };
+
+  assign capp_intr_state_word = {
+    29'b0,
+    reg2hw.intr_state.kmac_err.q,                 // [2]
+    reg2hw.intr_state.fifo_empty.q,               // [1]
+    reg2hw.intr_state.kmac_done.q                 // [0]
+  };
 
   // TL-UL Adapter(MSG_FIFO) signals
   logic        tlram_req;
@@ -247,6 +271,7 @@ module kmac
   logic [kmac_pkg::MsgWidth-1:0] mux2fifo_data[Share];
   logic [kmac_pkg::MsgWidth-1:0] mux2fifo_strb;
   logic                          mux2fifo_ready;
+  logic                          mux2fifo_bypass_fifo;
 
   // KMAC to SHA3 core
   logic                          msg_valid       ;
@@ -274,6 +299,7 @@ module kmac
   logic                       reg_kmac_en,         app_kmac_en;
   sha3_pkg::sha3_mode_e       reg_sha3_mode,       app_sha3_mode;
   sha3_pkg::keccak_strength_e reg_keccak_strength, app_keccak_strength;
+  logic                       reg_msg_mask;
 
   // RegIF of enabling unsupported mode & strength
   logic cfg_en_unsupported_modestrength;
@@ -337,7 +363,7 @@ module kmac
   logic alert_intg_err;
 
   // Life cycle
-  localparam int unsigned NumLcSyncCopies = 6;
+  localparam int unsigned NumLcSyncCopies = 7;
   lc_ctrl_pkg::lc_tx_t [NumLcSyncCopies-1:0] lc_escalate_en_sync;
   lc_ctrl_pkg::lc_tx_t [NumLcSyncCopies-1:0] lc_escalate_en;
 
@@ -550,7 +576,6 @@ module kmac
   assign entropy_fast_process = reg2hw.cfg_shadowed.entropy_fast_process.q;
 
   // msg_mask_en turns on the message LFSR when KMAC is enabled.
-  assign cfg_msg_mask = reg2hw.cfg_shadowed.msg_mask.q;
   assign msg_mask_en = cfg_msg_mask & msg_valid & msg_ready;
 
   // Enable unsupported mode & strength combination
@@ -577,10 +602,11 @@ module kmac
   // Make sure the field has latch in reg_top
   `ASSERT(ErrProcessedLatched_A, $rose(err_processed) |=> !err_processed)
 
-  // App mode, strength, kmac_en
+  // App mode, strength, KMAC enable and message masking enable
   assign reg_kmac_en         = reg2hw.cfg_shadowed.kmac_en.q;
   assign reg_sha3_mode       = sha3_pkg::sha3_mode_e'(reg2hw.cfg_shadowed.mode.q);
   assign reg_keccak_strength = sha3_pkg::keccak_strength_e'(reg2hw.cfg_shadowed.kstrength.q);
+  assign reg_msg_mask        = reg2hw.cfg_shadowed.msg_mask.q;
 
   ///////////////
   // Interrupt //
@@ -724,10 +750,12 @@ module kmac
   logic counter_error, sha3_count_error, key_index_error;
   logic msgfifo_counter_error;
   logic kmac_entropy_hash_counter_error;
+  logic capp_counter_error;
   assign counter_error = sha3_count_error
                        | kmac_entropy_hash_counter_error
                        | key_index_error
-                       | msgfifo_counter_error;
+                       | msgfifo_counter_error
+                       | capp_counter_error;
 
   assign msgfifo_counter_error = msgfifo_err.valid;
 
@@ -736,12 +764,14 @@ module kmac
   logic sha3_state_error, kmac_errchk_state_error;
   logic kmac_core_state_error, kmac_app_state_error;
   logic kmac_entropy_state_error, kmac_state_error;
+  logic capp_state_error;
   assign sparse_fsm_error = sha3_state_error
                           | kmac_errchk_state_error
                           | kmac_core_state_error
                           | kmac_app_state_error
                           | kmac_entropy_state_error
-                          | kmac_state_error;
+                          | kmac_state_error
+                          | capp_state_error;
 
   // Control Signal Integrity Errors
   logic control_integrity_error;
@@ -1045,6 +1075,67 @@ module kmac
   logic unused_tlram_addr;
   assign unused_tlram_addr = &{1'b0, tlram_addr};
 
+  kmac_cmd_e                   capp_cmd;
+  logic                        capp_granted;
+  logic                        capp_kmac_en;
+  sha3_pkg::sha3_mode_e        capp_sha3_mode;
+  sha3_pkg::keccak_strength_e  capp_keccak_strength;
+  logic                        capp_msg_mask;
+  logic                        capp_data_valid;
+  logic [MsgWidth-1:0]         capp_data_data[Share];
+  logic [MsgStrbW-1:0]         capp_data_strb;
+  logic                        capp_data_ready;
+  logic                        capp_state_valid;
+  logic [sha3_pkg::StateW-1:0] capp_state [Share];
+  sha3_pkg::keccak_strength_e  capp_state_strength;
+  sha3_pkg::sha3_mode_e        capp_state_mode;
+
+  // Command-based application interface
+  kmac_cmd_app #(
+    .EnMasking(EnMasking)
+  ) u_cmd_app (
+    .clk_i,
+    .rst_ni,
+
+    .req_i(cmd_app_i),
+    .rsp_o(cmd_app_o),
+
+    // TODO: implement responses and error propagation
+    .status_i    (capp_status_word),
+    .intr_state_i(capp_intr_state_word),
+    .err_code_i  ('0),
+
+    .cmd_o    (capp_cmd),
+    .granted_i(capp_granted),
+
+    .kmac_en_o        (capp_kmac_en),
+    .sha3_mode_o      (capp_sha3_mode),
+    .keccak_strength_o(capp_keccak_strength),
+    .msg_mask_o       (capp_msg_mask),
+
+    // Data to kmac_app
+    .data_valid_o(capp_data_valid),
+    .data_data_o (capp_data_data),
+    .data_strb_o (capp_data_strb),
+    .data_ready_i(capp_data_ready),
+
+    // From kmac_app
+    .state_valid_i   (capp_state_valid),
+    .state_i         (capp_state),
+    .state_strength_i(capp_state_strength),
+    .state_mode_i    (capp_state_mode),
+  
+    .absorbed_i           (sha3_absorbed),
+    .block_processed_i    (sha3_block_processed),
+    .entropy_ready_pulse_i(entropy_ready),
+
+    .err_processed_i (err_processed),
+    .lc_escalate_en_i(lc_escalate_en[6]),
+
+    .sparse_fsm_error_o(capp_state_error),
+    .counter_error_o   (capp_counter_error)
+  );
+
   // Application interface Mux/Demux
   kmac_app #(
     .EnMasking(EnMasking),
@@ -1060,9 +1151,10 @@ module kmac
 
     .reg_prefix_i (reg_ns_prefix),
 
-    .reg_kmac_en_i         (reg_kmac_en),
-    .reg_sha3_mode_i       (reg_sha3_mode),
-    .reg_keccak_strength_i (reg_keccak_strength),
+    .reg_kmac_en_i        (reg_kmac_en),
+    .reg_sha3_mode_i      (reg_sha3_mode),
+    .reg_keccak_strength_i(reg_keccak_strength),
+    .reg_msg_mask_i       (reg_msg_mask),
 
     // data from tl_adapter
     .sw_valid_i (sw_msg_valid),
@@ -1083,46 +1175,67 @@ module kmac
     .key_valid_o (key_valid),
 
     // to MSG_FIFO
-    .kmac_valid_o (mux2fifo_valid),
-    .kmac_data_o  (mux2fifo_data),
-    .kmac_strb_o  (mux2fifo_strb),
-    .kmac_ready_i (mux2fifo_ready),
+    .kmac_valid_o      (mux2fifo_valid),
+    .kmac_data_o       (mux2fifo_data),
+    .kmac_strb_o       (mux2fifo_strb),
+    .kmac_ready_i      (mux2fifo_ready),
+    .kmac_bypass_fifo_o(mux2fifo_bypass_fifo),
 
     // to KMAC Core
-    .kmac_en_o (app_kmac_en),
+    .kmac_en_o(app_kmac_en),
 
     // to SHA3 Core
-    .sha3_prefix_o     (ns_prefix),
-    .sha3_mode_o       (app_sha3_mode),
-    .keccak_strength_o (app_keccak_strength),
+    .sha3_prefix_o    (ns_prefix),
+    .sha3_mode_o      (app_sha3_mode),
+    .keccak_strength_o(app_keccak_strength),
+    .cfg_msg_mask_o   (cfg_msg_mask),
 
     // Keccak state from SHA3 core
-    .keccak_state_valid_i (state_valid),
-    .keccak_state_i       (state),
+    .keccak_state_valid_i(state_valid),
+    .keccak_state_i      (state),
 
     // to STATE TL Window
-    .reg_state_valid_o    (reg_state_valid),
-    .reg_state_o          (reg_state),
+    .reg_state_valid_o(reg_state_valid),
+    .reg_state_o      (reg_state),
 
     // Configuration: Sideloaded Key
-    .keymgr_key_en_i      (reg2hw.cfg_shadowed.sideload.q),
-
-    .absorbed_i (sha3_absorbed), // from SHA3
-    .absorbed_o (app_absorbed),  // to SW
-
-    .app_active_o(app_active),
-
-    .error_i         (sha3_err.valid),
-    .err_processed_i (err_processed),
-
-    .clear_after_error_o (clear_after_error),
+    .keymgr_key_en_i(reg2hw.cfg_shadowed.sideload.q),
 
     // Command interface
-    .sw_cmd_i (checked_sw_cmd),
-    .cmd_o    (kmac_cmd),
+    .sw_cmd_i  (checked_sw_cmd),
+    .absorbed_i(sha3_absorbed), // from SHA3
+    .cmd_o     (kmac_cmd),
+
+    .absorbed_o(app_absorbed),  // to SW
+    .app_active_o(app_active),
 
     // Status
-    .entropy_ready_i (entropy_configured),
+    .entropy_ready_i(entropy_configured),
+
+    .error_i        (sha3_err.valid),
+    .err_processed_i(err_processed),
+
+    .clear_after_error_o(clear_after_error),
+
+    // Command-based app interface
+    .capp_cmd_i        (capp_cmd),
+    .capp_granted_o    (capp_granted),
+    .capp_sw_takeover_i('0), // TODO
+
+    .capp_kmac_en_i        (capp_kmac_en),
+    .capp_sha3_mode_i      (capp_sha3_mode),
+    .capp_keccak_strength_i(capp_keccak_strength),
+    .capp_msg_mask_i       (capp_msg_mask),
+
+    .capp_valid_i(capp_data_valid),
+    .capp_data_i (capp_data_data),
+    .capp_strb_i (capp_data_strb),
+    .capp_ready_o(capp_data_ready),
+
+    .capp_state_valid_o   (capp_state_valid),
+    .capp_state_o         (capp_state),
+    .capp_state_strength_o(capp_state_strength),
+    .capp_state_mode_o    (capp_state_mode),
 
     // LC escalation
     .lc_escalate_en_i (lc_escalate_en[3]),
@@ -1130,14 +1243,13 @@ module kmac
     // Error report
     .error_o            (app_err),
     .sparse_fsm_error_o (kmac_app_state_error)
-
   );
 
   // Message FIFO
   kmac_msgfifo #(
-    .OutWidth  (kmac_pkg::MsgWidth),
-    .MsgDepth  (kmac_pkg::MsgFifoDepth),
-    .EnMasking (EnMasking)
+    .OutWidth(kmac_pkg::MsgWidth),
+    .MsgDepth(kmac_pkg::MsgFifoDepth),
+    .EnMasking(EnMasking)
   ) u_msgfifo (
     .clk_i,
     .rst_ni,
@@ -1146,22 +1258,23 @@ module kmac
     .fifo_data_i  (mux2fifo_data),
     .fifo_strb_i  (mux2fifo_strb),
     .fifo_ready_o (mux2fifo_ready),
+    .fifo_bypass_i(mux2fifo_bypass_fifo),
 
-    .msg_valid_o (msgfifo_valid),
-    .msg_data_o  (msgfifo_data[0]),
-    .msg_strb_o  (msgfifo_strb),
-    .msg_ready_i (msgfifo_ready),
+    .msg_valid_o(msgfifo_valid),
+    .msg_data_o (msgfifo_data),
+    .msg_strb_o (msgfifo_strb),
+    .msg_ready_i(msgfifo_ready),
 
-    .fifo_empty_o (msgfifo_empty), // intr and status
-    .fifo_full_o  (msgfifo_full),  // connected to status only
-    .fifo_depth_o (msgfifo_depth),
+    .fifo_empty_o(msgfifo_empty), // intr and status
+    .fifo_full_o (msgfifo_full),  // connected to status only
+    .fifo_depth_o(msgfifo_depth),
 
-    .clear_i (sha3_done),
+    .clear_i(sha3_done),
 
-    .process_i (reg2msgfifo_process ),
-    .process_o (msgfifo2kmac_process),
+    .process_i(reg2msgfifo_process),
+    .process_o(msgfifo2kmac_process),
 
-    .err_o (msgfifo_err)
+    .err_o(msgfifo_err)
   );
 
   logic [sha3_pkg::StateW-1:0] reg_state_tl [Share];
@@ -1556,6 +1669,8 @@ module kmac
                                          alert_tx_o[1])
   `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(KeyIndexCountCheck_A, u_kmac_core.u_key_index_count,
                                          alert_tx_o[1])
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(CmdAppDigestCountCheck_A, u_cmd_app.u_digest_word_count,
+                                         alert_tx_o[1])
 
   // Sparse FSM state error
   `ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(KmacCoreFsmCheck_A, u_kmac_core.u_state_regs, alert_tx_o[1])
@@ -1566,6 +1681,7 @@ module kmac
                                        alert_tx_o[1])
   `ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(ErrorCheckFsmCheck_A, u_errchk.u_state_regs, alert_tx_o[1])
   `ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(KmacFsmCheck_A, u_state_regs, alert_tx_o[1])
+  `ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(CmdAppFsmCheck_A, u_cmd_app.u_state_regs, alert_tx_o[1])
 
   // prim is only instantiated if masking is enabled
   if (EnMasking == 1) begin : g_testassertion

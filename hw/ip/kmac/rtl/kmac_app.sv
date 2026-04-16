@@ -30,6 +30,7 @@ module kmac_app
   input logic                       reg_kmac_en_i,
   input sha3_pkg::sha3_mode_e       reg_sha3_mode_i,
   input sha3_pkg::keccak_strength_e reg_keccak_strength_i,
+  input logic                       reg_msg_mask_i,
 
   // Data from Software
   input                sw_valid_i,
@@ -55,6 +56,7 @@ module kmac_app
   // This strobe is on bit level for the packer. The FIFO will then convert it again to byte level.
   output logic [MsgWidth-1:0] kmac_strb_o,
   input                       kmac_ready_i,
+  output logic                kmac_bypass_fifo_o,
 
   // KMAC Core
   output logic kmac_en_o,
@@ -63,6 +65,7 @@ module kmac_app
   output logic [sha3_pkg::NSRegisterSize*8-1:0] sha3_prefix_o,
   output sha3_pkg::sha3_mode_e                  sha3_mode_o,
   output sha3_pkg::keccak_strength_e            keccak_strength_o,
+  output logic                                  cfg_msg_mask_o,
 
   // STATE from SHA3 Core
   input                        keccak_state_valid_i,
@@ -79,7 +82,7 @@ module kmac_app
   // sideloaded key.
   // If set, the key for KMAC is taken from the KeyMgr sideload interface.
   // If reset, the key is taken from the registers.
-  input logic keymgr_key_en_i,
+  input logic keymgr_key_en_i,  // TODO: rename to sideload_key_i
 
   // Commands
   // Command from software
@@ -106,7 +109,7 @@ module kmac_app
   // This error comes from KMAC/SHA3 engine.
   // KeyMgr interface delivers the error signal to KeyMgr to drop the current op
   // and re-initiate.
-  // If error happens, regardless of SW-initiated or KeyMgr-initiated, the error
+  // If error happens, regardless whether SW, CmdApp, App initiated an operation, the error
   // is reported to the ERR_CODE so that SW can look into.
   input error_i,
 
@@ -115,12 +118,32 @@ module kmac_app
 
   output prim_mubi_pkg::mubi4_t clear_after_error_o,
 
-  // error_o value is pushed to Error FIFO at KMAC/SHA3 top and reported to SW
-  output kmac_pkg::err_t error_o,
+  // Command-based application interface.
+  input  kmac_cmd_e capp_cmd_i,
+  output logic      capp_granted_o,
+  input  logic      capp_sw_takeover_i,
+
+  input logic                       capp_kmac_en_i,
+  input sha3_pkg::sha3_mode_e       capp_sha3_mode_i,
+  input sha3_pkg::keccak_strength_e capp_keccak_strength_i,
+  input logic                       capp_msg_mask_i,
+
+  // Command app strobe is on byte level
+  input                capp_valid_i,
+  input [MsgWidth-1:0] capp_data_i[2], // Always operates on 2 shares!
+  input [MsgStrbW-1:0] capp_strb_i,
+  output logic         capp_ready_o,
+
+  output logic                        capp_state_valid_o,
+  output logic [sha3_pkg::StateW-1:0] capp_state_o[Share],
+  output sha3_pkg::keccak_strength_e  capp_state_strength_o,
+  output sha3_pkg::sha3_mode_e        capp_state_mode_o,
 
   // Life cycle
   input  lc_ctrl_pkg::lc_tx_t lc_escalate_en_i,
 
+  // error_o value is pushed to Error FIFO at KMAC/SHA3 top and reported to SW
+  output kmac_pkg::err_t error_o,
   output logic sparse_fsm_error_o
 );
 
@@ -201,6 +224,9 @@ module kmac_app
   logic [AppIdxW-1:0] app_id, app_id_d;
   logic               clr_appid, set_appid;
 
+  // CmdApp
+  logic capp_capture_config;
+
   // Output length
   logic [OutLenW-1:0] encoded_outlen, encoded_outlen_strb;
 
@@ -217,7 +243,7 @@ module kmac_app
 
   logic service_rejected_error;
   logic service_rejected_error_set, service_rejected_error_clr;
-  logic err_during_sw_d, err_during_sw_q;
+  logic err_during_sw_capp_d, err_during_sw_capp_q;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni)                         service_rejected_error <= 1'b 0;
@@ -331,6 +357,10 @@ module kmac_app
     set_appid = 1'b 0;
     clr_appid = 1'b 0;
 
+    // CmdApp
+    capp_granted_o      = 1'b0;
+    capp_capture_config = 1'b0;
+
     // Commands
     cmd_o = CmdNone;
 
@@ -355,11 +385,28 @@ module kmac_app
         if (arb_valid) begin
           st_d = StAppCfg;
 
-          // choose app_id
+          // choose app_id and latch configuration.
           set_appid = 1'b 1;
+        end else if (capp_cmd_i == CmdStart) begin
+          // We immediately grant the access but we must first latch the configuration before we
+          // can send the start command. This requires that there is at least once cycle delay
+          // before the first data arrives or a process command for an empty message arrives.
+          // TODO: ASSERT THIS and make this per design!! also in the CmdApp!!
+          capp_capture_config = 1'b1;
+          capp_granted_o      = 1'b1;
+          st_d                = StCmdAppInit;
+          // TODO: confirm this:
+          // We assume that the CmdApp checks the validity of the configuration and command order.
+          // Should we check the validity here again and add a transition into the error state?
+          // This is basically what the errchk does for SW commands / configurations.
+          // It is probably ok to assume that CmdApp does the same checks.
+          // For FI protection we would anyway required checks again at the actual core.
+          // Leave it for now, we can also assume that an application ensures the correct order is sent.
+          // -> no we fully trust the CmdApp the same way as we trust the errchk for SW.
         end else if (sw_cmd_i == CmdStart) begin
           st_d = StSw;
-          // Software initiates the sequence
+          // Software initiates the sequence. SW configuration is latched per default in Idle
+          // state.
           cmd_o = CmdStart;
         end else begin
           st_d = StIdle;
@@ -440,6 +487,33 @@ module kmac_app
         end
       end
 
+      StCmdAppInit: begin
+        // Configuration is now latched and we can send the start command.
+        // SW cannot take over in this state.
+        mux_sel        = SelCmdApp;
+        cmd_o          = CmdStart;
+        st_d           = StCmdApp;
+      end
+
+      StCmdApp: begin
+        mux_sel = SelCmdApp;
+        cmd_o = capp_cmd_i;
+
+        if (capp_cmd_i == CmdDone) begin
+          st_d = StIdle;
+        end else begin
+          st_d = StCmdApp;
+        end
+
+        // SW can recover KMAC if app interface unexpectedly shuts down.
+        // The latched configuration towards KMAC is not changed.
+        if (capp_sw_takeover_i) begin
+          st_d = StSw;
+          // How does SW takeover reset the CmdApp?
+          // How does the CmdApp ensure the request channel is empty?
+        end
+      end
+
       StKeyMgrErrKeyNotValid: begin
         st_d = StError;
 
@@ -455,7 +529,7 @@ module kmac_app
         st_d = StError;
 
         // Absorb data on the app interface.
-        fsm_data_ready = ~err_during_sw_q;
+        fsm_data_ready = ~err_during_sw_capp_q;
 
         // Next step depends on two conditions:
         // 1) Error being processed by SW
@@ -463,7 +537,7 @@ module kmac_app
         //    drained.  If the error occurred during a SW operation, the app interface is not
         //    involved, so this condition gets skipped.
         unique case ({err_processed_i,
-                      (app_i[app_id].valid && app_i[app_id].last) || err_during_sw_q})
+                      (app_i[app_id].valid && app_i[app_id].last) || err_during_sw_capp_q})
           2'b00: begin
             // Error not processed by SW and not last data from app interface -> keep current state.
             st_d = StError;
@@ -472,7 +546,7 @@ module kmac_app
             // Error not processed by SW but last data from app interface:
             // 1. Send garbage digest to the app interface (in the next cycle) to complete the
             // transaction.
-            fsm_digest_done_d = ~err_during_sw_q;
+            fsm_digest_done_d = ~err_during_sw_capp_q;
             if (service_rejected_error) begin
               // 2.a) Service was rejected because an app interface tried to configure KMAC while no
               // entropy was available. It is assumed that SW is not loaded yet, so don't wait for
@@ -494,7 +568,7 @@ module kmac_app
             // Error processed by SW and last data from app interface:
             // Send garbage digest to the app interface (in the next cycle) to complete the
             // transaction.
-            fsm_digest_done_d = ~err_during_sw_q;
+            fsm_digest_done_d = ~err_during_sw_capp_q;
             // Flush the message FIFO and let the SHA3 engine compute a digest (which won't be used
             // but serves to bring the SHA3 engine back to the idle state).
             cmd_o = CmdProcess;
@@ -537,7 +611,7 @@ module kmac_app
           cmd_o = CmdDone;
           st_d = StIdle;
           // If error originated from SW, report 'absorbed' to SW.
-          if (err_during_sw_q) begin
+          if (err_during_sw_capp_q) begin
             absorbed_o = prim_mubi_pkg::MuBi4True;
           end
         end
@@ -583,16 +657,17 @@ module kmac_app
   end
 
   // Track errors occurring in SW mode.
-  assign err_during_sw_d =
-      (mux_sel == SelSw) && (st_d inside {StError, StKeyMgrErrKeyNotValid}) ? 1'b1 : // set
-      (st_d == StIdle)                                                      ? 1'b0 : // clear
-      err_during_sw_q;                                                               // hold
+  assign err_during_sw_capp_d =
+      (mux_sel == SelSw || mux_sel == SelCmdApp) &&
+      (st_d inside {StError, StKeyMgrErrKeyNotValid}) ? 1'b1 : // set
+      (st_d == StIdle)                                ? 1'b0 : // clear
+      err_during_sw_capp_q;                                    // hold
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      err_during_sw_q <= 1'b0;
+      err_during_sw_capp_q <= 1'b0;
     end else begin
-      err_during_sw_q <= err_during_sw_d;
+      err_during_sw_capp_q <= err_during_sw_capp_d;
     end
   end
 
@@ -605,26 +680,35 @@ module kmac_app
   assign encoded_outlen_strb = EncodedOutLenStrb[SelKeySize];
 
   // Data mux
-  // This is the main part of the KeyMgr interface logic.
-  // The FSM selects KeyMgr interface in a cycle after it receives the first
-  // valid data from KeyMgr. The ready signal to the KeyMgr data interface
-  // represents the MSG_FIFO ready, only when it is in StKeyMgrMsg state.
-  // After KeyMgr sends last beat, the kmac interface (to MSG_FIFO) is switched
-  // to OutLen. OutLen is pre-defined values. See `EncodeOutLen` parameter above.
+  // This is the main part of the app interface logic.
+  // The FSM selects the active app interface a cycle after it receives the first valid data
+  // by setting app_id. The mux selection signal is then SelApp which connects the data input to
+  // the MSG_FIFO. When the last message chunk is received, the FSM switches the mux to
+  // SelOutLen if the operation is KMAC. The FSM then sends the predefined output length data. See
+  // `EncodeOutLen` parameter above. If the mode is not KMAC, the FSM starts the processing and
+  // switches the mux off (SelNone).
+  // For SW and CmdApp the data path to the MSG_FIFO is always active and its the application's
+  // responsibility to ensure no writes happen after the last message chunk.
   always_comb begin
-    app_data_ready = 1'b 0;
-    sw_ready_o = 1'b 1;
+    app_data_ready     = 1'b0;
+    capp_ready_o       = 1'b0;
+    sw_ready_o         = 1'b1;
+    kmac_valid_o       = 1'b0;
+    kmac_bypass_fifo_o = 1'b0;
 
-    kmac_valid_o = 1'b 0;
-    kmac_data_o = '0;
+    for (int i = 0; i < Share; i++) begin
+      kmac_data_o[i] = '0;
+    end
+
     kmac_strb_o = '0;
 
     unique case (mux_sel_buf_kmac)
       SelApp: begin
         // app_id is valid at this time
-        kmac_valid_o = app_i[app_id].valid;
-        kmac_data_o  = app_i[app_id].data;
-        // Expand strb to bits. prim_packer inside MSG_FIFO accepts the bit masks
+        kmac_valid_o   = app_i[app_id].valid;
+        // App interface supports only one share
+        kmac_data_o[0] = app_i[app_id].data;
+        // Expand strobe from byte to bit level as the packer inside MSG_FIFO operates on bits.
         for (int i = 0 ; i < $bits(app_i[app_id].strb) ; i++) begin
           kmac_strb_o[8*i+:8] = {8{app_i[app_id].strb[i]}};
         end
@@ -633,21 +717,38 @@ module kmac_app
 
       SelOutLen: begin
         // Write encoded output length value
-        kmac_valid_o = 1'b 1; // always write
-        kmac_data_o  = MsgWidth'(encoded_outlen);
-        kmac_strb_o  = MsgWidth'(encoded_outlen_strb);
+        kmac_valid_o   = 1'b 1; // always write
+        // App interface supports only one share
+        kmac_data_o[0] = MsgWidth'(encoded_outlen);
+        kmac_strb_o    = MsgWidth'(encoded_outlen_strb);
       end
 
       SelSw: begin
-        kmac_valid_o = sw_valid_i;
-        kmac_data_o  = sw_data_i ;
-        kmac_strb_o  = sw_strb_i ;
-        sw_ready_o   = kmac_ready_i ;
+        kmac_valid_o   = sw_valid_i;
+        // SW supports only one share
+        kmac_data_o[0] = sw_data_i;
+        // SW strobe is already on bit level
+        kmac_strb_o    = sw_strb_i;
+        sw_ready_o     = kmac_ready_i;
+      end
+
+      SelCmdApp: begin
+        // Bypass message FIFO as it only supports one share.
+        kmac_bypass_fifo_o = 1'b1;
+        kmac_valid_o       = capp_valid_i;
+        kmac_data_o        = capp_data_i;
+        // Expand strobe from byte to bit level as the packer inside MSG_FIFO operates on bits.
+        for (int i = 0 ; i < $bits(capp_strb_i) ; i++) begin
+          kmac_strb_o[8*i+:8] = {8{capp_strb_i[i]}};
+        end
+        capp_ready_o = kmac_ready_i;
       end
 
       default: begin // Incl. SelNone
         kmac_valid_o = 1'b 0;
-        kmac_data_o = '0;
+        for (int i = 0; i < Share; i++) begin
+          kmac_data_o[i] = '0;
+        end
         kmac_strb_o = '0;
       end
 
@@ -673,6 +774,9 @@ module kmac_app
         info: 24'(sw_cmd_i)
       };
     end
+    // TODO: do we need other errors? Probably not, any error from the CmdApp is directly reported
+    // back. It would however make sense to add sanity checks here. Maybe assertions are
+    // sufficient.
   end
 
   logic [AppMuxWidth-1:0] mux_sel_buf_output_logic;
@@ -712,36 +816,73 @@ module kmac_app
   logic reg_state_valid;
   prim_sec_anchor_buf #(
    .Width(1)
-  ) u_prim_buf_state_output_valid (
+  ) u_prim_buf_reg_state_output_valid (
     .in_i(reg_state_valid),
     .out_o(reg_state_valid_o)
   );
 
+  // TODO: Why do we need this buffer? Why isn't the direct input sufficient? And why is it not
+  // required for the data path?
+  // SEC_CM: LOGIC.INTEGRITY
+  logic capp_state_valid;
+  prim_sec_anchor_buf #(
+   .Width(1)
+  ) u_prim_buf_capp_state_output_valid (
+    .in_i(capp_state_valid),
+    .out_o(capp_state_valid_o)
+  );
+
   // Keccak state Demux
   // Keccak state --> Register output is enabled when state is in StSw
+  // Keccak state --> Command app output is enabled when state is in StCmdApp
+  // If key is sideloaded and KMAC is initiated by SW or CmdApp hide the capacity by zeroing it
+  // See also #17508.
+  logic                        public_state_valid;
+  logic [sha3_pkg::StateW-1:0] public_state[Share];
+
   always_comb begin
-    reg_state_valid = 1'b 0;
-    reg_state_o = '{default:'0};
-    if ((mux_sel_buf_output == SelSw) &&
-         lc_ctrl_pkg::lc_tx_test_false_strict(lc_escalate_en_i)) begin
-      reg_state_valid = keccak_state_valid_i;
-      reg_state_o = keccak_state_i;
-      // If key is sideloaded and KMAC is SW initiated
-      // hide the capacity from SW by zeroing (see #17508)
-      if (keymgr_key_en_i) begin
+    public_state_valid = keccak_state_valid_i;
+    public_state       = keccak_state_i;
+    if (keymgr_key_en_i) begin
         for (int i = 0; i < Share; i++) begin
-          unique case (reg_keccak_strength_i)
-            L128: reg_state_o[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L128]] = '0;
-            L224: reg_state_o[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L224]] = '0;
-            L256: reg_state_o[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L256]] = '0;
-            L384: reg_state_o[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L384]] = '0;
-            L512: reg_state_o[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L512]] = '0;
-            default: reg_state_o[i] = '0;
+          unique case (keccak_strength_o)
+            L128: public_state[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L128]] = '0;
+            L224: public_state[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L224]] = '0;
+            L256: public_state[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L256]] = '0;
+            L384: public_state[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L384]] = '0;
+            L512: public_state[i][sha3_pkg::StateW-1-:KeccakBitCapacity[L512]] = '0;
+            default: public_state[i] = '0;
           endcase
         end
       end
+  end
+
+  always_comb begin
+    reg_state_valid = 1'b0;
+    reg_state_o = '{default:'0};
+
+    capp_state_valid = 1'b0;
+    capp_state_o     = '{default:'0};
+
+    // TODO: the reg output is again muxed with reg_state_valid in kmac.sv
+
+    if (lc_ctrl_pkg::lc_tx_test_false_strict(lc_escalate_en_i)) begin
+      unique case (mux_sel_buf_output)
+        SelSw: begin
+          reg_state_valid = public_state_valid;
+          reg_state_o     = public_state;
+        end
+        SelCmdApp: begin
+          capp_state_valid = public_state_valid;
+          capp_state_o     = public_state;
+        end
+        default: ; // Do not expose anything
+      endcase
     end
   end
+
+  assign capp_state_strength_o = keccak_strength_o;
+  assign capp_state_mode_o     = sha3_mode_o;
 
   // Keccak state --> App interface
   always_comb begin
@@ -805,7 +946,7 @@ module kmac_app
         key_valid_o = keymgr_key_used && keymgr_key_i.valid;
       end
 
-      StSw: begin
+      StSw, StCmdApp: begin
         if (keymgr_key_en_i) begin
           // Key from keymgr is actually used if *keyed* MAC is enabled.
           keymgr_key_used = kmac_en_o;
@@ -831,8 +972,9 @@ module kmac_app
   end
 
   // Prefix Demux
-  // For SW, always prefix register.
-  // For App intf, check PrefixMode cfg and if 1, use Prefix cfg.
+  // For SW always take prefix from register.
+  // For CmdApp take prefix from register or fixed KMAC prefix.
+  // For App intf, decide based on PrefixMode configuration.
   always_comb begin
     sha3_prefix_o = '0;
 
@@ -854,39 +996,61 @@ module kmac_app
         sha3_prefix_o = reg_prefix_i;
       end
 
+      StCmdApp: begin
+        // To support KMAC and cSHAKE operation, CmdApp uses a fixed prefix for KMAC operation.
+        // This allows that the CmdApp can perform both KMAC and cSHAKE without intervention
+        // from the SW as SW can pre-configure the prefix used for cSHAKE.
+        // TODO: This does not allow to run KMAC with a different custom string. Is this a problem?
+        // TODO: Do we need this at all? Would it be sufficient if SW can set the prefix both for cSHAKE and KMAC?
+        // This however removes the need to check the prefix for KMAC as it must be ensured it is "KMAC" to adhere to the standard.
+        sha3_prefix_o = capp_kmac_en_i ? NSPrefixW'({EncodedStringEmpty, EncodedStringKMAC}) :
+                                         reg_prefix_i;
+      end
+
       default: begin
         sha3_prefix_o = reg_prefix_i;
       end
     endcase
   end
 
-  // KMAC en / SHA3 mode / Strength
-  //  by default, it uses reg cfg. When app intf reqs come, it uses AppCfg.
+  // KMAC en / SHA3 mode / Strength / message masking enable
+  // Default is configuration from registers (SW). For App interface requests take static values
+  // from AppCfg. For CmdApp use configuration provided from interface.
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       kmac_en_o         <= 1'b 0;
       sha3_mode_o       <= sha3_pkg::Sha3;
       keccak_strength_o <= sha3_pkg::L256;
+      cfg_msg_mask_o    <= 1'b0; // TODO: check if default is sensible
     end else if (clr_appid) begin
       // As App completed, latch reg value
       kmac_en_o         <= reg_kmac_en_i;
       sha3_mode_o       <= reg_sha3_mode_i;
       keccak_strength_o <= reg_keccak_strength_i;
+      cfg_msg_mask_o    <= reg_msg_mask_i;
     end else if (set_appid) begin
       kmac_en_o         <= AppCfg[arb_idx].Mode == AppKMAC ? 1'b 1 : 1'b 0;
       sha3_mode_o       <= AppCfg[arb_idx].Mode == AppSHA3
                            ? sha3_pkg::Sha3 : sha3_pkg::CShake;
       keccak_strength_o <= AppCfg[arb_idx].KeccakStrength ;
+      // App also takes msg_mask enable from registers
+      cfg_msg_mask_o    <= reg_msg_mask_i;
+    end else if (capp_capture_config) begin
+      kmac_en_o         <= capp_kmac_en_i;
+      sha3_mode_o       <= capp_sha3_mode_i;
+      keccak_strength_o <= capp_keccak_strength_i;
+      cfg_msg_mask_o    <= capp_msg_mask_i;
     end else if (st == StIdle) begin
       kmac_en_o         <= reg_kmac_en_i;
       sha3_mode_o       <= reg_sha3_mode_i;
       keccak_strength_o <= reg_keccak_strength_i;
+      cfg_msg_mask_o    <= reg_msg_mask_i;
     end
   end
 
   // Status
   assign app_active_o = (st inside {StAppCfg, StAppMsg, StAppOutLen,
-                                    StAppProcess, StAppWait});
+                                    StAppProcess, StAppWait, StCmdApp, StCmdAppInit});
 
   // Error Reporting ==========================================================
   always_comb begin

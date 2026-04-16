@@ -73,6 +73,9 @@ module tb;
     .app_i              (app_req ),
     .app_o              (app_rsp ),
 
+    .cmd_app_i          ('0),
+    .cmd_app_o          (/* unused */),
+
     // Interrupts
     .intr_kmac_done_o   (interrupts[KmacDone]      ),
     .intr_fifo_empty_o  (interrupts[KmacFifoEmpty] ),

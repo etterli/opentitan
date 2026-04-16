@@ -258,52 +258,54 @@ package kmac_pkg;
 
   // Exporting the app internal mux selection enum into the package. So that DV
   // can use this enum in its scoreboard.
-  // Encoding generated with:
-  // $ ./util/design/sparse-fsm-encode.py -d 3 -m 4 -n 5 \
-  //      -s 713832113 --language=sv
+  // Encoding generated at commit 007b0cf36a using Python 3.10.19 with:
+  // $ ./util/design/sparse-fsm-encode.py --language=sv \
+  //     --seed 713832113 --distance 3 --states 5 --bits 6
   //
   // Hamming distance histogram:
   //
   //  0: --
   //  1: --
   //  2: --
-  //  3: |||||||||||||||||||| (66.67%)
-  //  4: |||||||||| (33.33%)
-  //  5: --
+  //  3: |||||||||||||||||||| (50.00%)
+  //  4: |||||||||||||||| (40.00%)
+  //  5: |||| (10.00%)
+  //  6: --
   //
   // Minimum Hamming distance: 3
-  // Maximum Hamming distance: 4
+  // Maximum Hamming distance: 5
   // Minimum Hamming weight: 1
   // Maximum Hamming weight: 4
   //
-  localparam int AppMuxWidth = 5;
+  localparam int AppMuxWidth = 6;
   typedef enum logic [AppMuxWidth-1:0] {
-    SelNone   = 5'b10100,
-    SelApp    = 5'b11001,
-    SelOutLen = 5'b00010,
-    SelSw     = 5'b01111
-  } app_mux_sel_e ;
+    SelNone   = 6'b101000,
+    SelApp    = 6'b110010,
+    SelOutLen = 6'b000100,
+    SelCmdApp = 6'b001111,
+    SelSw     = 6'b110101
+  } app_mux_sel_e;
 
-// Encoding generated with:
-  // $ ./util/design/sparse-fsm-encode.py -d 3 -m 14 -n 10 \
-  //     -s 2454278799 --language=sv
+  // Encoding generated at commit 007b0cf36a using Python 3.10.19 with:
+  // $ ./util/design/sparse-fsm-encode.py --language=sv \
+  //     --seed 2454278799 --distance 3 --states 16 --bits 10
   //
   // Hamming distance histogram:
   //
   //  0: --
   //  1: --
   //  2: --
-  //  3: |||||||||| (14.29%)
-  //  4: |||||||||||||||||||| (27.47%)
-  //  5: ||||||||||||| (18.68%)
-  //  6: |||||||||||||||| (21.98%)
-  //  7: |||||||| (10.99%)
-  //  8: |||| (6.59%)
-  //  9: --
+  //  3: |||||||| (12.50%)
+  //  4: |||||||||||||||||||| (28.33%)
+  //  5: ||||||||||| (16.67%)
+  //  6: ||||||||||||||||| (24.17%)
+  //  7: ||||||| (10.00%)
+  //  8: ||||| (7.50%)
+  //  9:  (0.83%)
   // 10: --
   //
   // Minimum Hamming distance: 3
-  // Maximum Hamming distance: 8
+  // Maximum Hamming distance: 9
   // Minimum Hamming weight: 3
   // Maximum Hamming weight: 8
   //
@@ -341,18 +343,22 @@ package kmac_pkg;
     // requests from KeyMgr will be discarded.
     StSw = 10'b0010111011,
 
+    // Command-based application interface controlled.
+    StCmdAppInit = 10'b0111011111,
+    StCmdApp     = 10'b1110010111,
+
     // Error KeyNotValid
     // When KeyMgr operates, the secret key is not ready yet.
-    StKeyMgrErrKeyNotValid = 10'b0111011111,
+    StKeyMgrErrKeyNotValid = 10'b0110001100,
 
-    StError = 10'b1110010111,
-    StErrorAwaitSw = 10'b0110001100,
-    StErrorAwaitApp = 10'b1011100000,
-    StErrorWaitAbsorbed = 10'b0010100100,
-    StErrorServiceRejected = 10'b1101000111,
+    StError                = 10'b1011100000,
+    StErrorAwaitSw         = 10'b0010100100,
+    StErrorAwaitApp        = 10'b1101000111,
+    StErrorWaitAbsorbed    = 10'b0101110110,
+    StErrorServiceRejected = 10'b0000111100,
 
     // This state is used for terminal errors
-    StTerminalError = 10'b0101110110
+    StTerminalError = 10'b0001101001
   } st_e;
 
   // MsgWidth : 64
@@ -392,6 +398,81 @@ package kmac_pkg;
     error: 1'b1
   };
 
+  //////////////////////////////////////
+  // Command-based Application Interface
+  //////////////////////////////////////
+  parameter int CappMsgWidth    = MsgWidth;
+  parameter int CappMsgStrbW    = MsgStrbW;
+  parameter int CappDigestWidth = MsgWidth;
+
+  // Configuration delivered via the CmdAppConfig command.
+  // Mirrors the fields of CFG_SHADOWED that the CmdApp interface can set.
+  typedef struct packed {
+    sha3_pkg::sha3_mode_e       mode;
+    sha3_pkg::keccak_strength_e kstrength;
+    logic                       kmac_en;
+    logic                       en_unsupported_modestrength;
+    logic                       msg_mask;
+  } capp_config_t;
+
+  typedef struct packed {
+    capp_config_t cfg;
+    kmac_cmd_e    cmd;
+  } capp_req_meta_t;
+
+  // TODO: Ensure the request channel can hold the command and configuration
+
+  // Request channel: app -> KMAC
+  typedef struct packed {
+    logic                    req_valid;
+    logic                    req_is_data;
+    logic [CappMsgWidth-1:0] data_s0;
+    logic [CappMsgWidth-1:0] data_s1;
+    logic [CappMsgStrbW-1:0] strb;
+    logic                    rsp_ready;
+  } capp_req_t;
+
+  // Response values
+  typedef enum logic [2:0] {
+    CappAck = 3'b000,
+    CappErr = 3'b111
+  } capp_rsp_code_e;
+
+  typedef struct packed {
+    capp_rsp_code_e response;
+    logic [5:0]     info; // TODO: detail this out
+  } capp_rsp_meta_t;
+
+  parameter capp_rsp_meta_t CAPP_RESPONSE_INVALID = '{
+    response: CappErr, // TODO: should we introduce an invalid state?
+    info:     '0
+  };
+
+  // Response channel: KMAC -> app
+  typedef struct packed {
+    logic                       rsp_valid;
+    logic                       rsp_is_data;
+    logic [CappDigestWidth-1:0] digest_s0;
+    logic [CappDigestWidth-1:0] digest_s1;
+    logic                       req_ready;
+  } capp_rsp_t;
+
+  parameter capp_req_t CMD_APP_REQ_DEFAULT = '{
+    req_valid:   1'b0,
+    req_is_data: 1'b0,
+    data_s0:     '0,
+    data_s1:     '0,
+    strb:        '0,
+    rsp_ready:   '0
+  };
+
+  parameter capp_rsp_t CMD_APP_RSP_DEFAULT = '{
+    rsp_valid:   1'b0,
+    rsp_is_data: 1'b0,
+    digest_s0:   '0,
+    digest_s1:   '0,
+    req_ready:   '0
+  };
 
   ////////////////////
   // Error Handling //
@@ -414,7 +495,8 @@ package kmac_pkg;
     // This error occurs in below scenario:
     //   - Sw does not send "Start" command to KMAC then writes data into
     //     Msg FIFO
-    //   - Sw writes data into Msg FIFO when KeyMgr is in operation
+    //   - Sw writes data into Msg FIFO when Application or Command-based application interface is
+    //     active.
     ErrSwPushedMsgFifo = 8'h 02,
 
     // ErrSwIssuedCmdInAppActive
