@@ -347,9 +347,8 @@ call_stack_3:
   bn.add w2, w2, w1
 .endif
 
-# Set unused registers to zero. Without this, they would keep the random value assigned during
-# secure wipe, which cannot be compared against an expected value.
-xor x30, x30, x30
+# Read from urnd
+csrrs x30, urnd, x0
 
 jal x1, reg_dump
 ecall
