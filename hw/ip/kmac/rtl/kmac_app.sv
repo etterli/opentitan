@@ -13,8 +13,9 @@ module kmac_app
   parameter  bit          EnMasking          = 1'b0,
   localparam int          Share              = (EnMasking) ? 2 : 1, // derived parameter
   parameter  bit          SecIdleAcceptSwMsg = 1'b0,
-  parameter  int unsigned NumAppIntf         = 3,
-  parameter  app_config_t AppCfg[NumAppIntf] = '{AppCfgKeyMgr, AppCfgLcCtrl, AppCfgRomCtrl}
+  parameter  int unsigned NumAppIntf         = 4,
+  parameter  app_config_t AppCfg[NumAppIntf] = '{AppCfgKeyMgr, AppCfgLcCtrl,
+                                                 AppCfgRomCtrl, AppCfgOtbn}
 ) (
   input clk_i,
   input rst_ni,
@@ -54,7 +55,8 @@ module kmac_app
   output logic [MsgWidth-1:0] kmac_data_o[Share],
   // This strobe is on bit level for the packer. The FIFO will then convert it again to byte level.
   output logic [MsgWidth-1:0] kmac_strb_o,
-  input                       kmac_ready_i,
+  input  logic                kmac_ready_i,
+  output logic                kmac_bypass_fifo_o,
 
   // KMAC Core
   output logic kmac_en_o,
@@ -87,6 +89,7 @@ module kmac_app
 
   // from SHA3
   input prim_mubi_pkg::mubi4_t absorbed_i,
+  input logic                  squeezing_i,
 
   // to KMAC
   output kmac_cmd_e cmd_o,
@@ -121,7 +124,8 @@ module kmac_app
   // Life cycle
   input  lc_ctrl_pkg::lc_tx_t lc_escalate_en_i,
 
-  output logic sparse_fsm_error_o
+  output logic sparse_fsm_error_o,
+  output logic counter_error_o
 );
 
   import sha3_pkg::KeccakBitCapacity;
@@ -189,7 +193,8 @@ module kmac_app
   // the other responses are controlled in separate logic. So define the signals
   // here and merge them to the response.
   logic app_data_ready, fsm_data_ready;
-  logic app_digest_done, fsm_digest_done_q, fsm_digest_done_d;
+  logic app_digest_valid, fsm_digest_done_q, fsm_digest_done_d, app_finish_rsp_valid;
+  logic app_process_cmd_received;
   logic [AppDigestW-1:0] app_digest [2];
 
   // One more slot for value NumAppIntf. It is the value when no app intf is
@@ -228,7 +233,8 @@ module kmac_app
   ////////////////////////////
   // Application Mux/ Demux //
   ////////////////////////////
-
+  logic app_cfg_ready;
+  logic app_push_ready;
 
   // Processing return data.
   // sends to only selected app intf.
@@ -237,25 +243,25 @@ module kmac_app
     for (int unsigned i = 0 ; i < NumAppIntf ; i++) begin
       if (i == app_id) begin
         app_o[i] = '{
-          ready:         app_data_ready | fsm_data_ready,
-          done:          app_digest_done | fsm_digest_done_q,
-          digest_share0: app_digest[0],
-          digest_share1: app_digest[1],
+          req_ready: app_data_ready | fsm_data_ready | app_cfg_ready | app_process_cmd_received |
+                     app_push_ready,
+          rsp_valid: app_digest_valid | fsm_digest_done_q | app_finish_rsp_valid,
+          digest_s0: app_digest[0],
+          digest_s1: app_digest[1],
           // if fsm asserts done, should be an error case.
-          error:         error_i | fsm_digest_done_q | sparse_fsm_error_o
-                         | service_rejected_error
+          error:     error_i | fsm_digest_done_q | sparse_fsm_error_o | service_rejected_error
         };
       end else begin
-        app_o[i] = '{
-          ready: 1'b 0,
-          done:  1'b 0,
-          digest_share0: '0,
-          digest_share1: '0,
-          error: 1'b 0
+        app_o[i] = '{ // TODO: use default parameter?
+          req_ready: 1'b 0,
+          rsp_valid: 1'b 0,
+          digest_s0: '0,
+          digest_s1: '0,
+          error:     1'b0
         };
       end
-    end // for {i, NumAppIntf, i++}
-  end // always_comb
+    end
+  end
 
   // app_id latch
   always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -271,19 +277,23 @@ module kmac_app
   //  If this assumption is not true, consider RR arbiter.
 
   // Prep for arbiter
-  logic [NumAppIntf-1:0] app_reqs;
+  logic [NumAppIntf-1:0] app_req_valids;
   logic [NumAppIntf-1:0] unused_app_gnts;
   logic [$clog2(NumAppIntf)-1:0] arb_idx;
   logic arb_valid;
   logic arb_ready;
 
   always_comb begin
-    app_reqs = '0;
+    app_req_valids = '0;
     for (int unsigned i = 0 ; i < NumAppIntf ; i++) begin
-      app_reqs[i] = app_i[i].valid;
+      app_req_valids[i] = app_i[i].req_valid;
     end
   end
 
+  // pipelining issue
+  // when request is pipelined, then when valid is deasserted, it can still result in a grant!
+  // the same issues is also present for the CmdApp..
+  // We can fully cut the request path. it is actually regularly valid/ready handshaked.
   prim_arbiter_fixed #(
     .N (NumAppIntf),
     .DW(1),
@@ -292,7 +302,7 @@ module kmac_app
     .clk_i,
     .rst_ni,
 
-    .req_i  (app_reqs),
+    .req_i  (app_req_valids),
     .data_i ('{default:'0}),
     .gnt_o  (unused_app_gnts),
     .idx_o  (arb_idx),
@@ -304,11 +314,64 @@ module kmac_app
 
   assign app_id_d = AppIdxW'(arb_idx);
   assign arb_ready = set_appid;
-
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) fsm_digest_done_q <= 1'b 0;
     else         fsm_digest_done_q <= fsm_digest_done_d;
   end
+
+  app_req_t app_req;
+  assign app_req = app_i[app_id];
+
+  app_config_t app_cfg_q;
+  app_config_t app_cfg_d;
+
+  // Select the new configuration from either the compile time defined configuration or from the
+  // supplied dynamic configuration. This operates on the non-latched request.
+  // TODO: Idea: Both shares must have the same config. At mismatch we error out.
+  always_comb begin
+    app_cfg_d = AppCfg[arb_idx];
+    // Overrule configuration if it is dynamic.
+    if (app_cfg_d.Type == AppDynamic) begin
+      // TODO: define locations of bits
+      app_cfg_d.KeccakStrength = sha3_pkg::keccak_strength_e'(app_i[arb_idx].data_s0[2:0]);
+      app_cfg_d.Mode           = app_mode_e'(app_i[arb_idx].data_s0[11:10]);
+      app_cfg_d.PrefixMode     = app_cfg_d.Mode == AppKMAC ? 1'b1 : 1'b0;
+    end
+  end
+
+  // Configuration checker.
+  logic valid_app_sha3_strength;
+  logic valid_app_shake_strength;
+  logic valid_app_kmac_cfg;
+  logic valid_app_mode_strength_raw;
+  logic valid_app_mode_strength;
+  logic valid_app_cfg;
+
+  assign valid_app_sha3_strength = app_cfg_q.KeccakStrength inside {sha3_pkg::L224,
+                                                                    sha3_pkg::L256,
+                                                                    sha3_pkg::L384,
+                                                                    sha3_pkg::L512};
+
+  assign valid_app_shake_strength = app_cfg_q.KeccakStrength inside {sha3_pkg::L128,
+                                                                     sha3_pkg::L256};
+
+  assign valid_app_mode_strength_raw =
+      app_cfg_q.Mode == AppSHA3                            ? valid_app_sha3_strength  :
+      app_cfg_q.Mode inside {AppShake, AppCShake, AppKMAC} ? valid_app_shake_strength : 1'b0;
+
+  // TODO: implement unsupported modestrength flag
+  assign valid_app_mode_strength = valid_app_mode_strength_raw;
+
+  // The entropy is needed for KMAC operation.
+  // TODO: original check was on strict false. Is strict true really the opposite?
+  assign valid_app_kmac_cfg = prim_mubi_pkg::mubi4_test_true_strict(entropy_ready_i);
+
+  assign valid_app_cfg = valid_app_mode_strength &&
+                         (app_cfg_q.Mode == AppKMAC ? valid_app_kmac_cfg : 1'b1);
+
+  // The compile-time defined configuration must always result in a valid mode-strength
+  // configuration.
+  `ASSERT(ConfigValidIfStatic_A, app_cfg_q.Type == AppStatic |-> valid_app_mode_strength)
 
   /////////
   // FSM //
@@ -319,6 +382,18 @@ module kmac_app
 
   // Create a lint error to reduce the risk of accidentally enabling this feature.
   `ASSERT_STATIC_LINT_ERROR(KmacSecIdleAcceptSwMsgNonDefault, SecIdleAcceptSwMsg == 0)
+
+  logic digest_rsp_scheduled_d, digest_rsp_scheduled_q;
+  logic digest_parts_available;
+  logic reset_digest_pusher;
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      digest_rsp_scheduled_q <= 1'b0;
+    end else begin
+      digest_rsp_scheduled_q <= digest_rsp_scheduled_d;
+    end
+  end
 
   // Next State & output logic
   // SEC_CM: FSM.SPARSE
@@ -350,6 +425,24 @@ module kmac_app
     fsm_data_ready = 1'b 0;
     fsm_digest_done_d = 1'b 0;
 
+    // Bypass FIFO if masked app is active
+    kmac_bypass_fifo_o = 1'b0;
+
+    // Ready signals to handshake requests for dynamic interfaces
+    app_cfg_ready  = 1'b0;
+    app_push_ready = 1'b0;
+
+    // If the last request has an empty strobe, do not forward data but just send the process
+    // command.
+    app_process_cmd_received = 1'b0;
+
+    // Whether to push a digest part or reset the mux
+    digest_rsp_scheduled_d = 1'b0;
+    reset_digest_pusher    = 1'b0;
+
+    // Finish response
+    app_finish_rsp_valid = 1'b0;
+
     unique case (st)
       StIdle: begin
         if (arb_valid) begin
@@ -367,41 +460,48 @@ module kmac_app
       end
 
       StAppCfg: begin
-        if (AppCfg[app_id].Mode == AppKMAC &&
-          prim_mubi_pkg::mubi4_test_false_strict(entropy_ready_i)) begin
-          // Check if the entropy is not configured but it is needed in
-          // `AppCfg[app_id]` (KMAC mode).
-          //
-          // SW is not properly configured, report and not request Hashing
-          // Return the app with errors
-          st_d = StError;
-
+        if (!valid_app_cfg) begin
+          // Either the entropy source was not ready for a KMAC operation, or the App configuration
+          // is invalid or the configuration in the registers supplied by SW is invalid.
+          // In this error case we still go to the "message absorb" phase but no data is forwarded
+          // to the actual SHA3 core. This simplifies the error handling on the application side.
+          st_d                       = StError;
           service_rejected_error_set = 1'b 1;
-
         end else begin
-          // As Cfg is stable now, it sends cmd
-          st_d = StAppMsg;
-
-          // App initiates the data
+          // The configuration is valid and also latched. We can now send the start command and
+          // begin to absorb messages.
+          st_d  = StAppMsg;
           cmd_o = CmdStart;
         end
+        // Handshake the configuration request also if there is an error.
+        // This is required as an application interface still must send the full data (at least
+        // one beat with the last flag set) so that the app interface can bring back the KMAC into
+        // the Idle state.
+        app_cfg_ready = app_cfg_q.Type == AppDynamic;
       end
 
       StAppMsg: begin
-        mux_sel = SelApp;
-        if (app_i[app_id].valid && app_o[app_id].ready && app_i[app_id].last) begin
-          if (AppCfg[app_id].Mode == AppKMAC) begin
+        mux_sel            = SelApp;
+        kmac_bypass_fifo_o = app_cfg_q.Masked;
+        if (app_req.req_valid && app_o[app_id].req_ready && app_req.last) begin
+          if (app_cfg_q.Mode == AppKMAC) begin
             st_d = StAppOutLen;
           end else begin
             st_d = StAppProcess;
           end
+          // The app can end the message phase without sending any data if it sets the strobe to
+          // '0. In this case the data valid is not forwarded to the FIFO but the state is
+          // advanced. We also handshake this request directly as the downstream hashing engine
+          // could stall as it is absorbing the previous message.
+          app_process_cmd_received = app_req.strb == '0;
         end else begin
           st_d = StAppMsg;
         end
       end
 
       StAppOutLen: begin
-        mux_sel = SelOutLen;
+        mux_sel            = SelOutLen;
+        kmac_bypass_fifo_o = app_cfg_q.Masked;
 
         if (kmac_valid_o && kmac_ready_i) begin
           st_d = StAppProcess;
@@ -411,20 +511,64 @@ module kmac_app
       end
 
       StAppProcess: begin
-        cmd_o = CmdProcess;
-        st_d = StAppWait;
+        cmd_o               = CmdProcess;
+        st_d                = StAppWait;
+        reset_digest_pusher = 1'b1;
+        kmac_bypass_fifo_o  = app_cfg_q.Masked;
       end
 
       StAppWait: begin
-        if (prim_mubi_pkg::mubi4_test_true_strict(absorbed_i)) begin
-          // Send digest to KeyMgr and complete the op
-          st_d = StIdle;
-          cmd_o = CmdDone;
-
-          clr_appid = 1'b 1;
+        st_d = StAppWait;
+        if (app_cfg_q.Type == AppStatic) begin
+          if (prim_mubi_pkg::mubi4_test_true_strict(absorbed_i)) begin
+            // Send digest to KeyMgr and complete the op
+            st_d      = StIdle;
+            cmd_o     = CmdDone;
+            clr_appid = 1'b 1;
+          end
         end else begin
-          st_d = StAppWait;
+          // The app interface is of type dynamic. Send back the first part of the digest and go to
+          // the pushing state.
+          // TODO: Catch other cases of Type if it is not logic anymore.
+          // TODO: mubi for squeezing as well?
+          if (prim_mubi_pkg::mubi4_test_true_strict(absorbed_i) || squeezing_i) begin
+            st_d = StAppPushDigest;
+          end
         end
+      end
+
+      StAppPushDigest: begin
+        // TODO: assert that in this case the app_cfg_q.Type is dynamic
+        // In this state we:
+        // - Serve any digest request. If digest is fully pushed, we trigger a squeeze.
+        // - End the session if the request has the last flag set.
+        st_d = StAppPushDigest;
+        if (app_req.req_valid) begin
+          // Handshake all requests immediately. If a squeeze is required the response will come as
+          // soon as possible. But we handshake the request already.
+          app_push_ready = 1'b1;
+          if (app_req.last) begin
+            // We terminate the session.
+            st_d = StAppFinish;
+          end else begin
+            // We schedule a digest response if possible. If we have sent the full digest, start a
+            // squeeze.
+            digest_rsp_scheduled_d = digest_parts_available;
+            if (!digest_parts_available) begin
+              cmd_o               = CmdManualRun;
+              st_d                = StAppWait;
+              reset_digest_pusher = 1'b1;
+            end
+          end
+        end
+      end
+
+      StAppFinish: begin
+        // Send finish response and end session.
+        st_d                 = StIdle;
+        cmd_o                = CmdDone;
+        clr_appid            = 1'b1;
+        app_finish_rsp_valid = 1'b1;
       end
 
       StSw: begin
@@ -462,8 +606,9 @@ module kmac_app
         // 2) Last data provided from the app interface (so that the app interface is completely)
         //    drained.  If the error occurred during a SW operation, the app interface is not
         //    involved, so this condition gets skipped.
+        // TODO: here we should check whether the last handshake has happened and not wait until it happens
         unique case ({err_processed_i,
-                      (app_i[app_id].valid && app_i[app_id].last) || err_during_sw_q})
+                      (app_req.req_valid && app_req.last) || err_during_sw_q})
           2'b00: begin
             // Error not processed by SW and not last data from app interface -> keep current state.
             st_d = StError;
@@ -472,14 +617,15 @@ module kmac_app
             // Error not processed by SW but last data from app interface:
             // 1. Send garbage digest to the app interface (in the next cycle) to complete the
             // transaction.
-            fsm_digest_done_d = ~err_during_sw_q;
+            fsm_digest_done_d = ~err_during_sw_q; // TODO: ensure this is never set if SW. otherwise valid set
             if (service_rejected_error) begin
               // 2.a) Service was rejected because an app interface tried to configure KMAC while no
-              // entropy was available. It is assumed that SW is not loaded yet, so don't wait for
-              // SW to process the error. The last data from the app interface has now arrived, but
-              // we don't need to wait for the SHA3 core to have absorbed it because the data never
-              // entered the SHA3 core: the request from the app interface was terminated during the
-              // configuration phase.
+              // entropy was available or the configuration was invalid.
+              // If the KMAC request comes before SW is loaded, don't wait for SW to process the
+              // error. The last data from the app interface has now arrived, but we don't need to
+              // wait for the SHA3 core to have absorbed it because the data never entered the SHA3
+              // core: the request from the app interface was terminated during the configuration
+              // phase.
               st_d = StErrorServiceRejected;
             end else begin
               // 2.b) If service was not rejected, wait for SW to process the error.
@@ -517,7 +663,7 @@ module kmac_app
       StErrorAwaitApp: begin
         // Keep absorbing data on the app interface until the last data.
         fsm_data_ready = 1'b1;
-        if (app_i[app_id].valid && app_i[app_id].last) begin
+        if (app_req.req_valid && app_req.last) begin
           // Send garbage digest to the app interface (in the next cycle) to complete the
           // transaction.
           fsm_digest_done_d = 1'b1;
@@ -540,6 +686,7 @@ module kmac_app
           if (err_during_sw_q) begin
             absorbed_o = prim_mubi_pkg::MuBi4True;
           end
+          // TODO: Send finish response?
         end
       end
 
@@ -611,44 +758,75 @@ module kmac_app
   // represents the MSG_FIFO ready, only when it is in StKeyMgrMsg state.
   // After KeyMgr sends last beat, the kmac interface (to MSG_FIFO) is switched
   // to OutLen. OutLen is pre-defined values. See `EncodeOutLen` parameter above.
+
+  // EnMasking:
+  // - Static:
+  //   - Masked = 0: Forward share 0. Set share 1 to '0.
+  //   - Masked = 1: Forward both shares.
+  // - dynamic:
+  //   - Masked = 0: Forward share 0. Set share 1 to '0.
+  //   - Masked = 1: Forward both shares.
+  // EnMasking = 0
+  // - Static:
+  //   - Masked = 0: Forward share 0. Ignore share 1.
+  //   - Masked = 1: Forward XOR of both shares.
+  // - dynamic: same as static
   always_comb begin
     app_data_ready = 1'b 0;
     sw_ready_o = 1'b 1;
 
-    kmac_valid_o = 1'b 0;
-    kmac_data_o = '0;
-    kmac_strb_o = '0;
+    kmac_valid_o       = 1'b 0;
+    kmac_data_o        = '{default: '0};
+    kmac_strb_o        = '0;
 
     unique case (mux_sel_buf_kmac)
       SelApp: begin
-        // app_id is valid at this time
-        kmac_valid_o = app_i[app_id].valid;
-        kmac_data_o  = app_i[app_id].data;
-        // Expand strb to bits. prim_packer inside MSG_FIFO accepts the bit masks
-        for (int i = 0 ; i < $bits(app_i[app_id].strb) ; i++) begin
-          kmac_strb_o[8*i+:8] = {8{app_i[app_id].strb[i]}};
+        // Forward message request except app sends empty message to terminate message phase.
+        kmac_valid_o   = app_req.req_valid && !app_process_cmd_received;
+        if (EnMasking) begin // TODO: make this generic based on Share parameter?
+          kmac_data_o[0]     = app_req.data_s0;
+          kmac_data_o[1]     = app_cfg_q.Masked ? app_req.data_s1 : '0;
+        end else begin
+          // If the interface is masked but the KMAC core not, then we unmask the input data.
+          // This is save for the masked case because this XOR is removed at compile time if
+          // EnMasking is set.
+          kmac_data_o[0] = app_cfg_q.Masked ? app_req.data_s0 ^ app_req.data_s1 : app_req.data_s0;
+        end
+        // Expand byte strobe to bits. prim_packer inside MSG_FIFO accepts a bit mask
+        for (int i = 0; i < MsgStrbW; i++) begin
+          kmac_strb_o[8*i+:8] = {8{app_req.strb[i]}};
         end
         app_data_ready = kmac_ready_i;
       end
 
       SelOutLen: begin
         // Write encoded output length value
-        kmac_valid_o = 1'b 1; // always write
-        kmac_data_o  = MsgWidth'(encoded_outlen);
-        kmac_strb_o  = MsgWidth'(encoded_outlen_strb);
+        kmac_valid_o   = 1'b 1; // always write
+        kmac_data_o[0] = MsgWidth'(encoded_outlen);
+        if (EnMasking) begin
+          // TODO: What to send as 2nd share if masking is active? '0 share should be ok?
+          for (int i = 1; i < Share; i++) begin
+            kmac_data_o[i] = '0;
+          end
+        end
+        kmac_strb_o    = MsgWidth'(encoded_outlen_strb);
       end
 
       SelSw: begin
-        kmac_valid_o = sw_valid_i;
-        kmac_data_o  = sw_data_i ;
-        kmac_strb_o  = sw_strb_i ;
-        sw_ready_o   = kmac_ready_i ;
+        // SW supports only one share
+        kmac_valid_o   = sw_valid_i;
+        kmac_data_o[0] = sw_data_i;
+        for (int i = 1; i < Share; i++) begin
+          kmac_data_o[i] = '0;
+        end
+        kmac_strb_o    = sw_strb_i;
+        sw_ready_o     = kmac_ready_i;
       end
 
       default: begin // Incl. SelNone
-        kmac_valid_o = 1'b 0;
-        kmac_data_o = '0;
-        kmac_strb_o = '0;
+        kmac_valid_o       = 1'b 0;
+        kmac_data_o        = '{default: '0};
+        kmac_strb_o        = '0;
       end
 
     endcase
@@ -743,19 +921,99 @@ module kmac_app
     end
   end
 
-  // Keccak state --> App interface
-  always_comb begin
-    app_digest_done = 1'b 0;
-    app_digest = '{default:'0};
-    if (st == StAppWait && prim_mubi_pkg::mubi4_test_true_strict(absorbed_i) &&
-       lc_ctrl_pkg::lc_tx_test_false_strict(lc_escalate_en_i)) begin
-      // SHA3 engine has calculated the hash. Return the data to KeyMgr
-      app_digest_done = 1'b 1;
+  ///////////////////
+  // Digest pusher //
+  ///////////////////
+  // The maximal number of digest chunks is defined by the case with the largest rate.
+  localparam int DigestCntW = $clog2((sha3_pkg::StateW - 2 * 128) / DynAppDigestW);
+  logic [DigestCntW-1:0] digest_top;
+  logic [DigestCntW-1:0] current_digest_idx;
 
-      // digest has always 2 entries. If !EnMasking, second is tied to 0.
+  always_comb begin
+    if (sha3_mode_o == sha3_pkg::Sha3) begin
+      // Expose hash
+      unique case (keccak_strength_o)
+        sha3_pkg::L128: digest_top = DigestCntW'(128 / DynAppDigestW);
+        sha3_pkg::L224: digest_top = DigestCntW'(224 / DynAppDigestW);
+        sha3_pkg::L256: digest_top = DigestCntW'(256 / DynAppDigestW);
+        sha3_pkg::L384: digest_top = DigestCntW'(384 / DynAppDigestW);
+        sha3_pkg::L512: digest_top = DigestCntW'(512 / DynAppDigestW);
+        // Expose the least amount of hash if strength would be invalid
+        default:        digest_top = DigestCntW'(128 / DynAppDigestW);
+      endcase
+    end else begin
+      // Expose rate for SHAKE and cSHAKE
+      // TODO: use KeccakBitCapacity to compute the number of chunks?
+      unique case (keccak_strength_o)
+        sha3_pkg::L128: digest_top = DigestCntW'((sha3_pkg::StateW - 2 * 128) / DynAppDigestW);
+        sha3_pkg::L224: digest_top = DigestCntW'((sha3_pkg::StateW - 2 * 224) / DynAppDigestW);
+        sha3_pkg::L256: digest_top = DigestCntW'((sha3_pkg::StateW - 2 * 256) / DynAppDigestW);
+        sha3_pkg::L384: digest_top = DigestCntW'((sha3_pkg::StateW - 2 * 384) / DynAppDigestW);
+        sha3_pkg::L512: digest_top = DigestCntW'((sha3_pkg::StateW - 2 * 512) / DynAppDigestW);
+        // Expose the least amount of state if strength would be invalid
+        default:        digest_top = DigestCntW'((sha3_pkg::StateW - 2 * 512) / DynAppDigestW);
+      endcase
+    end
+  end
+
+  assign digest_parts_available = current_digest_idx != digest_top;
+
+  // SEC_CM CTR.REDUN
+  prim_count #(
+    .Width(DigestCntW)
+  ) u_digest_part_counter (
+    .clk_i,
+    .rst_ni,
+    .clr_i             (reset_digest_pusher),
+    .set_i             (1'b0),
+    .set_cnt_i         ('0),
+    .incr_en_i         (1'b1),
+    .decr_en_i         (1'b0),
+    .step_i            (DigestCntW'(1)),
+    .commit_i          (app_digest_valid || reset_digest_pusher),
+    .cnt_o             (current_digest_idx),
+    .cnt_after_commit_o(),
+    .err_o             (counter_error_o)
+  );
+
+  // Keccak state --> App interface for the first digest (part). The first digest is pushed fully
+  // towards the static app interfaces. The dynamic interfaces see only a subset.
+  logic push_first_digest_part;
+  logic push_other_digest_part;
+
+  // When the process or run command finishes, send first part of digest.
+  assign push_first_digest_part =
+      st == StAppWait && (prim_mubi_pkg::mubi4_test_true_strict(absorbed_i) || squeezing_i);
+
+  // Send remaining parts of the digest if we are pushing.
+  // Gate with digest_parts_available to prevent sending capacity-region bits when
+  // current_digest_idx has already reached digest_top (the rate boundary).
+  assign push_other_digest_part = st == StAppPushDigest && digest_rsp_scheduled_q
+                                  && digest_parts_available;
+
+  logic [DynAppDigestW-1:0] digest_part[Share];
+  for (genvar i = 0; i < Share; i++) begin
+    assign digest_part[i] = keccak_state_i[i][DynAppDigestW * current_digest_idx +: DynAppDigestW];
+  end
+
+  always_comb begin
+    app_digest_valid = 1'b 0;
+    app_digest = '{default:'0};
+    if ((push_first_digest_part || push_other_digest_part) &&
+        lc_ctrl_pkg::lc_tx_test_false_strict(lc_escalate_en_i)) begin
+      // SHA3 engine has calculated the hash. Return the data to the app.
+      app_digest_valid = 1'b 1;
+
+      // Digest has always 2 entries. If !EnMasking, second is tied to 0.
       for (int i = 0 ; i < Share ; i++) begin
         // Return the portion of state.
-        app_digest[i] = keccak_state_i[i][AppDigestW-1:0];
+        if (app_cfg_q.Type == AppStatic) begin
+          app_digest[i] = keccak_state_i[i][AppDigestW-1:0];
+        end else if (app_cfg_q.Type == AppDynamic) begin
+          // Only expose a sub part
+          app_digest[i][DynAppDigestW-1:0] = digest_part[i];
+        end
+        // Faulted Types expose '0
       end
     end
   end
@@ -794,8 +1052,9 @@ module kmac_app
 
     unique case (st)
       StAppCfg, StAppMsg, StAppOutLen, StAppProcess, StAppWait: begin
+        // TODO: Must StAppPushingDigest and StAppFinish be included here?
         // Key from keymgr is actually used if the current HW app interface does *keyed* MAC.
-        keymgr_key_used = AppCfg[app_id].Mode == AppKMAC;
+        keymgr_key_used = app_cfg_q.Mode == AppKMAC;
         key_len_o = SideloadedKey;
         for (int i = 0 ; i < Share; i++) begin
           key_data_o[i] = keymgr_key[i];
@@ -838,13 +1097,15 @@ module kmac_app
 
     unique case (st)
       StAppCfg, StAppMsg, StAppOutLen, StAppProcess, StAppWait: begin
+        // TODO: include pushing state? Yes, to keep it stable.
         // Check app intf cfg
         for (int unsigned i = 0 ; i < NumAppIntf ; i++) begin
+          // TODO: simplify this.
           if (app_id == i) begin
-            if (AppCfg[i].PrefixMode == 1'b 0) begin
+            if (app_cfg_q.PrefixMode == 1'b 0) begin
               sha3_prefix_o = reg_prefix_i;
             end else begin
-              sha3_prefix_o = AppCfg[i].Prefix;
+              sha3_prefix_o = app_cfg_q.Prefix;
             end
           end
         end
@@ -860,24 +1121,29 @@ module kmac_app
     endcase
   end
 
-  // KMAC en / SHA3 mode / Strength
-  //  by default, it uses reg cfg. When app intf reqs come, it uses AppCfg.
+  // KMAC en / SHA3 mode / Strength / configuration latching
+  // by default, it uses reg cfg. When app intf reqs come, it uses AppCfg.
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
+      app_cfg_q         <= AppCfgDefault; // What should we use as default?
       kmac_en_o         <= 1'b 0;
       sha3_mode_o       <= sha3_pkg::Sha3;
       keccak_strength_o <= sha3_pkg::L256;
     end else if (clr_appid) begin
       // As App completed, latch reg value
+      app_cfg_q         <= AppCfgDefault; // has no effect
       kmac_en_o         <= reg_kmac_en_i;
       sha3_mode_o       <= reg_sha3_mode_i;
       keccak_strength_o <= reg_keccak_strength_i;
     end else if (set_appid) begin
-      kmac_en_o         <= AppCfg[arb_idx].Mode == AppKMAC ? 1'b 1 : 1'b 0;
-      sha3_mode_o       <= AppCfg[arb_idx].Mode == AppSHA3
-                           ? sha3_pkg::Sha3 : sha3_pkg::CShake;
-      keccak_strength_o <= AppCfg[arb_idx].KeccakStrength ;
+      app_cfg_q         <= app_cfg_d;
+      kmac_en_o         <= app_cfg_d.Mode == AppKMAC ? 1'b 1 : 1'b 0;
+      // KMAC is based upon CShake
+      sha3_mode_o       <= app_cfg_d.Mode == AppSHA3  ? sha3_pkg::Sha3  :
+                           app_cfg_d.Mode == AppShake ? sha3_pkg::Shake : sha3_pkg::CShake;
+      keccak_strength_o <= app_cfg_d.KeccakStrength;
     end else if (st == StIdle) begin
+      app_cfg_q         <= AppCfgDefault;
       kmac_en_o         <= reg_kmac_en_i;
       sha3_mode_o       <= reg_sha3_mode_i;
       keccak_strength_o <= reg_keccak_strength_i;
@@ -885,8 +1151,8 @@ module kmac_app
   end
 
   // Status
-  assign app_active_o = (st inside {StAppCfg, StAppMsg, StAppOutLen,
-                                    StAppProcess, StAppWait});
+  assign app_active_o = (st inside {StAppCfg, StAppMsg, StAppOutLen, StAppProcess, StAppWait,
+                                    StAppPushDigest, StAppFinish});
 
   // Error Reporting ==========================================================
   always_comb begin

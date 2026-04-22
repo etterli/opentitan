@@ -190,21 +190,30 @@ package kmac_pkg;
   // Application interface //
   ///////////////////////////
 
+  // Application configuration type. Either use a compile-time defined configuration or the app
+  // provides the KMAC configuration at runtime.
+  typedef enum logic {
+    AppStatic  = 1'b0,
+    AppDynamic = 1'b1
+  } app_type_e;
+
   // Application Algorithm
   // Each interface can choose algorithms among SHA3, cSHAKE, KMAC
-  typedef enum bit [1:0] {
-    // SHA3 mode doer not nees any additional information.
+  typedef enum logic [1:0] {
+    // SHA3 mode does not need any additional information.
     // Prefix will be tied to all zero and not used.
-    AppSHA3   = 0,
+    AppSHA3   = 2'b00,
+
+    AppShake = 2'b01,
 
     // In CShake/ KMAC mode, the Prefix can be determined by the compile-time
     // parameter or through CSRs.
-    AppCShake = 1,
+    AppCShake = 2'b10,
 
     // In KMAC mode, the secret key always comes from sideload.
     // KMAC mode needs uniformly distributed entropy. The request will be
     // silently discarded in Reset state.
-    AppKMAC   = 2
+    AppKMAC   = 2'b11
   } app_mode_e;
 
   // Predefined encoded_string
@@ -216,8 +225,25 @@ package kmac_pkg;
   parameter logic [79:0] EncodedStringRomCtrl = 80'h 4c52_5443_5f4d_4f52_4001;
   parameter int unsigned NSPrefixW = sha3_pkg::NSRegisterSize*8;
 
+
+  // Set by app:
+  // - mode: select the keccak hashing mode
+  // - kstrength: select the strength
+
+  // Derived
+  // - kmac_en: If 1 prepend the key to the message / operate in kmac mode
+
+  // Set by SW
+  // - en_unsupported_modestrength: In case such a configuration is desired
+  // - msg_mask: If 1, the message is masked if mode is KMAC. Keep it for full flexibility
+
   typedef struct packed {
+    app_type_e Type;
     app_mode_e Mode;
+
+    // Specify whether the input comes in shares. If set, message FIFO is bypassed. This parameter
+    // is only relevant if EnMasking parameter is set.
+    logic Masked;
 
     sha3_pkg::keccak_strength_e KeccakStrength;
 
@@ -225,15 +251,30 @@ package kmac_pkg;
     // and cSHAKE operations.
     // Choose **0** for CSRs (!!PREFIX), or **1** to use `Prefix` parameter
     // below.
-    bit PrefixMode;
+    logic PrefixMode;
 
     // If `PrefixMode` is 1'b 1, then this `Prefix` value will be used in
     // cSHAKE or KMAC operation.
     logic [NSPrefixW-1:0] Prefix;
+
+    // TODO: implement this if required for OTBN
+    // Determines whether the application can perform non-standardized hashing operations
+    // logic unsupported_modestrength;
   } app_config_t;
 
+  parameter app_config_t AppCfgDefault = '{
+    Type:           AppStatic,      // Static because it has the least MUX effect
+    Mode:           AppSHA3,        // SHA3 as it has no key involved
+    Masked:         1'b1,           // Masking enabled to avoid mixing shares
+    KeccakStrength: sha3_pkg::L256, // TODO: reason?
+    PrefixMode:     1'b1,           // So we control what would be fed outside.
+    Prefix:         NSPrefixW'({EncodedStringEmpty, EncodedStringEmpty}) // an invalid string.
+  };
+
   parameter app_config_t AppCfgKeyMgr = '{
+    Type: AppStatic,
     Mode: AppKMAC, // KeyMgr uses KMAC operation
+    Masked: 1'b0,
     KeccakStrength: sha3_pkg::L256,
     PrefixMode: 1'b1,   // Use prefix parameter
     // {fname: encoded_string("KMAC"), custom_str: encoded_string("")}
@@ -241,7 +282,9 @@ package kmac_pkg;
   };
 
   parameter app_config_t AppCfgLcCtrl= '{
+    Type: AppStatic,
     Mode: AppCShake,
+    Masked: 1'b0,
     KeccakStrength: sha3_pkg::L128,
     PrefixMode: 1'b1,     // Use prefix parameter
     // {fname: encode_string(""), custom_str: encode_string("LC_CTRL")}
@@ -249,11 +292,25 @@ package kmac_pkg;
   };
 
   parameter app_config_t AppCfgRomCtrl = '{
+    Type: AppStatic,
     Mode: AppCShake,
+    Masked: 1'b0,
     KeccakStrength: sha3_pkg::L256,
     PrefixMode: 1'b1,     // Use prefix parameter
     // {fname: encode_string(""), custom_str: encode_string("ROM_CTRL")}
     Prefix: NSPrefixW'({EncodedStringRomCtrl, EncodedStringEmpty})
+  };
+
+  parameter app_config_t AppCfgOtbn = '{
+    Type: AppDynamic,
+    Masked: 1'b1,
+    // The following configurations are defaults. Most are overruled by the dynamically provided
+    // values. An exception is the Prefix, which is used if the app requests a KMAC operation. For
+    // cSHAKE the Prefix from the register is taken.
+    Mode: AppShake,
+    KeccakStrength: sha3_pkg::L256,
+    PrefixMode: 1'b1,
+    Prefix: NSPrefixW'({EncodedStringEmpty, EncodedStringKMAC})
   };
 
   // Exporting the app internal mux selection enum into the package. So that DV
@@ -332,9 +389,11 @@ package kmac_pkg;
 
     // In StKeyOutLen, this module pushes encoded outlen to the MSG_FIFO.
     // Assume the length is 256 bit, the data will be 48'h 02_0100
-    StAppOutLen  = 10'b1010011000,
-    StAppProcess = 10'b1110110010,
-    StAppWait    = 10'b1001010000,
+    StAppOutLen     = 10'b1010011000,
+    StAppProcess    = 10'b1110110010,
+    StAppWait       = 10'b1001010000,
+    StAppPushDigest = 10'b0000000000,
+    StAppFinish     = 10'b1111111111,
 
     // SW Controlled
     // If start request comes from SW first, until the operation ends, all
@@ -359,39 +418,42 @@ package kmac_pkg;
   // MsgStrbW : 8
   parameter int unsigned AppDigestW = 384;
   parameter int unsigned AppKeyW = 256;
+  // Width of one digest chunk returned per rsp_valid pulse in AppDynamic mode.
+  parameter int unsigned DynAppDigestW = MsgWidth;
 
   typedef struct packed {
-    logic valid;
-    logic [MsgWidth-1:0] data;
+    logic req_valid;
+    logic [MsgWidth-1:0] data_s0;
+    logic [MsgWidth-1:0] data_s1;
     logic [MsgStrbW-1:0] strb;
     logic last;
   } app_req_t;
 
   typedef struct packed {
-    logic ready;
-    logic done;
-    logic [AppDigestW-1:0] digest_share0;
-    logic [AppDigestW-1:0] digest_share1;
-    // Error is valid when done is high. If any error occurs during KDF, KMAC
+    logic req_ready;
+    logic rsp_valid;
+    logic [AppDigestW-1:0] digest_s0;
+    logic [AppDigestW-1:0] digest_s1;
+    // Error is valid when rsp_valid is high. If any error occurs during KDF, KMAC
     // returns the garbage digest data with error. The KeyMgr discards the
     // digest and may re-initiate the process.
     logic error;
   } app_rsp_t;
 
   parameter app_req_t APP_REQ_DEFAULT = '{
-    valid: 1'b 0,
-    data: '0,
-    strb: '0,
-    last: 1'b 0
+    req_valid: 1'b0,
+    data_s0:   '0,
+    data_s1:   '0,
+    strb:      '0,
+    last:      1'b0
   };
   parameter app_rsp_t APP_RSP_DEFAULT = '{
-    ready: 1'b1,
-    done:  1'b1,
-    digest_share0: AppDigestW'(32'hDEADBEEF),
-    digest_share1: AppDigestW'(32'hFACEBEEF),
-    error: 1'b1
+    req_ready: 1'b1,
+    rsp_valid: 1'b1,
+    digest_s0: AppDigestW'(32'hDEADBEEF),
+    digest_s1: AppDigestW'(32'hFACEBEEF),
+    error:     1'b1
   };
-
 
   ////////////////////
   // Error Handling //
