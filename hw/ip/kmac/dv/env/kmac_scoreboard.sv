@@ -464,7 +464,7 @@ class kmac_scoreboard extends cip_base_scoreboard #(
 
                 // It's possible for SW to not clear the error until after the hash is done.
                 // In this case the hash will be garbage data, so do not check it.
-                if (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.valid &&
+                if (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_valid &&
                     cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.last) begin
                   do_check_digest = 0;
                 end

@@ -56,12 +56,12 @@ interface kmac_app_intf (input clk, input rst_n);
 
   // The following assertions only apply to device mode.
   // strb should never be 0
-  `ASSERT(StrbNotZero_A, kmac_data_req.valid |-> kmac_data_req.strb > 0,
+  `ASSERT(StrbNotZero_A, kmac_data_req.req_valid |-> kmac_data_req.strb > 0,
           clk, !rst_n || if_mode == dv_utils_pkg::Host)
 
   // Check strb is aligned to LSB, for example: if strb[1]==0, strb[$:2] should be 0 too
   for (genvar k = 1; k < KmacDataIfWidth / 8 - 1; k++) begin : gen_strb_check
-    `ASSERT(StrbAlignLSB_A, kmac_data_req.valid && kmac_data_req.strb[k] === 0 |->
+    `ASSERT(StrbAlignLSB_A, kmac_data_req.req_valid && kmac_data_req.strb[k] === 0 |->
                             kmac_data_req.strb[k+1] === 0,
                             clk, !rst_n || if_mode == dv_utils_pkg::Host)
   end
@@ -70,7 +70,7 @@ interface kmac_app_intf (input clk, input rst_n);
 
   // Done should be asserted after last, before we start another request
   `ASSERT(DoneAssertAfterLast_A,
-    (kmac_data_req.last && kmac_data_req.valid && kmac_data_rsp.ready) |=>
-    !kmac_data_req.valid throughout rsp_done[->1], clk, !rst_n || rsp_error)
+    (kmac_data_req.last && kmac_data_req.req_valid && kmac_data_rsp.req_ready) |=>
+    !kmac_data_req.req_valid throughout rsp_done[->1], clk, !rst_n || rsp_error)
 
 endinterface
