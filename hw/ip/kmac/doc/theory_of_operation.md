@@ -242,6 +242,402 @@ After hashing operation is completed, KMAC does not raise a `kmac_done` interrup
 The result digest always comes in two shares.
 If the `EnMasking` parameter is not set, the second share is always zero.
 
+#### Details of the interface
+This section describes the current app interface.
+> The signal names have been renamed to make more sense and also streamline the proposed extension.
+> The data path is also extended to two shares.
+
+| Old signal     | New name         | Description |
+|----------------|------------------|-------------|
+| valid          | req_valid        | The valid signal of the request channel |
+| data           | data_s0, data_s1 | The data of the request channel |
+| strb           | strb             | The strobe data for the data |
+| last           | last             | A flag to signal the end of the message |
+| ready          | req_ready        | The ready signal of the request channel |
+| done           | rsp_valid        | The valid signal of the response channel. Note there is no ready signal for this channel. |
+| digest_share0  | digest_s0        | First share of the digest data |
+| digest_share1  | digest_s1        | Second share of the digest data |
+| error          | error            | A flag which is set if there occurred an error and the app should discard the digest |
+
+```mermaid
+stateDiagram-v2
+StIdle
+StAppCfg
+StAppMsg
+StAppOutLen
+StAppProcess
+StAppWait
+StError
+StErrorServiceRejected
+StErrorWaitAbsorbed
+StErrorAwaitSW
+StErrorAwaitApp
+StSw
+StKeyMgrErrKeyNotValid
+StKeyInvalid: At any time Key used && Key Invalid
+
+[*] --> StIdle
+
+StIdle --> StAppCfg: arb_valid
+StIdle --> StSw: sw_cmd_i
+
+StSw --> StIdle: done command
+
+StAppCfg --> StError: is KMAC and Entropy not ready
+StAppCfg --> StAppMsg: else
+
+StAppMsg --> StAppProcess: Last message handshaked && !KMAC
+StAppMsg --> StAppOutLen: Last message handshaked && KMAC
+
+StAppOutLen --> StAppProcess: KMAC length handshaked
+
+StAppProcess --> StAppWait
+
+StAppWait --> StIdle: absorbed_i
+
+StError --> StErrorAwaitSW: SW error || (Last app message received && !ServiceRejected)
+StError --> StErrorServiceRejected: Last app message received && ServiceRejected
+StError --> StErrorAwaitApp: SW error processed
+StError --> StErrorWaitAbsorbed: SW error processed && Last app message received
+
+StErrorAwaitSW --> StErrorWaitAbsorbed: SW error processed
+StErrorAwaitApp --> StErrorWaitAbsorbed: Last app message received
+
+StErrorWaitAbsorbed --> StIdle: absorbed_i
+
+StErrorServiceRejected --> StIdle
+
+StKeyInvalid --> StKeyMgrErrKeyNotValid
+StKeyMgrErrKeyNotValid --> StError
+```
+
+Happy case for SHA3.
+KMAC operation would have one extra state between AppCfg and AppMsg.
+```wavejson
+{
+  signal: [
+    {name: 'App state', wave: '2.22..22|..2', data: ["Idle","AppCfg","AppMsg","AppProcess","AppWait","Idle"]},
+    {},
+    ['Request',
+    {name: 'req_valid', wave: '01....0.....'},
+    {name: 'data_s0',   wave: 'x2..22x.....'},
+    {name: 'data_s1',   wave: 'x2..22x.....'},
+    {name: 'strb',      wave: 'x2...2x.....', data: ["0xFF","0x03"]},
+    {name: 'last',      wave: 'x0...1x.....'},
+    {name: 'req_ready', wave: '0..1..0.....'},
+    ],
+    {},
+    ['Response',
+    {name: 'rsp_valid', wave: '0.........10'},
+    {name: 'digest_s0', wave: 'x.........2x'},
+    {name: 'digest_s1', wave: 'x.........2x'},
+    {name: 'error',     wave: 'x.........0x'},
+    ],
+  ],
+  edge: [],
+  foot:{
+   tock:0
+ },
+ config:{hscale:2},
+}
+```
+
+#### Error handling by the existing app interface
+There are 4 error reasons:
+- The app FSM entered its terminal error state because:
+  - The escalate_i signal is asserted.
+  - The FSM itself entered an invalid state.
+- Service rejected error
+  - The service is rejected because a KMAC operation is requested but the entropy is not ready.
+- Key is invalid error
+  - The sideloaded key is used but the key is invalid.
+- Hashing engine error (`error_i` signal)
+  - The hashing backend received a wrong command / the command order was violated.
+
+
+These errors are handled as described in the following.
+
+##### Terminal error state
+The terminal error state leads to a fatal alert in OT domain which will result in a chip reset.
+As of this, this error case does not need to end the app session gracefully.
+If this error occurs, the app interface will set the error bit but not send a response or handle any message requests.
+
+##### Service rejected error
+If the app interface rejects an application request, the messages from the application are still accepted but directly discarded.
+As of this no data is pushed into the hashing engine.
+After the last message part, the app interface then immediately sends a response with garbage data and the error flag set.
+It then directly returns into the Idle state without waiting for SW to set the `error_processed` bit.
+
+```wavejson
+{
+  signal: [
+    {name: 'App state', wave: '2.22..22', data: ["Idle","AppCfg","StError","SerRej","Idle"]},
+    {},
+    ['Request',
+    {name: 'req_valid', wave: '01....0.'},
+    {name: 'data_s0',   wave: 'x2..22x.'},
+    {name: 'data_s1',   wave: 'x2..22x.'},
+    {name: 'strb',      wave: 'x2...2x.', data: ["0xFF","0x03"]},
+    {name: 'last',      wave: 'x0...1x.'},
+    {name: 'req_ready', wave: '0..1..0.'},
+    ],
+    {},
+    ['Response',
+    {name: 'rsp_valid', wave: '0.....10'},
+    {name: 'digest_s0', wave: 'x.....2x'},
+    {name: 'digest_s1', wave: 'x.....2x'},
+    {name: 'error',     wave: 'x.1....x'},
+    ],
+  ],
+  edge: [],
+  foot:{
+   tock:0
+ },
+ config:{hscale:2},
+}
+```
+
+##### Key is invalid error
+If the key is used by a KMAC operation but the provided key is invalid at any time, the app interface will enter the `StError` (via `StKeyMgrErrKeyNotValid`).
+
+In the `StError` state, the app interface handles both app and SW induced errors.
+The same way as in the service rejected error case, the app interface ensures that any pending message requests are fully drained.
+Once this has happened, it sends the process command to the hashing engine.
+When the processing has finished, it sends back a response with garbage digest data and the error flag set.
+Then the app interface waits for SW to set the `error_processed_i` flag before it finally sends the done command.
+Only then the KMAC is back in the idle state.
+
+In the current implementation this error handling has a potential deadlock issue.
+If the key gets invalid after the app has sent last message, the app interface will still handle the error but the error handling currently waits until the app sends the last message (StErrorAwaitApp).
+However, this could have already happened, so the app interface will wait forever and thus deadlock the interface.
+A solution to this would be to register whether the last message has already been sent.
+
+```wavejson
+{
+  signal: [
+    {name: 'App state', wave: '2.222.2..2.2', data: ["Idle","AppCfg","AppMsg","StError","ErrAwaitSw","ErrWaitAbsorbed","Idle"]},
+    {},
+    ['Request',
+    {name: 'req_valid', wave: '01....0.....'},
+    {name: 'data_s0',   wave: 'x2..22x.....'},
+    {name: 'data_s1',   wave: 'x2..22x.....'},
+    {name: 'strb',      wave: 'x2...2x.....', data: ["0xFF","0x03"]},
+    {name: 'last',      wave: 'x0...1x.....'},
+    {name: 'req_ready', wave: '0..1..0.....'},
+    ],
+    {},
+    ['Response',
+    {name: 'rsp_valid', wave: '0.....10....'},
+    {name: 'digest_s0', wave: 'x.....2x....'},
+    {name: 'digest_s1', wave: 'x.....2x....'},
+    {name: 'error',     wave: 'x...1..x....'},
+    ],
+    {},
+    {name: 'error_processed_i', wave: '0.......10..'}
+  ],
+  edge: [],
+  foot:{
+   tock:0
+ },
+ config:{hscale:2},
+}
+```
+
+##### Hashing engine error
+If there is an error at any time in the hashing engine, signaled with `error_i`, the app still continues its operation but once it sends the digest response the error flag will be set.
+As long as the `absorbed_i` signal is still pulsed in the error case, the interface will end the session regularly by sending the done command and return to the idle state.
+
+### Extending the app interface
+For the OTBN interface we require:
+- A way to send the hashing configuration (mode, strength, etc.)
+- A way to send digest back in parts
+- A way to signal that we need more digest parts
+- A way to end a session once we have all the digest parts we want
+
+How can we send the configuration:
+- For the current interface, the first request already contains the first part of the message.
+- To send configuration, a compile-time parameter marks an interface as dynamic which means that its first request does not contain data but rather that it contains the configuration.
+- A request is then either accepted or rejected if the configuration is valid/invalid.
+- The rejection is handled the same way as currently a KMAC request is rejected in case the entropy is not ready.
+
+How can we send digest back in parts and request more digest parts:
+- A) Implement response back pressure and try to send all available digest parts as soon as possible.
+  - This would be the cleanest option as full back pressure gives the greatest flexibility on the app side.
+    - It allows to dispatch all commands in the correct order and then just wait for the corresponding responses.
+  - It also gives the best performance as no digest must be requested, it just can be sent back as soon as it is available.
+  - It is however also the most complex and would require to either adapt the other applications or add a new interface along side the current one.
+    - Merging back pressure in the current implementation seems to be quite complex.
+  - An interface supporting full back pressure is described in the CmdApp proposal.
+- B) Have an "always ready" response channel and request each digest part separately.
+  - The current response channel operates in an "always ready" manner.
+    As of this any application must always immediately accept a response.
+  - The app interface still automatically sends the first digest part as soon as it is available.
+    - For the existing interface we have a compile-time parameter so we send the full digest back and immediately end the session.
+    - For the new interface we would send back the first 64-bit chunk but the session would be kept alive.
+    - A "message" request arriving after the first digest part has been sent back is interpreted as a "next digest" request.
+        - The KMAC interface will then send the next digest part.
+        - If there is no more digest ready, it will automatically trigger a RUN command.
+          Once the new digest is available, a response is sent.
+    - To end the session, the app must signal the end with a request which has the "last" flag set.
+      - The interface will send back a response to acknowledge the end.
+      - This request will not send back any digest and thus won't trigger a RUN command if the digest is already fully read.
+        This simplifies the app side as it not known when the last data is required.
+        This way we can stop once we have read enough digest without having to void the unused data (and thus save the cycles of the squeezing).
+      - If the app does not know when the last message is sent, it can also send a message with strobe='0 and the last flag set to trigger the processing without forwarding further data.
+
+The option B can be implemented without affecting the functionality of the current interface.
+Its details are described below.
+
+#### Always ready response based interface
+The option B can be implemented with the following state machine.
+The new states are `StAppPushDigest` and `StAppFinish` which handle the case to send the digest in parts.
+
+```mermaid
+stateDiagram-v2
+StIdle
+StAppCfg
+StAppMsg
+StAppOutLen
+StAppProcess
+StAppWait
+StAppPushDigest
+StAppFinish
+StError
+StErrorServiceRejected
+StErrorWaitAbsorbed
+StErrorAwaitSW
+StErrorAwaitApp
+StSw
+StKeyMgrErrKeyNotValid
+StKeyInvalid: At any time Key used && Key Invalid
+
+[*] --> StIdle
+
+StIdle --> StAppCfg: arb_valid
+StIdle --> StSw: sw_cmd_i
+
+StSw --> StIdle: done command
+
+StAppCfg --> StError: (is KMAC and Entropy not ready) || config invalid
+StAppCfg --> StAppMsg: else
+
+StAppMsg --> StAppProcess: Last message handshaked && !KMAC
+StAppMsg --> StAppOutLen: Last message handshaked && KMAC
+
+StAppOutLen --> StAppProcess: KMAC length handshaked
+
+StAppProcess --> StAppWait
+
+StAppWait --> StIdle: if static interface && absorbed_i
+StAppWait --> StAppPushDigest: if dynamic interface && (absorbed_i || block_processed_i)
+
+StAppPushDigest --> StAppWait: request && digest pushed && !last
+StAppPushDigest --> StAppFinish: request && last
+
+StAppFinish --> StIdle
+
+StError --> StErrorAwaitSW: SW error || (Last app message received && !ServiceRejected)
+StError --> StErrorServiceRejected: Last app message received && ServiceRejected
+StError --> StErrorAwaitApp: SW error processed
+StError --> StErrorWaitAbsorbed: SW error processed && Last app message received
+
+StErrorAwaitSW --> StErrorWaitAbsorbed: SW error processed
+StErrorAwaitApp --> StErrorWaitAbsorbed: Last app message received
+
+StErrorWaitAbsorbed --> StIdle: absorbed_i
+
+StErrorServiceRejected --> StIdle
+
+StKeyInvalid --> StKeyMgrErrKeyNotValid
+StKeyMgrErrKeyNotValid --> StError
+```
+
+For concept B, the previously described happy path would stay exactly the same for an interface which has a static configuration.
+For a SHAKE operation via a dynamic interface instance would look like shown in the wave below.
+In this example the app ends the session after it has received 3 digest parts.
+
+First, the app sends a request with the configuration 
+
+Note, the AppFinish state is required to keep the arbitration lock to be able to send the acknowledgement back.
+
+```wavejson
+{
+  signal: [
+    {name: 'App state', wave: '2.22.22.2..22', data: ["Idle","AppCfg","AppMsg","AppProcess","AppWait","AppPushDigest","AppFinish","Idle"]},
+    {},
+    ['Request',
+    {name: 'req_valid', wave: '01...0..1..0.'},
+    {name: 'data_s0',   wave: 'x2.22x.......', data: ["config"]},
+    {name: 'data_s1',   wave: 'x..22x.......'},
+    {name: 'strb',      wave: 'x..22x.......', data: ["","0xFF","0x03"]},
+    {name: 'last',      wave: 'x0..10....1x.'},
+    {name: 'req_ready', wave: '0.1..0..1..0.'},
+    ],
+    {},
+    ['Response',
+    {name: 'rsp_valid', wave: '0......101..0'},
+    {name: 'digest_s0', wave: 'x......2x22x.'},
+    {name: 'digest_s1', wave: 'x......2x22x.'},
+    {name: 'error',     wave: 'x......0x0..x'},
+    ],
+  ],
+  edge: [],
+  foot:{
+   tock:0
+ },
+ config:{hscale:2},
+}
+```
+
+If the app requests more than the current rate (in this diagram 3 digest parts) it looks like shown below (diagram starts when last message is sent).
+The digest response for the request in cycle 6 is immediately handshaked but the actual response data is send in cycle 8 once the squeezing has produced a new digest.
+```wavejson
+{
+  signal: [
+    {name: 'App state', wave: '222.2..2.2.22', data: ["AppMsg","AppProcess","AppWait","AppPushDigest","AppWait","AppPushDigest","AppFinish","Idle"]},
+    {},
+    ['Request',
+    {name: 'req_valid', wave: '10..1......0.'},
+    {name: 'data_s0',   wave: '2x...........', data: [""]},
+    {name: 'data_s1',   wave: '2x...........'},
+    {name: 'strb',      wave: '2x...........', data: ["0x03"]},
+    {name: 'last',      wave: '10........1x.'},
+    {name: 'req_ready', wave: '10..1..0.1.0.'},
+    ],
+    {},
+    ['Response',
+    {name: 'rsp_valid', wave: '0..101.0101.0'},
+    {name: 'digest_s0', wave: 'x..2x22x2x2x.'},
+    {name: 'digest_s1', wave: 'x..2x22x2x2x.'},
+    {name: 'error',     wave: 'x..0x0.x0x0.x'},
+    ],
+  ],
+  edge: [],
+  foot:{
+   tock:0
+ },
+ config:{hscale:2},
+}
+```
+
+#### Extending the interface shared messages
+Extending the interface so the messages are sent in a shared manner is simple.
+It just requires to slightly adapt the data forward path inside the kmac_app module.
+
+For coding reasons, the interface type is expanded to two shares.
+However, any app which does not make use of shares must only drive one share.
+The other share is tied to `'0` inside the kmac_app by a compile time option.
+
+#### Error handling
+
+The error handling is very similar to the original interface.
+- If the dynamic configuration is invalid or the entropy is not ready for a KMAC operation, the app rejects the service and returns back to idle.
+- If there is an error during the message sending part, the app drains the application empty and starts to recover the KMAC the same way as the original interface.
+- If there is an error during the processing or whilst pushing the digest parts, the interface simply sets the error flag for all responses.
+  The app then must handle accordingly.
+
+In any case, there is no finish response sent if an error occurs.
+
 ### Entropy Generator
 
 This section explains the entropy generator inside the KMAC HWIP.
