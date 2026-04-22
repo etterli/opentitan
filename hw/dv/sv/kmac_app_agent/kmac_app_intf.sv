@@ -44,10 +44,21 @@ interface kmac_app_intf (input clk, input rst_n);
 
   always @(if_mode) req_data_if.if_mode = if_mode;
 
+  // Explicitly pack struct fields to handle the two-share req format. data_s1 is
+  // not driven by the push_pull_if (single-share / unmasked operations only).
   assign kmac_data_req = (if_mode == dv_utils_pkg::Host) ?
-                         {req_data_if.valid, req_data_if.h_data} : 'z;
+      {req_data_if.valid,
+       req_data_if.h_data[KmacDataIfWidth + KmacDataIfWidth/8 : KmacDataIfWidth/8 + 1],
+       {KmacDataIfWidth{1'b0}},
+       req_data_if.h_data[KmacDataIfWidth/8 : 1],
+       req_data_if.h_data[0]}
+      : 'z;
   assign {req_data_if.valid, req_data_if.h_data} = (if_mode == dv_utils_pkg::Device) ?
-                                                   kmac_data_req : 'z;
+      {kmac_data_req.req_valid,
+       kmac_data_req.data_s0,
+       kmac_data_req.strb,
+       kmac_data_req.last}
+      : 'z;
 
   assign {req_data_if.ready, rsp_done, rsp_digest_share0, rsp_digest_share1, rsp_error} =
          (if_mode == dv_utils_pkg::Host) ? kmac_data_rsp : 'z;

@@ -11,19 +11,34 @@ class kmac_app_item extends uvm_sequence_item;
   // also used by the monitor to assemble the full request message
   rand byte byte_data_q[$];
 
-  // response digest/error
+  // App interface type determines digest collection mode.
+  kmac_pkg::app_type_e app_type = kmac_pkg::AppStatic;
+
+  // For AppDynamic: how many digest parts the host will request.
+  int unsigned req_output_len = 0;
+
+  // Static mode: single full-width digest (384 bits each share).
   rand bit [kmac_pkg::AppDigestW-1:0] rsp_digest_share0;
   rand bit [kmac_pkg::AppDigestW-1:0] rsp_digest_share1;
-  rand bit                            rsp_error;
 
-  rand int unsigned       rsp_delay;
+  // Dynamic mode: stream of 64-bit digest chunks.
+  bit [kmac_pkg::DynAppDigestW-1:0] digest_chunks_s0[$];
+  bit [kmac_pkg::DynAppDigestW-1:0] digest_chunks_s1[$];
+
+  rand bit rsp_error;
+
+  rand int unsigned rsp_delay;
 
   `uvm_object_utils_begin(kmac_app_item)
-    `uvm_field_queue_int(byte_data_q, UVM_DEFAULT)
-    `uvm_field_int(rsp_digest_share0, UVM_DEFAULT)
-    `uvm_field_int(rsp_digest_share1, UVM_DEFAULT)
-    `uvm_field_int(rsp_error,         UVM_DEFAULT)
-    `uvm_field_int(rsp_delay,         UVM_DEFAULT)
+    `uvm_field_queue_int(byte_data_q,      UVM_DEFAULT)
+    `uvm_field_enum(kmac_pkg::app_type_e, app_type, UVM_DEFAULT)
+    `uvm_field_int(req_output_len,         UVM_DEFAULT)
+    `uvm_field_int(rsp_digest_share0,      UVM_DEFAULT)
+    `uvm_field_int(rsp_digest_share1,      UVM_DEFAULT)
+    `uvm_field_queue_int(digest_chunks_s0, UVM_DEFAULT)
+    `uvm_field_queue_int(digest_chunks_s1, UVM_DEFAULT)
+    `uvm_field_int(rsp_error,              UVM_DEFAULT)
+    `uvm_field_int(rsp_delay,              UVM_DEFAULT)
   `uvm_object_utils_end
 
   `uvm_object_new

@@ -32,6 +32,18 @@ class kmac_app_agent_cfg extends dv_base_agent_cfg;
 
   rand push_pull_agent_cfg#(`CONNECT_DATA_WIDTH) m_data_push_agent_cfg;
 
+  // App interface type: AppStatic (KeyMgr/LC/ROM) or AppDynamic (OTBN).
+  // Set once from the environment before the test starts.
+  kmac_pkg::app_type_e app_type = kmac_pkg::AppStatic;
+
+  // For AppDynamic: mode and strength encoded in the config beat.
+  kmac_pkg::app_mode_e           app_mode     = kmac_pkg::AppShake;
+  sha3_pkg::keccak_strength_e    app_strength = sha3_pkg::L256;
+
+  // For AppDynamic: number of digest parts the app will request.
+  // The vseq sets this before starting a sequence.
+  int unsigned req_output_len = 0;
+
   // KMAC digest share0/1 that can be set from test env.
   kmac_pkg::rsp_digest_t rsp_digest_hs[$];
 

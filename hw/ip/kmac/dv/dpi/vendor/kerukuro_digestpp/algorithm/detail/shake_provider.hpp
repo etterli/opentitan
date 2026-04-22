@@ -133,6 +133,7 @@ public:
 			m[r - 1] |= 0x80;
 			sha3_functions::transform<R>(m.data(), 1, A.data(), rate);
 			squeezing = true;
+			pos = 0;
 		}
 		else if (pos < r)
 		{

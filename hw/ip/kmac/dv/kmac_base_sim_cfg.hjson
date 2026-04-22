@@ -92,6 +92,10 @@
       uvm_test_seq: kmac_smoke_vseq
     }
     {
+      name: "{name}_app_xof_smoke"
+      uvm_test_seq: kmac_app_xof_smoke_vseq
+    }
+    {
       name: "{name}_long_msg_and_output"
       uvm_test_seq: kmac_long_msg_and_output_vseq
       run_opts: ["+test_timeout_ns=10_000_000_000"]
