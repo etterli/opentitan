@@ -4,8 +4,7 @@
 
 // Smoke test for the AppDynamic interface.
 //
-// Sends the 3-byte message "abc" and verifies the digest against the DPI
-// reference model.
+// Sends a randomized message and verifies the digest against the DPI reference model.
 class kmac_app_xof_smoke_vseq extends kmac_sideload_vseq;
   `uvm_object_utils(kmac_app_xof_smoke_vseq)
   `uvm_object_new
@@ -14,8 +13,9 @@ class kmac_app_xof_smoke_vseq extends kmac_sideload_vseq;
   // TODO: constrain this to all apps which have type dynamic (via APP_CFG?)
   localparam kmac_app_e dut_app = AppOtbn;
 
-  // TODO: randomize message
-  localparam byte MSG[3] = '{"a", "b", "c"};
+  constraint msg_c {
+    msg.size() inside {[1:1000]};
+  }
 
   // AppDynamic mode and strength encoded in the config beat.
   rand kmac_pkg::app_mode_e        dyn_mode;
@@ -80,7 +80,7 @@ class kmac_app_xof_smoke_vseq extends kmac_sideload_vseq;
     end
 
     `uvm_create_on(xof_seq, p_sequencer.kmac_app_sequencer_h[dut_app])
-    foreach (MSG[i]) xof_seq.msg_q.push_back(MSG[i]);
+    foreach (msg[i]) xof_seq.msg_q.push_back(msg[i]);
     xof_seq.req_output_len = output_chunks;
     `uvm_send(xof_seq)
 
