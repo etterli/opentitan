@@ -208,7 +208,7 @@ class rom_ctrl_bkdr_util extends mem_bkdr_util;
       end
     end
     digestpp_dpi_pkg::c_dpi_cshake256(kmac_data_arr, "", "ROM_CTRL", kmac_data_arr.size,
-                                      kmac_pkg::AppDigestW / 8, dpi_digest);
+                                      kmac_pkg::AppDigestW / 8, 1'b0, dpi_digest);
 
     for (int i = 0; i < ROM_DIGEST_BYTES; i++) begin
       rom_encrypt_write8(digest_start_addr + i, dpi_digest[i], key, nonce, scramble_data);
