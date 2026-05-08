@@ -111,7 +111,7 @@ extern void c_dpi_sha3_512(const svOpenArrayHandle msg, uint64_t msg_len,
 // SHAKE128 //
 //////////////
 extern void c_dpi_shake128(const svOpenArrayHandle msg, uint64_t msg_len,
-                           uint64_t output_len, svOpenArrayHandle digest) {
+                           uint64_t output_len, bool xof_en, svOpenArrayHandle digest) {
   // Load message from SV memory
   uint8_t *msg_arr = (uint8_t *)malloc(msg_len * sizeof(uint8_t));
   load_arr_from_simulator(msg, msg_arr, msg_len);
@@ -135,7 +135,7 @@ extern void c_dpi_shake128(const svOpenArrayHandle msg, uint64_t msg_len,
 // SHAKE256 //
 //////////////
 extern void c_dpi_shake256(const svOpenArrayHandle msg, uint64_t msg_len,
-                           uint64_t output_len, svOpenArrayHandle digest) {
+                           uint64_t output_len, bool xof_en, svOpenArrayHandle digest) {
   // Load message from SV memory
   uint8_t *msg_arr = (uint8_t *)malloc(msg_len * sizeof(uint8_t));
   load_arr_from_simulator(msg, msg_arr, msg_len);
@@ -161,7 +161,7 @@ extern void c_dpi_shake256(const svOpenArrayHandle msg, uint64_t msg_len,
 extern void c_dpi_cshake128(const svOpenArrayHandle msg,
                             const char *function_name,
                             const char *customization_str, uint64_t msg_len,
-                            uint64_t output_len, svOpenArrayHandle digest) {
+                            uint64_t output_len, bool xof_en, svOpenArrayHandle digest) {
   // Load message from SV memory
   uint8_t *msg_arr = (uint8_t *)malloc(msg_len * sizeof(uint8_t));
   load_arr_from_simulator(msg, msg_arr, msg_len);
@@ -172,6 +172,7 @@ extern void c_dpi_cshake128(const svOpenArrayHandle msg,
   digestpp::cshake128 shake;
   shake.set_function_name(function_name, strlen(function_name));
   shake.set_customization(customization_str, strlen(customization_str));
+  shake.reset();
   shake.absorb(msg_arr, msg_len);
   shake.squeeze(digest_arr, output_len);
 
@@ -189,7 +190,7 @@ extern void c_dpi_cshake128(const svOpenArrayHandle msg,
 extern void c_dpi_cshake256(const svOpenArrayHandle msg,
                             const char *function_name,
                             const char *customization_str, uint64_t msg_len,
-                            uint64_t output_len, svOpenArrayHandle digest) {
+                            uint64_t output_len, bool xof_en, svOpenArrayHandle digest) {
   // Load message from SV memory
   uint8_t *msg_arr = (uint8_t *)malloc(msg_len * sizeof(uint8_t));
   load_arr_from_simulator(msg, msg_arr, msg_len);
@@ -200,6 +201,7 @@ extern void c_dpi_cshake256(const svOpenArrayHandle msg,
   digestpp::cshake256 shake;
   shake.set_function_name(function_name, strlen(function_name));
   shake.set_customization(customization_str, strlen(customization_str));
+  shake.reset();
   shake.absorb(msg_arr, msg_len);
   shake.squeeze(digest_arr, output_len);
 
@@ -211,13 +213,16 @@ extern void c_dpi_cshake256(const svOpenArrayHandle msg,
   write_array_to_simulator(digest, digest_arr);
 }
 
+
+
+
 /////////////
 // KMAC128 //
 /////////////
 extern void c_dpi_kmac128(const svOpenArrayHandle msg, uint64_t msg_len,
                           const svOpenArrayHandle key, uint64_t key_len,
                           const char *customization_str, uint64_t output_len,
-                          svBitVecVal *digest) {
+                          svOpenArrayHandle digest) {
   uint64_t output_len_bits = output_len * 8;
 
   // Load message from SV memory
@@ -234,6 +239,7 @@ extern void c_dpi_kmac128(const svOpenArrayHandle msg, uint64_t msg_len,
   digestpp::kmac128 kmac(output_len_bits);
   kmac.set_customization(customization_str, strlen(customization_str));
   kmac.set_key(key_arr, key_len);
+  kmac.reset();
   kmac.absorb(msg_arr, msg_len);
   kmac.digest(digest_arr, sizeof(digest_arr));
 
@@ -255,7 +261,7 @@ extern void c_dpi_kmac128(const svOpenArrayHandle msg, uint64_t msg_len,
 extern void c_dpi_kmac128_xof(const svOpenArrayHandle msg, uint64_t msg_len,
                               const svOpenArrayHandle key, uint64_t key_len,
                               const char *customization_str,
-                              uint64_t output_len, svBitVecVal *digest) {
+                              uint64_t output_len, svOpenArrayHandle digest) {
   // Load message from SV memory
   uint8_t *msg_arr = (uint8_t *)malloc(msg_len * sizeof(uint8_t));
   load_arr_from_simulator(msg, msg_arr, msg_len);
@@ -270,6 +276,7 @@ extern void c_dpi_kmac128_xof(const svOpenArrayHandle msg, uint64_t msg_len,
   digestpp::kmac128_xof kmac;
   kmac.set_customization(customization_str, strlen(customization_str));
   kmac.set_key(key_arr, key_len);
+  kmac.reset();
   kmac.absorb(msg_arr, msg_len);
   kmac.squeeze(digest_arr, sizeof(digest_arr));
 
@@ -291,7 +298,7 @@ extern void c_dpi_kmac128_xof(const svOpenArrayHandle msg, uint64_t msg_len,
 extern void c_dpi_kmac256(const svOpenArrayHandle msg, uint64_t msg_len,
                           const svOpenArrayHandle key, uint64_t key_len,
                           const char *customization_str, uint64_t output_len,
-                          svBitVecVal *digest) {
+                          svOpenArrayHandle digest) {
   uint64_t output_len_bits = output_len * 8;
 
   // Load message from SV memory
@@ -308,6 +315,7 @@ extern void c_dpi_kmac256(const svOpenArrayHandle msg, uint64_t msg_len,
   digestpp::kmac256 kmac(output_len_bits);
   kmac.set_customization(customization_str, strlen(customization_str));
   kmac.set_key(key_arr, key_len);
+  kmac.reset();
   kmac.absorb(msg_arr, msg_len);
   kmac.digest(digest_arr, sizeof(digest_arr));
 
@@ -329,7 +337,7 @@ extern void c_dpi_kmac256(const svOpenArrayHandle msg, uint64_t msg_len,
 extern void c_dpi_kmac256_xof(const svOpenArrayHandle msg, uint64_t msg_len,
                               const svOpenArrayHandle key, uint64_t key_len,
                               const char *customization_str,
-                              uint64_t output_len, svBitVecVal *digest) {
+                              uint64_t output_len, svOpenArrayHandle digest) {
   // Load message from SV memory
   uint8_t *msg_arr = (uint8_t *)malloc(msg_len * sizeof(uint8_t));
   load_arr_from_simulator(msg, msg_arr, msg_len);
@@ -344,6 +352,7 @@ extern void c_dpi_kmac256_xof(const svOpenArrayHandle msg, uint64_t msg_len,
   digestpp::kmac256_xof kmac;
   kmac.set_customization(customization_str, strlen(customization_str));
   kmac.set_key(key_arr, key_len);
+  kmac.reset();
   kmac.absorb(msg_arr, msg_len);
   kmac.squeeze(digest_arr, sizeof(digest_arr));
 

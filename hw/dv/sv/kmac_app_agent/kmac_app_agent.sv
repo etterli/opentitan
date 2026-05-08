@@ -15,7 +15,8 @@ class kmac_app_agent extends dv_base_agent #(
   `uvm_component_utils(kmac_app_agent)
 
   `uvm_component_new
-  push_pull_agent#(`CONNECT_DATA_WIDTH) m_data_push_agent;
+  push_pull_agent#(`CONNECT_DATA_WIDTH)     m_data_push_agent;
+  push_pull_agent#(`RSP_CONNECT_DATA_WIDTH) m_rsp_push_agent;
 
   function void build_phase(uvm_phase phase);
     super.build_phase(phase);
@@ -37,11 +38,35 @@ class kmac_app_agent extends dv_base_agent #(
     cfg.vif.if_mode = cfg.if_mode;
     cfg.m_data_push_agent_cfg.zero_delays = cfg.zero_delays;
 
-    // pass cfg and vif
+    // pass cfg and vif for req push agent
     uvm_config_db#(push_pull_agent_cfg#(`CONNECT_DATA_WIDTH))::set(this, "m_data_push_agent*",
                    "cfg", cfg.m_data_push_agent_cfg);
     uvm_config_db#(virtual push_pull_if#(`CONNECT_DATA_WIDTH))::set(this,
                    "m_data_push_agent*", "vif", cfg.vif.req_data_if);
+
+    // Response push agent runs in both modes.
+    //   Host mode → push_pull Device: TB device driver asserts rsp_ready with random delay,
+    //               providing back pressure.  device_delay_{min,max} map to rsp_delay_{min,max}.
+    //   Device mode → push_pull Host: TB host driver sends rsp_valid/h_data.
+    //               host_delay_{min,max} map to rsp_delay_{min,max}.
+    m_rsp_push_agent = push_pull_agent#(`RSP_CONNECT_DATA_WIDTH)::type_id::create(
+        "m_rsp_push_agent", this);
+    cfg.m_rsp_push_agent_cfg.is_active   = cfg.is_active;
+    cfg.m_rsp_push_agent_cfg.agent_type  = PushAgent;
+    cfg.m_rsp_push_agent_cfg.zero_delays = cfg.zero_delays;
+    if (cfg.if_mode == dv_utils_pkg::Host) begin
+      cfg.m_rsp_push_agent_cfg.if_mode          = dv_utils_pkg::Device;
+      cfg.m_rsp_push_agent_cfg.device_delay_min = cfg.rsp_delay_min;
+      cfg.m_rsp_push_agent_cfg.device_delay_max = cfg.rsp_delay_max;
+    end else begin
+      cfg.m_rsp_push_agent_cfg.if_mode        = dv_utils_pkg::Host;
+      cfg.m_rsp_push_agent_cfg.host_delay_min = cfg.rsp_delay_min;
+      cfg.m_rsp_push_agent_cfg.host_delay_max = cfg.rsp_delay_max;
+    end
+    uvm_config_db#(push_pull_agent_cfg#(`RSP_CONNECT_DATA_WIDTH))::set(this,
+                   "m_rsp_push_agent*", "cfg", cfg.m_rsp_push_agent_cfg);
+    uvm_config_db#(virtual push_pull_if#(`RSP_CONNECT_DATA_WIDTH))::set(this,
+                   "m_rsp_push_agent*", "vif", cfg.vif.rsp_data_if);
   endfunction
 
   function void connect_phase(uvm_phase phase);
@@ -56,6 +81,12 @@ class kmac_app_agent extends dv_base_agent #(
     end
 
     m_data_push_agent.monitor.analysis_port.connect(monitor.data_fifo.analysis_export);
+    m_rsp_push_agent.monitor.analysis_port.connect(monitor.rsp_data_fifo.analysis_export);
+
+    if (cfg.is_active && cfg.if_mode == dv_utils_pkg::Device) begin
+      sequencer.m_rsp_push_sequencer = m_rsp_push_agent.sequencer;
+      cfg.m_rsp_push_sequencer       = m_rsp_push_agent.sequencer;
+    end
   endfunction
 
   virtual task run_phase(uvm_phase phase);

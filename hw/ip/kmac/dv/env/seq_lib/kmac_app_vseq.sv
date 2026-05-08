@@ -7,6 +7,13 @@ class kmac_app_vseq extends kmac_sideload_vseq;
   `uvm_object_utils(kmac_app_vseq)
   `uvm_object_new
 
+  // AppOtbn uses the Dynamic protocol (config beat + XOF digest loop) and is
+  // exercised by kmac_app_xof_smoke_vseq.  Restrict this test to the three
+  // static interfaces.
+  constraint app_mode_c {
+    app_mode inside {AppKeymgr, AppLc, AppRom};
+  }
+
   constraint en_app_c {
     en_app dist {
       0 :/ 3,

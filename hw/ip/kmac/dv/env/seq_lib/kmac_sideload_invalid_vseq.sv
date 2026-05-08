@@ -76,7 +76,7 @@ class kmac_sideload_invalid_vseq extends kmac_long_msg_and_output_vseq;
       // TODO(lowrisc/opentitan#24739): Currently, when invalidating the key when the
       // app_i.last was received, exiting the StErrorAwaitApp is not possible anymore.
       // After resolving this issue, we simply can wait until we got kmac_done.
-      wait(cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.valid &&
+      wait(cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_valid &&
            cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.last);
       kmac_done = 1;
     end else begin
@@ -150,7 +150,7 @@ class kmac_sideload_invalid_vseq extends kmac_long_msg_and_output_vseq;
       csr_wr(.ptr(ral.cmd.err_processed), .value(1));
     end else begin
       // Normal operation, wait until KMAC operation has finished.
-      wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.rsp_done == 1);
+      wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.rsp_valid == 1);
     end
   endtask
 

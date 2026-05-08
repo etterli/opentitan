@@ -39,6 +39,7 @@ package digestpp_dpi_pkg;
     input bit[7:0]          msg[],
     input longint unsigned  msg_len,
     input longint unsigned  output_len,
+    input bit               xof_en,
     output bit[7:0]         digest[]
   );
 
@@ -46,6 +47,7 @@ package digestpp_dpi_pkg;
     input bit[7:0]          msg[],
     input longint unsigned  msg_len,
     input longint unsigned  output_len,
+    input bit               xof_en,
     output bit[7:0]         digest[]
   );
 
@@ -55,6 +57,7 @@ package digestpp_dpi_pkg;
     input string            customization_str,
     input longint unsigned  msg_len,
     input longint unsigned  output_len,
+    input bit               xof_en,
     output bit[7:0]         digest[]
   );
 
@@ -64,6 +67,7 @@ package digestpp_dpi_pkg;
     input string            customization_str,
     input longint unsigned  msg_len,
     input longint unsigned  output_len,
+    input bit               xof_en,
     output bit[7:0]         digest[]
   );
 
