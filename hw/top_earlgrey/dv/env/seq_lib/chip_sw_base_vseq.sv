@@ -740,7 +740,7 @@ class chip_sw_base_vseq extends chip_base_vseq;
     bit [kmac_pkg::AppDigestW-1:0] digest_bits;
 
     digestpp_dpi_pkg::c_dpi_cshake128(token_in, "", "LC_CTRL", TokenWidthByte,
-                                      kmac_pkg::AppDigestW/8, dpi_digest);
+                                      kmac_pkg::AppDigestW/8, 1'b0, dpi_digest);
 
     digest_bits = {<< byte {dpi_digest}};
     return (digest_bits[TokenWidthBit-1:0]);

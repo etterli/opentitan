@@ -107,7 +107,7 @@ class chip_sw_flash_init_vseq extends chip_sw_base_vseq;
     bit [7:0] dpi_digest[kmac_pkg::AppDigestW/8];
 
     digestpp_dpi_pkg::c_dpi_cshake128(key_in, "", "FLASH_CTRL", KeyWidthAddrBytes,
-                                      kmac_pkg::AppDigestW / 8, dpi_digest);
+                                      kmac_pkg::AppDigestW / 8, 1'b0, dpi_digest);
     digest_bits = {<<byte{dpi_digest}};
     return (digest_bits[KeyWidthAddrBits-1:0]);
   endfunction
@@ -118,7 +118,7 @@ class chip_sw_flash_init_vseq extends chip_sw_base_vseq;
     bit [7:0] dpi_digest[kmac_pkg::AppDigestW/8];
 
     digestpp_dpi_pkg::c_dpi_cshake128(key_in, "", "SRAM_CTRL", KeyWidthSramBytes,
-                                      kmac_pkg::AppDigestW / 8, dpi_digest);
+                                      kmac_pkg::AppDigestW / 8, 1'b0, dpi_digest);
     digest_bits = {<<byte{dpi_digest}};
     return (digest_bits[KeyWidthSramBits-1:0]);
   endfunction

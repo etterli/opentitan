@@ -45,7 +45,7 @@ class chip_sw_flash_rma_unlocked_vseq extends chip_sw_base_vseq;
     bit [7:0] dpi_digest[kmac_pkg::AppDigestW/8];
 
     digestpp_dpi_pkg::c_dpi_cshake128(key_in, "", "LC_CTRL", KeyWidthByte, kmac_pkg::AppDigestW / 8,
-                                      dpi_digest);
+                                      1'b0, dpi_digest);
 
     digest_bits = {<<byte{dpi_digest}};
     return (digest_bits[KeyWidthBit-1:0]);
