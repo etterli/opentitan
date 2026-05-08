@@ -128,6 +128,15 @@ module kmac_app
   output logic counter_error_o
 );
 
+  // TODO: Discuss whether we can remove this input signal completely.
+  // The signal error_i is only asserted for one cycle when a wrong command is sent. This should
+  // only be possible if SW controls the KMAC as in the app operation the sent commands are fixed.
+  // Also, as it is pulsed, it will definitively never be handshaked as there is never a handshake
+  // when sending a command. Thus we add this assertion here.
+  // Is this here to detect attacks? I doubt it as it is pulsed. I think this is just an obsolete
+  // signal.
+  `ASSERT(ErrorOnlyDuringSw_A, app_active_o |-> !error_i)
+
   import sha3_pkg::KeccakBitCapacity;
   import sha3_pkg::L128;
   import sha3_pkg::L224;
@@ -237,21 +246,14 @@ module kmac_app
   ////////////////////////////
 
   assign app_rsp = '{
-    req_ready: app_data_ready | fsm_data_ready | app_req_ready | app_process_cmd_received,
+    req_ready: app_data_ready | fsm_data_ready | app_req_ready,
     rsp_valid: app_digest_valid | fsm_digest_done_q | app_finish_rsp_valid,
     digest_s0: app_digest[0],
     digest_s1: app_digest[1],
-    // If fsm asserts done, should be an error case.
-    error:     error_i | fsm_digest_done_q | sparse_fsm_error_o | service_rejected_error,
+    // If fsm asserts done, we are handling an error case.
+    error:     fsm_digest_done_q | sparse_fsm_error_o | service_rejected_error,
     finished:  app_finish_rsp_valid
   };
-
-  // The signal error_i is only asserted for one cycle when a wrong command is sent. This should
-  // only be possible if SW controls the KMAC. Also, as it is pulsed, it will definitively never be
-  // handshaked as there is never a handshake when sending a command. Thus we add this assertion
-  // here.
-  // TODO: Discuss whether we can remove this input signal completely.
-  `ASSERT(ErrorOnlyDuringSw_A, app_active_o |-> !error_i)
 
   // app_digest_valid and app_finish_rsp_valid may never be true at the same time because it would
   // mean that the finish response tries to overrule a pending digest response.
@@ -409,13 +411,34 @@ module kmac_app
   logic squeeze_again;
   logic app_push_digest;
   logic reset_digest_pusher;
+  logic key_used_but_invalid;
   logic pending_digest_rsp_d, pending_digest_rsp_q;
+  logic message_parts_received_d, message_parts_received_q;
+  logic err_processed_d, err_processed_q;
+  logic message_part_handshaked;
+
+  assign message_part_handshaked = st == StAppMsg && app_req.req_valid && app_rsp.req_ready;
+
+  assign message_parts_received_d =
+      message_part_handshaked ? 1'b1 :                    // set
+      (st == StIdle)          ? 1'b0 :                    // reset
+                                message_parts_received_q; // hold
+
+  // Only set flag if this bit is relevant for the app interface, i.e., a hashing operation is
+  // ongoing (this includes SW- and app-triggered operations).
+  assign err_processed_d = err_processed_i && (st != StIdle) ? 1'b1 :           // set
+                           st == StIdle                      ? 1'b0 :           // reset
+                                                               err_processed_q; // hold
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      pending_digest_rsp_q <= 1'b0;
+      message_parts_received_q <= 1'b0;
+      err_processed_q          <= 1'b0;
+      pending_digest_rsp_q     <= 1'b0;
     end else begin
-      pending_digest_rsp_q <= pending_digest_rsp_d;
+      message_parts_received_q <= message_parts_received_d;
+      err_processed_q          <= err_processed_d;
+      pending_digest_rsp_q     <= pending_digest_rsp_d;
     end
   end
 
@@ -445,7 +468,7 @@ module kmac_app
     service_rejected_error_set = 1'b 0;
     service_rejected_error_clr = 1'b 0;
 
-    // If error happens, FSM asserts data ready but discard incoming msg
+    // If an error happens, FSM asserts data ready but discard incoming message parts.
     fsm_data_ready = 1'b 0;
     fsm_digest_done_d = 1'b 0;
 
@@ -456,7 +479,7 @@ module kmac_app
     app_req_ready  = 1'b0;
 
     // If the last request has an empty strobe, do not forward data but just send the process
-    // command.
+    // command (or advance to the output length append state for KMAC).
     app_process_cmd_received = 1'b0;
 
     // Whether to push a digest part or reset the pusher.
@@ -495,7 +518,7 @@ module kmac_app
           st_d  = StAppMsg;
           cmd_o = CmdStart;
         end
-        // Handshake the configuration request also if there is an error.
+        // Handshake the configuration request also if there is an error (incl. key invalid error).
         // This is required as an application interface still must send the full data (at least
         // one beat with the last flag set) so that the app interface can bring back the KMAC into
         // the Idle state.
@@ -509,10 +532,16 @@ module kmac_app
 
         // The app can end the message phase without sending any data if it sets the strobe to
         // '0. In this case the data valid is not forwarded to the FIFO and the request is
-        // immediately handshaked. Any process command is latched downstream in case the hashing
+        // immediately handshaked. This command is only valid once the app already has sent some
+        // message parts as otherwise the same request represents an empty message. Note that we
+        // can immediately send the process command as it is latched downstream in case the hashing
         // engine is still absorbing previous message parts.
         app_process_cmd_received = app_cfg_q.Type == AppDynamic &&
-                                   app_req.req_valid && app_req.strb == '0 && app_req.last;
+                                   message_parts_received_q     &&
+                                   app_req.strb == '0           &&
+                                   app_req.last                 &&
+                                   app_req.req_valid;
+        app_req_ready            = app_process_cmd_received;
 
         if (app_process_cmd_received ||
             (app_req.req_valid && app_rsp.req_ready && app_req.last)) begin
@@ -521,6 +550,12 @@ module kmac_app
           end else begin
             st_d = StAppProcess;
           end
+        end else if (key_used_but_invalid) begin
+          // Error out if the key is used but it is invalid. This error can be ignored if in the
+          // same cycle the last message was handshaked. The reason is that for KMAC the key is
+          // used before any message parts are absorbed. So if the last message part is handshaked,
+          // the key is already fully absorbed.
+          st_d = StKeyMgrErrKeyNotValid;
         end
       end
 
@@ -545,7 +580,7 @@ module kmac_app
       StAppWait: begin
         st_d = StAppWait;
 
-        // absorbed_i and squeezing_i are pulsed.
+        // absorbed_i and squeezing_i are pulsed once the processing / squeezing has finished.
         if (prim_mubi_pkg::mubi4_test_true_strict(absorbed_i) ||
             (squeezing_i && app_cfg_q.Type == AppDynamic)) begin
           st_d                = StAppPushDigest;
@@ -555,7 +590,7 @@ module kmac_app
 
       StAppPushDigest: begin
         // Static interface:
-        // - Return full digest in one handshaked response and return to idle.
+        // - Return full digest in one handshaked response and return to idle (via finish).
         // Dynamic interface:
         // - Push the available digest / rate in parts.
         // - For SHAKE and CSHAKE, if digest / rate is fully pushed, trigger a squeeze.
@@ -569,12 +604,12 @@ module kmac_app
           end
         end else begin
           // Ending a session by handshaking the request takes priority over squeezing to avoid
-          // starting a long squeeze operation.
+          // starting an obsolete squeeze operation.
           if (app_req.req_valid && app_req.last) begin
             st_d          = StAppFinish;
             app_req_ready = 1'b1;
           end else if (squeeze_again && !pending_digest_rsp_d) begin
-            // Trigger a squeeze if there are should be sent more digest parts. Ensure that there
+            // Trigger a squeeze if there should be sent more digest parts. Ensure that there
             // is no pending response which would be 'killed' when changing the state.
             cmd_o = CmdManualRun;
             st_d  = StAppWait;
@@ -599,7 +634,7 @@ module kmac_app
           if (!pending_digest_rsp_q) begin
             // We now can send the finish response. Disable the digest pusher and send response.
             app_push_digest      = 1'b0;
-            app_finish_rsp_valid = app_cfg_q.Type == AppDynamic;
+            app_finish_rsp_valid = 1'b1;
 
             // Once the finish response is handshaked the session can be ended.
             if (app_finish_rsp_valid && app_req.rsp_ready) begin
@@ -622,80 +657,63 @@ module kmac_app
         end else begin
           st_d = StSw;
         end
+
+        // Error out if the key is detected as invalid.
+        if (key_used_but_invalid) begin
+          st_d = StKeyMgrErrKeyNotValid;
+        end
       end
 
       StKeyMgrErrKeyNotValid: begin
+        // Signal the error to SW and start the error recovery. This state won't accept any message
+        // requests, so we cannot miss the last message part.
+        // Note that entering this state could result in a de-asserted valid signal towards the
+        // message FIFO / hashing engine if bypassed. This violates the valid locked-in concept but
+        // as of now, the FIFO and hashing engine do not strictly require a locked-in valid.
         st_d = StError;
 
-        // As mux_sel is not set to SelApp, app_data_ready is still 0.
-        // This logic won't accept the requests from the selected App.
         fsm_err.valid = 1'b 1;
         fsm_err.code = ErrKeyNotValid;
         fsm_err.info = 24'(app_id);
       end
 
       StError: begin
-        // In this state, the state machine flush out the request
+        // In case of an error, the state machine absorbs all message requests by voiding the
+        // received data. Once the last message request has been handshaked an error response is
+        // sent. Once SW also acknowledged the error by writing to the err_processed bit, the
+        // hashing engine is then brought back to the idle state by computing a garbage digest.
+        // Once this digest is computed, the app interface returns back to the idle state.
+        //
+        // An exception is the service rejected error. In this case no data has ever been sent to
+        // the hashing engine and thus it still is in the idle state. The interface still absorbs
+        // the full message, sends an error response and then returns back to the idle state. No SW
+        // interaction is required.
+        //
+        // Note that once the message is fully absorbed, there is no error case possible anymore,
+        // i.e., this error state is only reachable before the last message part arrives.
         st_d = StError;
 
-        // Absorb data on the app interface.
+        // Continue to absorb data on the app interface.
         fsm_data_ready = ~err_during_sw_q;
 
-        // Next step depends on two conditions:
-        // 1) Error being processed by SW
-        // 2) Last data provided from the app interface so that the app interface is completely
-        //    drained.  If the error occurred during a SW operation, the app interface is not
-        //    involved, so this condition gets skipped.
-        // TODO: here we should check whether the last handshake has happened and not wait until it happens
-        // TODO: fix lowrisc/opentitan#24739.
-        // Alternative solution: make key invalid error only active in StAppMsg and also exclude
-        // cycle where last message part arrives.
-        unique case ({err_processed_i,
-                     (app_req.req_valid && app_req.last) || err_during_sw_q})
-          2'b00: begin
-            // Error not processed by SW and not last data from app interface -> keep current state.
-            st_d = StError;
+        if (err_during_sw_q) begin
+          // Only wait for SW to ack the error.
+          st_d = StErrorAwaitSw;
+        end else begin
+          // Wait for last message part, then send error response in next cycle.
+          // The error acknowledgement from SW is latched and checked once the error response has
+          // been sent back to the app.
+          if (app_req.req_valid && app_req.last) begin
+            fsm_digest_done_d = 1'b1;
+            st_d              = service_rejected_error ? StErrorServiceRejected : StErrorAwaitApp;
           end
-          2'b01: begin
-            // Error not processed by SW but last data from app interface:
-            // 1. Send garbage digest to the app interface (in the next cycle) to complete the
-            // transaction.
-            fsm_digest_done_d = ~err_during_sw_q; // TODO: ensure this is never set if SW. otherwise valid set
-            if (service_rejected_error) begin
-              // 2.a) Service was rejected because an app interface tried to configure KMAC while no
-              // entropy was available or the configuration was invalid.
-              // If the KMAC request comes before SW is loaded, don't wait for SW to process the
-              // error. The last data from the app interface has now arrived, but we don't need to
-              // wait for the SHA3 core to have absorbed it because the data never entered the SHA3
-              // core: the request from the app interface was terminated during the configuration
-              // phase.
-              st_d = StErrorServiceRejected;
-            end else begin
-              // 2.b) If service was not rejected, wait for SW to process the error.
-              st_d = StErrorAwaitSw;
-            end
-          end
-          2'b10: begin
-            // Error processed by SW but not last data from app interface -> wait for app interface.
-            st_d = StErrorAwaitApp;
-          end
-          2'b11: begin
-            // Error processed by SW and last data from app interface:
-            // Send garbage digest to the app interface (in the next cycle) to complete the
-            // transaction.
-            fsm_digest_done_d = ~err_during_sw_q;
-            // Flush the message FIFO and let the SHA3 engine compute a digest (which won't be used
-            // but serves to bring the SHA3 engine back to the idle state).
-            cmd_o = CmdProcess;
-            st_d = StErrorWaitAbsorbed;
-          end
-          default: st_d = StError;
-        endcase
+        end
       end
 
       StErrorAwaitSw: begin
-        // Just wait for SW to process the error.
-        if (err_processed_i) begin
+        // Wait for SW to have processed the error. This could already have happened thus the flag
+        // is latched.
+        if (err_processed_d) begin
           // Flush the message FIFO and let the SHA3 engine compute a digest (which won't be used
           // but serves to bring the SHA3 engine back to the idle state).
           cmd_o = CmdProcess;
@@ -704,31 +722,19 @@ module kmac_app
       end
 
       StErrorAwaitApp: begin
-        // Keep absorbing data on the app interface until the last data.
-        fsm_data_ready = 1'b1;
-        if (app_req.req_valid && app_req.last) begin
-          // Send garbage digest to the app interface (in the next cycle) to complete the
-          // transaction.
-          fsm_digest_done_d = 1'b1;
-          // Flush the message FIFO and let the SHA3 engine compute a digest (which won't be used
-          // but serves to bring the SHA3 engine back to the idle state).
-          cmd_o = CmdProcess;
-          st_d = StErrorWaitAbsorbed;
+        // Send error response back to app. Once response is handshaked, begin waiting for SW to
+        // acknowledge the error.
+        st_d              = StErrorAwaitApp;
+        fsm_digest_done_d = !(app_rsp.rsp_valid && app_req.rsp_ready);
+
+        if (!fsm_digest_done_d) begin
+          st_d = StErrorAwaitSw;
         end
       end
 
       StErrorWaitAbsorbed: begin
-        // If error response has not been sent yet, keep it alive.
-        // TODO: implement this
-        // if (fsm_digest_done_q && rsp_handshaked) begin
-        //     fsm_digest_done_d = 1'b0;
-        // end else begin
-        //   // Hold error response valid and try again.
-        //   fsm_digest_done_d = ~err_during_sw_q;
-        // end
-        // TODO: absorbed_i is pulsed!
-        // Once absorbed and response has been sent (if required).
-        if (prim_mubi_pkg::mubi4_test_true_strict(absorbed_i) && !fsm_digest_done_d) begin
+        // Wait until the hashing engine has finished computing the garbage digest.
+        if (prim_mubi_pkg::mubi4_test_true_strict(absorbed_i)) begin
           // Clear internal variables, send done command, and return to idle.
           clr_appid = 1'b1;
           clear_after_error_o = prim_mubi_pkg::MuBi4True;
@@ -739,19 +745,15 @@ module kmac_app
           if (err_during_sw_q) begin
             absorbed_o = prim_mubi_pkg::MuBi4True;
           end
-          // TODO: Send finish response?
         end
       end
 
       StErrorServiceRejected: begin
-        // TODO: handle rsp backpressure
-        // Skipped if error during SW.
-        // if (fsm_digest_done_q && rsp_handshaked) begin
-        //   fsm_digest_done_d = 1'b0;
-        // end else begin
-        //   // Hold error response valid and try again.
-        //   fsm_digest_done_d = ~err_during_sw_q;
-        // end
+        // Send an error response back to the app. Once the response is handshaked release the app
+        // mutex and return to idle. There is no action required from the SW.
+        st_d              = StErrorServiceRejected;
+        fsm_digest_done_d = !(app_rsp.rsp_valid && app_req.rsp_ready);
+
         if (!fsm_digest_done_d) begin
           // Clear internal variables and return to idle.
           clr_appid = 1'b1;
@@ -783,14 +785,6 @@ module kmac_app
       st_d = StTerminalError;
     end
 
-    // Handle errors outside the terminal error state.
-    // TODO: we still must ack config handshake if this error happens during cfg?
-    if (st_d != StTerminalError) begin
-      // Key from keymgr is used but not valid, so abort into the invalid key error state.
-      if (keymgr_key_used && !keymgr_key_i.valid) begin
-        st_d = StKeyMgrErrKeyNotValid;
-      end
-    end
   end
 
   // Track errors occurring in SW mode.
@@ -1003,7 +997,7 @@ module kmac_app
           sha3_pkg::L128: digest_top = DigestCntW'(128 / DynAppDigestW);
           // 224 is not a multiple of 64. Round up the number of digest parts. Note, due to this
           // rounding the interface exposes bits from the rate which are not part of the hash.
-          sha3_pkg::L224: digest_top = DigestCntW'((224 + DynAppDigestW - 1) / DynAppDigestW);
+          sha3_pkg::L224: digest_top = DigestCntW'(4);
           sha3_pkg::L256: digest_top = DigestCntW'(256 / DynAppDigestW);
           sha3_pkg::L384: digest_top = DigestCntW'(384 / DynAppDigestW);
           sha3_pkg::L512: digest_top = DigestCntW'(512 / DynAppDigestW);
@@ -1027,12 +1021,13 @@ module kmac_app
     endcase
   end
 
+  // Limit the response width to 64 bits because its the GCD for all modes except SHA-224.
+  `ASSERT_INIT(DynAppDigestWIs64Bit_A, DynAppDigestW == 64)
   // Ensure all counter top computations divide properly as the response channel does not carry any
   // valid-strobe information.
   `ASSERT_INIT(DigestTopDividesSha3L128_A, 128 % DynAppDigestW == 0)
-  // An exception is SHA3-224, where we round up the number of digest parts so the full hash and
+  // An exception is SHA3-224, where we fix the number of digest parts to 4, so the full hash and
   // some additional rate bits are sent.
-  `ASSERT_INIT(DigestTopDividesSha3L224_A, (224 + DynAppDigestW - 1) / DynAppDigestW == 0)
   `ASSERT_INIT(DigestTopDividesSha3L256_A, 256 % DynAppDigestW == 0)
   `ASSERT_INIT(DigestTopDividesSha3L384_A, 384 % DynAppDigestW == 0)
   `ASSERT_INIT(DigestTopDividesSha3L512_A, 512 % DynAppDigestW == 0)
@@ -1070,6 +1065,8 @@ module kmac_app
   // asserted.
   assign pending_digest_rsp_d = app_digest_valid && !digest_part_pushed;
 
+  // TODO: Do we have to guard the capacity? Especially for SHA3-224 as we push bits outside of the
+  //       actual digest.
   logic [DynAppDigestW-1:0] digest_part[Share];
   for (genvar i = 0; i < Share; i++) begin
     assign digest_part[i] = keccak_state_i[i][DynAppDigestW * current_digest_idx +: DynAppDigestW];
@@ -1132,8 +1129,9 @@ module kmac_app
     end
   end
 
-  // Sideloaded key manage: Keep use sideloaded key for KMAC AppIntf until the
-  // hashing operation is finished.
+  // Sideloaded key expose control
+  assign key_used_but_invalid = keymgr_key_used && !keymgr_key_i.valid;
+
   always_comb begin
     keymgr_key_used = 1'b0;
     key_len_o  = reg_key_len_i;
@@ -1145,9 +1143,11 @@ module kmac_app
     key_valid_o = 1'b0;
 
     unique case (st)
-      StAppCfg, StAppMsg, StAppOutLen, StAppProcess, StAppWait: begin
-        // TODO: Must StAppPushingDigest and StAppFinish be included here?
-        // Key from keymgr is actually used if the current HW app interface does *keyed* MAC.
+      StAppMsg: begin
+        // The key from keymgr is used if the current HW app interface does *keyed* MAC. We
+        // consider the key only valid as long as the hashing engine actually uses the key, i.e.,
+        // at the start of the message absorb phase. Once the processing has started the key is no
+        // longer used.
         keymgr_key_used = app_cfg_q.Mode == AppKMAC;
         key_len_o = SideloadedKey;
         for (int i = 0 ; i < Share; i++) begin
