@@ -349,6 +349,9 @@ Once the app has send the finish request it must make sure to drain the (pipelin
 For this any in-flight digest response can be discarded.
 Once the interface has sent the finish response, it will return to its idle state, ready to serve the next app request.
 
+When the app receives the finish response, it must check it for errors.
+The reason is that there could have been an error in the last digest but this was not reported immediately to satisfy to the valid locked-in property.
+
 In case `EnXof` is disabled, once the first digest is sent, the interface will just wait for a finish request and not trigger any RUN commands.
 
 ```mermaid
@@ -361,13 +364,12 @@ StAppProcess
 StAppWait
 StAppPushDigest
 StAppFinish
-StError
-StErrorServiceRejected
-StErrorWaitAbsorbed
+
+StErrorAwaitMsg
+
 StErrorAwaitSW
-StErrorAwaitApp
 StSw
-StKeyMgrErrKeyNotValid
+StErrorKeyNotValid
 
 [*] --> StIdle
 
@@ -375,14 +377,17 @@ StIdle --> StAppCfg: app selected
 StIdle --> StSw: Start command
 
 StSw --> StIdle: Done command
-StSw --> StKeyMgrErrKeyNotValid: Key used but invalid
 
-StAppCfg --> StError: invalid config
 StAppCfg --> StAppMsg: valid config
 
 StAppMsg --> StAppProcess: Last message handshaked && !KMAC
 StAppMsg --> StAppOutLen: Last message handshaked && KMAC
-StAppMsg --> StKeyMgrErrKeyNotValid: Key used but invalid
+StAppMsg --> StErrorKeyNotValid: Key used but invalid
+StErrorKeyNotValid --> StErrorAwaitMsg: if APP
+StAppMsg --> StErrorAwaitMsg: SHA3 error
+
+StAppCfg --> StErrorAwaitMsg: invalid config
+StSw --> StErrorKeyNotValid: Key used but invalid
 
 StAppOutLen --> StAppProcess: KMAC output length appended
 
@@ -390,24 +395,30 @@ StAppProcess --> StAppWait
 
 StAppWait --> StAppPushDigest: Digest available
 
-StAppPushDigest --> StAppWait: if dynamic interface && digest pushed && EnXof
-StAppPushDigest --> StAppFinish: if static interface && first digest part pushed
-StAppPushDigest --> StAppFinish: if dynamic interface && finish request
+StAppPushDigest --> StAppWait:   DYN && digest pushed && EnXof
+StAppPushDigest --> StAppFinish: STATIC && first digest part pushed
+StAppPushDigest --> StAppFinish: DYN && finish request
 
-StAppFinish --> StIdle: Finish response sent (or immediately for static)
+StAppFinish --> StIdle: finish rsp sent || STATIC
 
-StKeyMgrErrKeyNotValid --> StError
+StErrorKeyNotValid --> StErrorAwaitSw: if SW error
 
-StError --> StErrorAwaitSW: SW error
-StError --> StErrorServiceRejected: Last app message received && ServiceRejected
-StError --> StErrorAwaitApp: Last app message received && !ServiceRejected
+StErrorAwaitMsg    --> StErrorNotify: last message part received
+StErrorNotify   --> StErrorAwaitFinish: DYN && error rsp sent
+StErrorNotify   --> StErrorFinish: STATIC && error rsp sent
+StErrorAwaitFinish --> StErrorFinish: finish req
 
-StErrorServiceRejected --> StIdle: Error response sent
+StErrorFinish --> StErrorAwaitSw: (finish rsp sent || STATIC) && !ServiceRejected
+StErrorFinish --> StIdle: (finish rsp sent || STATIC) && ServiceRejected
 
-StErrorAwaitApp --> StErrorAwaitSW: Error response sent
-StErrorAwaitSW --> StErrorWaitAbsorbed: SW error processed
+StErrorAwaitSw --> StErrorAwaitAbsorb: err_processed
 
-StErrorWaitAbsorbed --> StIdle: absorbed_i
+StErrorAwaitAbsorb --> StIdle: absorbed_i
+
+StAppPushDigest --> StErrorPush: DYN && SHA3 error
+
+StErrorPush --> StAppFinish: finish req
+
 ```
 
 #### Example operation
@@ -492,8 +503,20 @@ When an app is active the following errors can occur:
 - Terminal state error
 - Service rejected error
 - Key invalid error
+- SHA3 engine command error
 
 The handling of these errors is described below.
+
+
+If error, respond with error response at a time when possible.
+Then wait for finish request.
+send finish response and end
+
+CFG
+Void message
+
+
+unify behaviour
 
 ##### Terminal state error
 This error occurs if the app FSM entered its terminal error state because:
@@ -509,29 +532,31 @@ This error occurs when the configuration is invalid (both dynamic and static) or
 If the app interface rejects an application request, the messages from the application are still accepted but directly discarded.
 As of this no data is ever pushed into the hashing engine.
 After the last message request, the app interface then immediately sends a response with garbage data and the error flag set.
-It then directly returns into the Idle state without waiting for SW to set the `error_processed` bit.
+A static interface then directly returns into the Idle state without waiting for SW to set the `error_processed` bit.
+A dynamic interface waits until a finish request is received and answers with a finish acknowledgment response.
+The diagram below shows an example for a dynamic interface (note the response backpressure cycles, these are optional).
 
 ```wavejson
 {
   signal: [
-    {name: 'App state', wave: '2.22..2..2', data: ["Idle","AppCfg","StError","ErrorServiceRejected","Idle"]},
+    {name: 'App state', wave: '222..2.2.2.2', data: ["Idle","AppCfg","ErrorAwaitMsg","ErrorNotify","ErrorAwaitFinish","ErrorFinish","Idle"]},
     {},
     ['Request',
-    {name: 'req_valid', wave: '01....0...'},
-    {name: 'data_s0',   wave: 'x2..22x...'},
-    {name: 'data_s1',   wave: 'x2..22x...'},
-    {name: 'strb',      wave: 'x2...2x...', data: ["0xFF","0x03"]},
-    {name: 'last',      wave: 'x0...1x...'},
-    {name: 'req_ready', wave: '0..1..0...'},
+    {name: 'req_valid', wave: '1....0..10..'},
+    {name: 'data_s0',   wave: '2..22x......'},
+    {name: 'data_s1',   wave: '2..22x......'},
+    {name: 'strb',      wave: '2...2x......', data: ["0xFF","0x03"]},
+    {name: 'last',      wave: '0...1x..1x..'},
+    {name: 'req_ready', wave: '0.1..0.1.0..'},
     ],
     {},
     ['Response',
-    {name: 'rsp_valid', wave: '0.....1..0'},
-    {name: 'digest_s0', wave: 'x.....2..x'},
-    {name: 'digest_s1', wave: 'x.....2..x'},
-    {name: 'error',     wave: 'x.1......x'},
-    {name: 'finished',  wave: 'x........x'},
-    {name: 'rsp_ready', wave: '0.......10'},
+    {name: 'rsp_valid', wave: '0....1.0.1.0'},
+    {name: 'digest_s0', wave: 'x....2.x....'},
+    {name: 'digest_s1', wave: 'x....2.x....'},
+    {name: 'error',     wave: 'x1.....x.0.x'},
+    {name: 'finished',  wave: 'x......x.1.0'},
+    {name: 'rsp_ready', wave: '0.....10..10'},
     ],
   ],
   edge: [],
@@ -547,41 +572,90 @@ This error occurs if the sideloaded key is used but the key is invalid.
 The sideloaded key is considered as used when either SW has full control over the KMAC or during the message absorption phase (`StAppMsg`) for an interface.
 If during this time the key gets invalidated, the app interface no longer forwards message requests to the hashing engine.
 Any incoming requests are discarded.
-Once the last message has arrived, the app interface sends an error response (garbage digest with the `error` signal set).
-It then waits until SW acknowledged the error by writing to the `error_processed` bit.
-The interface then triggers a PROCESS command to bring the hashing engine back into the idle state.
-Once the hashing completes the interface returns back to its idle state.
-There is no finish response sent.
+Once the last message has arrived, a static app interface sends an error response (garbage digest with the `error` signal set) and then waits until SW acknowledged the error by writing to the `error_processed` bit.
+A dynamic interface also sends an immediate error response but then waits until a finish request arrives.
+It then waits for SW to clear the error.
+Once SW has cleared the error, the interface then triggers a PROCESS command to bring the hashing engine back into the idle state.
 
 Note, the acknowledge of the software can also happen before the app accepted the response.
-In case the KMAC is controlled by SW the `StErrorAwaitApp` is skipped.
+In case the KMAC is controlled by SW the app related states are skipped.
 
 The following wave shows an example where the key invalid error occurs in cycle 4.
 
 ```wavejson
 {
   signal: [
-    {name: 'App state', wave: '2.222.2.2.2.2', data: ["Idle","AppCfg","AppMsg","StError","ErrAwaitApp","ErrAwaitSw","ErrWaitAbsorbed","Idle"]},
+    {name: 'App state', wave: '2222.22.22.2.2', data: ["Idle","AppCfg","AppMsg","ErrorAwaitMsg","ErrorNotify","ErrorAwaitFinish","ErrorFinish","ErrorAwaitSw","ErrorWaitAbsorbed","Idle"]},
     {},
     ['Request',
-    {name: 'req_valid', wave: '01....0......'},
-    {name: 'data_s0',   wave: 'x2..22x......'},
-    {name: 'data_s1',   wave: 'x2..22x......'},
-    {name: 'strb',      wave: 'x2...2x......', data: ["0xFF","0x03"]},
-    {name: 'last',      wave: 'x0...1x......'},
-    {name: 'req_ready', wave: '0..1..0......'},
+    {name: 'req_valid', wave: '1....0.10.....'},
+    {name: 'data_s0',   wave: '2..22x........'},
+    {name: 'data_s1',   wave: '2..22x........'},
+    {name: 'strb',      wave: '2...2x........', data: ["0xFF","0x03"]},
+    {name: 'last',      wave: '0...1x.10.....'},
+    {name: 'req_ready', wave: '0.1..01.0.....'},
     ],
     {},
     ['Response',
-    {name: 'rsp_valid', wave: '0.....1.0....'},
-    {name: 'digest_s0', wave: 'x.....2.x....'},
-    {name: 'digest_s1', wave: 'x.....2.x....'},
-    {name: 'error',     wave: 'x...1...x....'},
-    {name: 'finished',  wave: 'x.......x....'},
-    {name: 'rsp_ready', wave: '0......10....'},
+    {name: 'rsp_valid', wave: '0....10.10....'},
+    {name: 'digest_s0', wave: 'x....2x.......'},
+    {name: 'digest_s1', wave: 'x....2x.......'},
+    {name: 'error',     wave: 'x..1..x.0.....'},
+    {name: 'finished',  wave: 'x....0x.10....'},
+    {name: 'rsp_ready', wave: '0....10.10....'},
     ],
     {},
-    {name: 'error_processed_i', wave: '0........10..'}
+    {name: 'error_processed_i', wave: '0.........10..'}
+  ],
+  edge: [],
+  foot:{
+   tock:0
+ },
+ config:{hscale:2},
+}
+```
+
+#### SHA3 engine internal error
+This error arises if an invalid command sequence is sent to the hashing engine or one of these control signals is manipulated.
+Usually this error cannot occur during an app session.
+However, if the control signals are faulted, this error occurs and any digest value should be considered as invalid.
+
+This error must be handled in two cases, namely:
+- The error occurs in the message phase.
+- The error occurs after the complete message is received.
+
+The first case is simple and is handled the same way as a key invalid error.
+Once the error occurs, the message data is voided.
+As soon as the complete message is received the hashing engine is brought back to idle by issuing a process and done command.
+There is only one error response sent and a dynamic interface waits for the finish request.
+It then waits for SW to acknowledge the error.
+
+If the error occurs after the complete message is received, the app interface begins to continuously send error responses once the message is processed.
+It continues to send error responses until a finish request arrives.
+It then terminates the same way as a error-free session thus the interface does not wait for SW to process the error.
+
+```wavejson
+{
+  signal: [
+    {name: 'App state', wave: '2222.2..22', data: ["AppMsg","AppProcess","AppWait","AppPushDigest","ErrorPush","AppFinish","Idle"]},
+    {},
+    ['Request',
+    {name: 'req_valid', wave: '10.....10.'},
+    {name: 'data_s0',   wave: '2x........', data: [""]},
+    {name: 'data_s1',   wave: '2x........'},
+    {name: 'strb',      wave: '2x........', data: ["0x03"]},
+    {name: 'last',      wave: '1x.....1x.'},
+    {name: 'req_ready', wave: '10.....10.'},
+    ],
+    {},
+    ['Response',
+    {name: 'rsp_valid', wave: '0..1.....0'},
+    {name: 'digest_s0', wave: 'x..22x..2x'},
+    {name: 'digest_s1', wave: 'x..22x..2x'},
+    {name: 'error',     wave: 'x..0.1..0x'},
+    {name: 'finished',  wave: 'x..0.x..1x'},
+    {name: 'rsp_ready', wave: '1.........'},
+    ],
   ],
   edge: [],
   foot:{
