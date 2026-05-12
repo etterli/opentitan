@@ -3,6 +3,14 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // KMAC Application interface
+//
+// This module implements the app interface which arbitrates between the SW interface and up to
+// NumAppIntf hardware app interfaces. While a session is active (either an app or SW), other
+// requests are stalled.
+//
+// There are two kind of app interfaces: Static interfaces which have a configuration defined at
+// compile-time and only a one-shot digest can be retrieved. In contrast, a dynamic interface can
+// send the desired hashing configuration at run time and supports XOF operation.
 
 `include "prim_assert.sv"
 
@@ -128,15 +136,6 @@ module kmac_app
   output logic counter_error_o
 );
 
-  // TODO: Discuss whether we can remove this input signal completely.
-  // The signal error_i is only asserted for one cycle when a wrong command is sent. This should
-  // only be possible if SW controls the KMAC as in the app operation the sent commands are fixed.
-  // Also, as it is pulsed, it will definitively never be handshaked as there is never a handshake
-  // when sending a command. Thus we add this assertion here.
-  // Is this here to detect attacks? I doubt it as it is pulsed. I think this is just an obsolete
-  // signal.
-  `ASSERT(ErrorOnlyDuringSw_A, app_active_o |-> !error_i)
-
   import sha3_pkg::KeccakBitCapacity;
   import sha3_pkg::L128;
   import sha3_pkg::L224;
@@ -203,7 +202,9 @@ module kmac_app
   // here and merge them to the response.
   app_rsp_t app_rsp;
   logic app_data_ready, fsm_data_ready;
-  logic app_digest_valid, fsm_digest_done_q, fsm_digest_done_d, app_finish_rsp_valid;
+  logic app_digest_valid, fsm_digest_done_q, fsm_digest_done_d;
+  logic app_finish_rsp_valid, app_error_rsp_valid;
+  logic app_finish_rsp_is_error;
   logic app_req_ready;
   logic app_process_cmd_received;
   logic [AppDigestW-1:0] app_digest[2];
@@ -234,6 +235,7 @@ module kmac_app
   logic service_rejected_error;
   logic service_rejected_error_set, service_rejected_error_clr;
   logic err_during_sw_d, err_during_sw_q;
+  logic err_sha3_during_app, err_sha3_during_app_d, err_sha3_during_app_q;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni)                         service_rejected_error <= 1'b 0;
@@ -247,17 +249,19 @@ module kmac_app
 
   assign app_rsp = '{
     req_ready: app_data_ready | fsm_data_ready | app_req_ready,
-    rsp_valid: app_digest_valid | fsm_digest_done_q | app_finish_rsp_valid,
+    rsp_valid: app_digest_valid | fsm_digest_done_q | app_finish_rsp_valid | app_error_rsp_valid,
     digest_s0: app_digest[0],
     digest_s1: app_digest[1],
     // If fsm asserts done, we are handling an error case.
-    error:     fsm_digest_done_q | sparse_fsm_error_o | service_rejected_error,
+    error:     fsm_digest_done_q | sparse_fsm_error_o | service_rejected_error |
+               app_error_rsp_valid | app_finish_rsp_is_error,
     finished:  app_finish_rsp_valid
   };
 
-  // app_digest_valid and app_finish_rsp_valid may never be true at the same time because it would
-  // mean that the finish response tries to overrule a pending digest response.
-  `ASSERT(AppDigestAndFinishRspExclusive_A, !(app_digest_valid && app_finish_rsp_valid))
+  // app_digest_valid, app_finish_rsp_valid, app_error_rsp_valid and may never be true at the same
+  // time because it would mean that one response tries to overrule a pending response.
+  `ASSERT(AppOnlyOneRspSourceActive_A, 
+      $onehot0({app_digest_valid, app_finish_rsp_valid, app_error_rsp_valid}))
 
   // Processing return data.
   // sends to only selected app intf.
@@ -413,6 +417,7 @@ module kmac_app
   logic reset_digest_pusher;
   logic key_used_but_invalid;
   logic pending_digest_rsp_d, pending_digest_rsp_q;
+  logic pending_error_rsp_d, pending_error_rsp_q;
   logic message_parts_received_d, message_parts_received_q;
   logic err_processed_d, err_processed_q;
   logic message_part_handshaked;
@@ -435,10 +440,12 @@ module kmac_app
       message_parts_received_q <= 1'b0;
       err_processed_q          <= 1'b0;
       pending_digest_rsp_q     <= 1'b0;
+      pending_error_rsp_q      <= 1'b0;
     end else begin
       message_parts_received_q <= message_parts_received_d;
       err_processed_q          <= err_processed_d;
       pending_digest_rsp_q     <= pending_digest_rsp_d;
+      pending_error_rsp_q      <= pending_error_rsp_d;
     end
   end
 
@@ -485,9 +492,11 @@ module kmac_app
     // Whether to push a digest part or reset the pusher.
     app_push_digest     = 1'b0;
     reset_digest_pusher = 1'b0;
+    app_error_rsp_valid = 1'b0;
 
     // Finish response
-    app_finish_rsp_valid = 1'b0;
+    app_finish_rsp_valid    = 1'b0;
+    app_finish_rsp_is_error = 1'b0;
 
     unique case (st)
       StIdle: begin
@@ -510,7 +519,7 @@ module kmac_app
           // is invalid or the configuration in the registers supplied by SW is invalid.
           // In this error case we still go to the "message absorb" phase but no data is forwarded
           // to the actual SHA3 core. This simplifies the error handling on the application side.
-          st_d                       = StError;
+          st_d                       = StErrorAwaitMsg;
           service_rejected_error_set = 1'b 1;
         end else begin
           // The configuration is valid and also latched. We can now send the start command and
@@ -555,7 +564,9 @@ module kmac_app
           // same cycle the last message was handshaked. The reason is that for KMAC the key is
           // used before any message parts are absorbed. So if the last message part is handshaked,
           // the key is already fully absorbed.
-          st_d = StKeyMgrErrKeyNotValid;
+          st_d = StErrorKeyNotValid;
+        end else if (err_sha3_during_app) begin
+          st_d = StErrorAwaitMsg;
         end
       end
 
@@ -608,6 +619,8 @@ module kmac_app
           if (app_req.req_valid && app_req.last) begin
             st_d          = StAppFinish;
             app_req_ready = 1'b1;
+          end else if (err_sha3_during_app) begin
+            st_d = StErrorPush;
           end else if (squeeze_again && !pending_digest_rsp_d) begin
             // Trigger a squeeze if there should be sent more digest parts. Ensure that there
             // is no pending response which would be 'killed' when changing the state.
@@ -626,15 +639,15 @@ module kmac_app
           cmd_o     = CmdDone;
           clr_appid = 1'b1;
         end else begin
-          // Continue pushing so any pending request is still sent.
-          app_push_digest = 1'b1;
-
-          // Await handshake of pending digest response from last cycle(s). Otherwise the finish
-          // response would change the response payload after the valid was asserted.
-          if (!pending_digest_rsp_q) begin
-            // We now can send the finish response. Disable the digest pusher and send response.
-            app_push_digest      = 1'b0;
-            app_finish_rsp_valid = 1'b1;
+          // Await handshake of pending response from last cycle(s) (digest or error response).
+          // Otherwise the finish response would violate the valid locked-in principle.
+          app_push_digest     = pending_digest_rsp_q;
+          app_error_rsp_valid = pending_error_rsp_q;
+          if (!pending_digest_rsp_q && !pending_error_rsp_q) begin
+            // We now can send the finish response. Send again the error flag to cover the case the
+            // error occurred whilst the last digest response was pending.
+            app_finish_rsp_valid    = 1'b1;
+            app_finish_rsp_is_error = err_sha3_during_app;
 
             // Once the finish response is handshaked the session can be ended.
             if (app_finish_rsp_valid && app_req.rsp_ready) begin
@@ -660,38 +673,35 @@ module kmac_app
 
         // Error out if the key is detected as invalid.
         if (key_used_but_invalid) begin
-          st_d = StKeyMgrErrKeyNotValid;
+          st_d = StErrorKeyNotValid;
         end
       end
 
-      StKeyMgrErrKeyNotValid: begin
+      StErrorKeyNotValid: begin
         // Signal the error to SW and start the error recovery. This state won't accept any message
         // requests, so we cannot miss the last message part.
         // Note that entering this state could result in a de-asserted valid signal towards the
         // message FIFO / hashing engine if bypassed. This violates the valid locked-in concept but
         // as of now, the FIFO and hashing engine do not strictly require a locked-in valid.
-        st_d = StError;
+        st_d = StErrorAwaitMsg;
 
         fsm_err.valid = 1'b 1;
         fsm_err.code = ErrKeyNotValid;
         fsm_err.info = 24'(app_id);
       end
 
-      StError: begin
+      StErrorAwaitMsg: begin
         // In case of an error, the state machine absorbs all message requests by voiding the
         // received data. Once the last message request has been handshaked an error response is
-        // sent. Once SW also acknowledged the error by writing to the err_processed bit, the
-        // hashing engine is then brought back to the idle state by computing a garbage digest.
-        // Once this digest is computed, the app interface returns back to the idle state.
+        // sent. Once the app finished the session and SW also acknowledged the error by writing to
+        // the err_processed bit, the hashing engine is then brought back to the idle state by
+        // computing a garbage digest.
         //
         // An exception is the service rejected error. In this case no data has ever been sent to
         // the hashing engine and thus it still is in the idle state. The interface still absorbs
-        // the full message, sends an error response and then returns back to the idle state. No SW
-        // interaction is required.
-        //
-        // Note that once the message is fully absorbed, there is no error case possible anymore,
-        // i.e., this error state is only reachable before the last message part arrives.
-        st_d = StError;
+        // the full message, sends an error response, waits for a finish request and then returns
+        // back to the idle state. No SW interaction is required.
+        st_d = StErrorAwaitMsg;
 
         // Continue to absorb data on the app interface.
         fsm_data_ready = ~err_during_sw_q;
@@ -705,7 +715,48 @@ module kmac_app
           // been sent back to the app.
           if (app_req.req_valid && app_req.last) begin
             fsm_digest_done_d = 1'b1;
-            st_d              = service_rejected_error ? StErrorServiceRejected : StErrorAwaitApp;
+            st_d              = StErrorNotify;
+          end
+        end
+      end
+
+      StErrorNotify: begin
+        // Send error response back to app. Once response is handshaked, wait for finish request
+        // (static interfaces don't wait for finish request).
+        st_d              = StErrorNotify;
+        fsm_digest_done_d = !(app_rsp.rsp_valid && app_req.rsp_ready);
+
+        if (!fsm_digest_done_d) begin
+          st_d = app_cfg_q.Type == AppDynamic ? StErrorAwaitFinish : StErrorFinish;
+        end
+      end
+
+      StErrorAwaitFinish: begin
+        // Dynamic only: wait for the app to send a finish request.
+        st_d = StErrorAwaitFinish;
+
+        if (app_req.req_valid && app_req.last) begin
+          st_d          = StErrorFinish;
+          app_req_ready = 1'b1;
+        end
+      end
+
+      StErrorFinish: begin
+        // Send finish response (dynamic) or exit immediately (static).
+        // For service-rejected errors, return to idle without SW interaction.
+        // For other errors, wait for SW to acknowledge via err_processed.
+        st_d = StErrorFinish;
+
+        app_finish_rsp_valid = app_cfg_q.Type == AppDynamic;
+
+        if ((app_finish_rsp_valid && app_req.rsp_ready) || (app_cfg_q.Type == AppStatic)) begin
+          if (service_rejected_error) begin
+            clr_appid                  = 1'b1;
+            clear_after_error_o        = prim_mubi_pkg::MuBi4True;
+            service_rejected_error_clr = 1'b1;
+            st_d                       = StIdle;
+          end else begin
+            st_d = StErrorAwaitSw;
           end
         end
       end
@@ -717,30 +768,19 @@ module kmac_app
           // Flush the message FIFO and let the SHA3 engine compute a digest (which won't be used
           // but serves to bring the SHA3 engine back to the idle state).
           cmd_o = CmdProcess;
-          st_d = StErrorWaitAbsorbed;
+          st_d  = StErrorAwaitAbsorbed;
         end
       end
 
-      StErrorAwaitApp: begin
-        // Send error response back to app. Once response is handshaked, begin waiting for SW to
-        // acknowledge the error.
-        st_d              = StErrorAwaitApp;
-        fsm_digest_done_d = !(app_rsp.rsp_valid && app_req.rsp_ready);
-
-        if (!fsm_digest_done_d) begin
-          st_d = StErrorAwaitSw;
-        end
-      end
-
-      StErrorWaitAbsorbed: begin
+      StErrorAwaitAbsorbed: begin
         // Wait until the hashing engine has finished computing the garbage digest.
         if (prim_mubi_pkg::mubi4_test_true_strict(absorbed_i)) begin
           // Clear internal variables, send done command, and return to idle.
-          clr_appid = 1'b1;
-          clear_after_error_o = prim_mubi_pkg::MuBi4True;
+          clr_appid                  = 1'b1;
+          clear_after_error_o        = prim_mubi_pkg::MuBi4True;
           service_rejected_error_clr = 1'b1;
-          cmd_o = CmdDone;
-          st_d = StIdle;
+          cmd_o                      = CmdDone;
+          st_d                       = StIdle;
           // If error originated from SW, report 'absorbed' to SW.
           if (err_during_sw_q) begin
             absorbed_o = prim_mubi_pkg::MuBi4True;
@@ -748,18 +788,22 @@ module kmac_app
         end
       end
 
-      StErrorServiceRejected: begin
-        // Send an error response back to the app. Once the response is handshaked release the app
-        // mutex and return to idle. There is no action required from the SW.
-        st_d              = StErrorServiceRejected;
-        fsm_digest_done_d = !(app_rsp.rsp_valid && app_req.rsp_ready);
+      StErrorPush: begin
+        // State for dynamic app only.
+        // An error occurred while pushing digest parts. Keep sending an error response until the
+        // app sends a finish request, then close the session normally.
+        st_d              = StErrorPush;
 
-        if (!fsm_digest_done_d) begin
-          // Clear internal variables and return to idle.
-          clr_appid = 1'b1;
-          clear_after_error_o = prim_mubi_pkg::MuBi4True;
-          service_rejected_error_clr = 1'b1;
-          st_d = StIdle;
+        // Continue sending pending response to adhere to valid locked-in principle.
+        if (pending_digest_rsp_q) begin
+          app_push_digest = 1'b1;
+        end else begin
+          // Now continuously send error responses until finish request arrives.
+          app_error_rsp_valid = 1'b1;
+          if (app_req.req_valid && app_req.last) begin
+            app_req_ready = 1'b1;
+            st_d          = StAppFinish;
+          end
         end
       end
 
@@ -787,17 +831,33 @@ module kmac_app
 
   end
 
+  // Assert that state StErrorPush is only reached if interface is dynamic.
+  `ASSERT(StErrorPushDynamic_A, (st == StErrorPush) |-> (app_cfg_q.Type == AppDynamic), 
+          clk_i, rst_ni)
+
   // Track errors occurring in SW mode.
   assign err_during_sw_d =
-      (mux_sel == SelSw) && (st_d inside {StError, StKeyMgrErrKeyNotValid}) ? 1'b1 : // set
-      (st_d == StIdle)                                                      ? 1'b0 : // clear
-      err_during_sw_q;                                                               // hold
+      (mux_sel == SelSw) && (st_d inside {StErrorAwaitMsg, StErrorKeyNotValid}) ? 1'b1 : // set
+      (st_d == StIdle)                                                          ? 1'b0 : // clear
+      err_during_sw_q;                                                                   // hold
+
+  // Track SHA3 core errors occurring in app mode. Tracking if already in an error state is not
+  // required.
+  assign err_sha3_during_app_d =
+      (st inside {StAppCfg, StAppMsg, StAppOutLen, StAppProcess,
+                  StAppWait, StAppPushDigest, StAppFinish} && error_i) ? 1'b1 : // set
+      (st == StIdle)                                                   ? 1'b0 : // clear
+      err_sha3_during_app_q;                                                    // hold
+
+  assign err_sha3_during_app = err_sha3_during_app_d | err_sha3_during_app_q;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      err_during_sw_q <= 1'b0;
+      err_during_sw_q       <= 1'b0;
+      err_sha3_during_app_q <= 1'b0;
     end else begin
-      err_during_sw_q <= err_during_sw_d;
+      err_during_sw_q       <= err_during_sw_d;
+      err_sha3_during_app_q <= err_sha3_during_app_d;
     end
   end
 
@@ -811,12 +871,11 @@ module kmac_app
   assign encoded_outlen_strb = EncodedOutLenStrb[SelKeySize];
 
   // Data mux
-  // This is the main part of the KeyMgr interface logic.
-  // The FSM selects KeyMgr interface in a cycle after it receives the first
-  // valid data from KeyMgr. The ready signal to the KeyMgr data interface
-  // represents the MSG_FIFO ready, only when it is in StKeyMgrMsg state.
-  // After KeyMgr sends last beat, the kmac interface (to MSG_FIFO) is switched
-  // to OutLen. OutLen is pre-defined values. See `EncodeOutLen` parameter above.
+  // This is the main part of the app interface logic.
+  // The FSM select an app interface in a cycle after it receives the first valid request. The
+  // ready signal to the selected app data interface represents the MSG_FIFO ready, only when in
+  // the FSM in in the message state. After app has sent the last beat, the interface (to MSG_FIFO)
+  // is switched to OutLen. OutLen is a pre-defined value, see `EncodeOutLen` parameter above.
 
   // EnMasking = 1:
   // - For static and dynamic interface:
@@ -1062,8 +1121,13 @@ module kmac_app
 
   // Register if there is a digest response pending. If so, the finish response must wait until the
   // currently pending response is accepted. Otherwise we would change data after the valid was
-  // asserted.
+  // asserted which violates the valid locked-in property.
   assign pending_digest_rsp_d = app_digest_valid && !digest_part_pushed;
+
+  // Similarly, register if there is a pending error response.
+  logic error_rsp_pushed;
+  assign error_rsp_pushed    = app_error_rsp_valid && app_req.rsp_ready;
+  assign pending_error_rsp_d = app_error_rsp_valid && !error_rsp_pushed;
 
   // TODO: Do we have to guard the capacity? Especially for SHA3-224 as we push bits outside of the
   //       actual digest.
