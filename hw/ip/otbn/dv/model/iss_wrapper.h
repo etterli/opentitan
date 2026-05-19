@@ -148,6 +148,24 @@ struct ISSWrapper {
 
   const MirroredRegs &get_mirrored() const { return mirrored_; }
 
+  // Load an ELF file into the ISS (sets IMEM/DMEM content and symbol table).
+  void load_elf(const std::string &elf_path);
+
+  // Load a testcase hjson file into the ISS, applying DMEM and register
+  // overrides. load_elf must have been called first so that symbols are
+  // available for label resolution.
+  //
+  // On return, (*gprs_set)[i] / (*wdrs_set)[i] are true iff the testcase
+  // explicitly specifies register x<i> / w<i>; the corresponding value is
+  // written into (*gprs)[i] / (*wdrs)[i]. Registers not in the testcase leave
+  // their array entries untouched — callers should zero-initialise the arrays
+  // first if they need a defined value for unspecified registers.
+  void load_testcase(const std::string &hjson_path,
+                     std::array<uint32_t, 32> *gprs,
+                     std::array<u256_t, 32> *wdrs,
+                     std::array<bool, 32> *gprs_set,
+                     std::array<bool, 32> *wdrs_set);
+
   // Read contents of the register file
   void get_regs(std::array<uint32_t, 32> *gprs, std::array<u256_t, 32> *wdrs);
 

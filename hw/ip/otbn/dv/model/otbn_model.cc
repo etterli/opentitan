@@ -449,8 +449,10 @@ int OtbnModel::step(svBitVecVal *status /* bit [7:0] */,
 }
 
 int OtbnModel::check() const {
-  if (!has_rtl())
+  if (!has_rtl()) {
+    std::cerr << "Cannot check OTBN model: no RTL available.\n";
     return 1;
+  }
 
   ISSWrapper *iss = iss_.get();
   if (!iss) {
@@ -869,6 +871,27 @@ int OtbnModel::initial_secure_wipe() {
   return 0;
 }
 
+int OtbnModel::prepare_testcase(const std::string &elf_path,
+                                const std::string &hjson_path,
+                                std::array<uint32_t, 32> *gprs,
+                                std::array<ISSWrapper::u256_t, 32> *wdrs,
+                                std::array<bool, 32> *gprs_set,
+                                std::array<bool, 32> *wdrs_set) {
+  ISSWrapper *iss = ensure_wrapper();
+  if (!iss)
+    return -1;
+
+  // Load the ELF so that sim.symbols is populated for testcase label
+  // resolution. Memory content loaded here will be overwritten by load_d/load_i
+  // in start_operation, so it does not affect the final ISS state.
+  iss->load_elf(elf_path);
+  // load_testcase applies DMEM and register overrides and reports which
+  // registers the testcase explicitly set via the set-mask outputs.
+  iss->load_testcase(hjson_path, gprs, wdrs, gprs_set, wdrs_set);
+
+  return 0;
+}
+
 OtbnModel *otbn_model_init(const char *mem_scope, const char *design_scope) {
   assert(mem_scope && design_scope);
   return new OtbnModel(mem_scope, design_scope);
@@ -999,6 +1022,7 @@ unsigned otbn_model_step(OtbnModel *model, unsigned model_state,
 
 int otbn_model_check(OtbnModel *model, svBitVecVal *mismatch /* bit [0:0] */) {
   assert(model && mismatch);
+  std::cerr << "Running model checks...\n";
 
   // Run model checks if needed. This usually happens just after an operation
   // has finished.

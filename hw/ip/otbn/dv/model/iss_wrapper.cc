@@ -548,6 +548,66 @@ void ISSWrapper::set_rma_req(uint8_t rma_req) {
   run_command(oss.str(), nullptr);
 }
 
+void ISSWrapper::load_elf(const std::string &elf_path) {
+  run_command("load_elf " + elf_path + "\n", nullptr);
+}
+
+void ISSWrapper::load_testcase(const std::string &hjson_path,
+                               std::array<uint32_t, 32> *gprs,
+                               std::array<u256_t, 32> *wdrs,
+                               std::array<bool, 32> *gprs_set,
+                               std::array<bool, 32> *wdrs_set) {
+  assert(gprs && wdrs && gprs_set && wdrs_set);
+  gprs_set->fill(false);
+  wdrs_set->fill(false);
+
+  std::vector<std::string> lines;
+  run_command("load_testcase " + hjson_path + "\n", &lines);
+
+  // Lines for specified registers look like:
+  //  x5  = 0x00000042
+  //  w10 = 0x0000...0000   (64 hex chars for a 256-bit WDR)
+  // Any other output lines (e.g. LOAD_TESTCASE header) are ignored.
+  std::regex re("\\s*([wx][0-9]{1,2})\\s*=\\s*0x([0-9a-f]+)");
+  std::smatch match;
+
+  for (const std::string &line : lines) {
+    if (!std::regex_match(line, match, re))
+      continue;
+
+    const std::string &reg_name = match[1].str();
+    const std::string &str_value = match[2].str();
+
+    bool is_wide = reg_name[0] == 'w';
+    int reg_idx = atoi(reg_name.c_str() + 1);
+    if (reg_idx < 0 || reg_idx >= 32) {
+      std::ostringstream oss;
+      oss << "Invalid register index in load_testcase output (`" << reg_name
+          << "').";
+      throw std::runtime_error(oss.str());
+    }
+
+    unsigned num_u32s = is_wide ? 8 : 1;
+    unsigned expected_len = 8 * num_u32s;
+    if (str_value.size() != expected_len) {
+      std::ostringstream oss;
+      oss << "Bad value length for " << reg_name << " in load_testcase output.";
+      throw std::runtime_error(oss.str());
+    }
+
+    uint32_t *dst = is_wide ? &(*wdrs)[reg_idx].words[7] : &(*gprs)[reg_idx];
+    for (unsigned i = 0; i < num_u32s; ++i) {
+      *dst = read_hex_32(&str_value[8 * i]);
+      --dst;
+    }
+
+    if (is_wide)
+      (*wdrs_set)[reg_idx] = true;
+    else
+      (*gprs_set)[reg_idx] = true;
+  }
+}
+
 void ISSWrapper::get_regs(std::array<uint32_t, 32> *gprs,
                           std::array<u256_t, 32> *wdrs) {
   assert(gprs && wdrs);

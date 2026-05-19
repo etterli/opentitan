@@ -26,9 +26,14 @@ extern unsigned int otbn_base_call_stack_get_size();
 extern unsigned int otbn_base_call_stack_get_element(int index);
 extern unsigned int otbn_base_reg_get(int index);
 extern unsigned int otbn_bignum_reg_get(int index, int quarter);
+extern void otbn_base_reg_set(int index, unsigned int value);
+extern void otbn_bignum_reg_set(int index, int word, unsigned int value);
 extern svBit otbn_err_get();
 extern int otbn_core_get_stop_pc();
 }
+
+static std::string testcase_hjson_path;
+static std::string testcase_elf_path;
 
 /**
  * SimCtrlExtension that adds a '--otbn-trace-file' command line option. If set
@@ -56,13 +61,18 @@ class OtbnTraceUtil : public SimCtrlExtension {
   void PrintHelp() {
     std::cout << "Trace log utilities:\n\n"
                  "--otbn-trace-file=FILE\n"
-                 "  Write OTBN trace log to FILE\n\n";
+                 "  Write OTBN trace log to FILE\n\n"
+                 "--testcase=FILE\n"
+                 "  Load testcase hjson FILE; applies DMEM and register\n"
+                 "  overrides after the initial secure wipe\n\n";
   }
 
  public:
   virtual bool ParseCLIArguments(int argc, char **argv, bool &exit_app) {
     const struct option long_options[] = {
         {"otbn-trace-file", required_argument, nullptr, 'l'},
+        {"load-elf", required_argument, nullptr, 'E'},
+        {"testcase", required_argument, nullptr, 't'},
         {"help", no_argument, nullptr, 'h'},
         {nullptr, no_argument, nullptr, 0}};
 
@@ -81,6 +91,12 @@ class OtbnTraceUtil : public SimCtrlExtension {
           break;
         case 'l':
           return SetupTraceLog(optarg);
+        case 'E':
+          testcase_elf_path = optarg;
+          break;
+        case 't':
+          testcase_hjson_path = optarg;
+          break;
         case 'h':
           PrintHelp();
           break;
@@ -285,6 +301,54 @@ extern "C" void OtbnTopApplyLoopWarp() {
           get_loop_counter(loop_controller,
                            (uint32_t)loop_controller->loop_stack_rd_idx),
           new_iters);
+    }
+  }
+}
+
+// This is executed over DPI on the negedge after the initial secure wipe
+// completes. It applies any --testcase overrides: DMEM is synced from the ISS
+// and register values are written directly to the RTL register files.
+extern "C" void OtbnTopSetInitialRegisters() {
+  if (testcase_hjson_path.empty())
+    return;
+
+  Votbn_top_sim &top = *verilator_top;
+  auto sv_model_handle = top.otbn_top_sim->u_otbn_core_model->model_handle;
+  assert(sv_model_handle != 0);
+  OtbnModel *model = (OtbnModel *)sv_model_handle;
+
+  std::array<uint32_t, 32> gprs{};
+  std::array<ISSWrapper::u256_t, 32> wdrs{};
+  std::array<bool, 32> gprs_set{};
+  std::array<bool, 32> wdrs_set{};
+  if (model->prepare_testcase(testcase_elf_path, testcase_hjson_path,
+                              &gprs, &wdrs, &gprs_set, &wdrs_set) != 0) {
+    std::cerr << "ERROR: Failed to apply testcase from " << testcase_hjson_path
+              << ".\n";
+    return;
+  }
+
+  // Sync ISS DMEM into RTL simulation memory.
+  // load_dmem() uses a scope relative to the model's MemScope (".." from
+  // u_otbn_core_model -> TOP.otbn_top_sim). Set that scope explicitly so the
+  // relative reference resolves correctly regardless of where this DPI function
+  // was called from.
+  {
+    SVScoped core_model_scope("TOP.otbn_top_sim.u_otbn_core_model");
+    model->load_dmem();
+  }
+
+  // Write only the registers that were explicitly specified in the testcase.
+  // Unspecified registers keep their post-wipe RTL state and are not touched.
+  svSetScope(svGetScopeFromName("TOP.otbn_top_sim"));
+  for (int i = 0; i < 32; i++) {
+    if (gprs_set[i])
+      otbn_base_reg_set(i, gprs[i]);
+  }
+  for (int i = 0; i < 32; i++) {
+    if (wdrs_set[i]) {
+      for (int q = 0; q < 8; q++)
+        otbn_bignum_reg_set(i, q, wdrs[i].words[q]);
     }
   }
 }

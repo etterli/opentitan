@@ -83,6 +83,7 @@ from typing import List, Optional
 from sim.decode import decode_file
 from sim.load_elf import load_elf
 from sim.sim import OTBNSim
+from shared.testcase import OtbnTestCase
 
 
 def read_word(arg_name: str, word_data: str, bits: int) -> int:
@@ -407,6 +408,34 @@ def on_initial_secure_wipe(sim: OTBNSim, args: List[str]) -> Optional[OTBNSim]:
     return None
 
 
+def on_load_testcase(sim: OTBNSim, args: List[str]) -> Optional[OTBNSim]:
+    check_arg_count('load_testcase', 1, args)
+    hjson_path = args[0]
+    with open(hjson_path) as f:
+        testcase = OtbnTestCase.from_hjson(f.read(), sim.symbols)
+    sim.load_dmem_vars(testcase.input.dmem)
+    sim.load_regs_vars(testcase.input.regs)
+    # Commit register writes immediately so they land in _uval, not _next_uval.
+    # Two reasons: (1) get_regs() (print_regs) reads _uval via peek_unsigned_values
+    # so without commit it would return the post-wipe zero values, causing the RTL
+    # to be initialized to zero.  (2) Pending writes in _next_uval show up in
+    # state.changes() during the next IDLE step, emitting spurious trace entries
+    # that the RTL trace checker does not see, causing a mismatch.
+    sim.state.gprs.commit()
+    sim.state.wdrs.commit()
+    # Print only the registers that were explicitly specified in the testcase.
+    # The caller uses this output to determine which RTL registers to write;
+    # unspecified registers must not be touched (they keep their post-wipe state).
+    for label, value in sorted(testcase.input.regs.items()):
+        if label.startswith('x'):
+            idx = int(label[1:])
+            print(' x{:<2} = 0x{:08x}'.format(idx, value))
+        elif label.startswith('w'):
+            idx = int(label[1:])
+            print(' w{:<2} = 0x{:064x}'.format(idx, value))
+    return None
+
+
 def on_otp_cdc_done(sim: OTBNSim, args: List[str]) -> Optional[OTBNSim]:
     check_arg_count('otp_key_cdc_done', 0, args)
 
@@ -440,6 +469,7 @@ _HANDLERS = {
     'send_stall_request': on_send_stall_request,
     'set_rma_req': on_set_rma_req,
     'initial_secure_wipe': on_initial_secure_wipe,
+    'load_testcase': on_load_testcase,
     'set_software_errs_fatal': on_set_software_errs_fatal
 }
 

@@ -10,9 +10,8 @@
 #include <svdpi.h>
 #include <vector>
 
+#include "iss_wrapper.h"
 #include "otbn_memutil.h"
-
-struct ISSWrapper;
 
 class OtbnModel {
  public:
@@ -136,6 +135,19 @@ class OtbnModel {
 
   // Trigger initial secure wipe. Returns 0 on success; -1 on failure.
   int initial_secure_wipe();
+
+  // Apply a testcase hjson to the ISS (DMEM + register overrides). Returns the
+  // values and a set-mask for each register: (*gprs_set)[i] / (*wdrs_set)[i]
+  // are true only for registers explicitly named in the testcase. The caller is
+  // responsible for syncing DMEM to RTL (load_dmem()) and writing the registers
+  // to RTL — only the registers flagged in the set-masks should be written.
+  // Returns 0 on success; -1 on failure.
+  int prepare_testcase(const std::string &elf_path,
+                       const std::string &hjson_path,
+                       std::array<uint32_t, 32> *gprs,
+                       std::array<ISSWrapper::u256_t, 32> *wdrs,
+                       std::array<bool, 32> *gprs_set,
+                       std::array<bool, 32> *wdrs_set);
 
   // Set RMA request input on model. Returns 0 on success; -1 on failure.
   int set_rma_req(svBitVecVal *rma_req /* bit [3:0] */);

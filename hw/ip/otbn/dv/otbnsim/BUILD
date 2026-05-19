@@ -20,3 +20,14 @@ py_binary(
         "//hw/ip/otbn/dv/otbnsim/sim:stats",
     ],
 )
+
+py_binary(
+    name = "stepped",
+    srcs = ["stepped.py"],
+    deps = [
+        "//hw/ip/otbn/dv/otbnsim/sim:load_elf",
+        "//hw/ip/otbn/dv/otbnsim/sim:standalonesim",
+        "//hw/ip/otbn/dv/otbnsim/sim:stats",
+        "//hw/ip/otbn/util/shared:testcase",
+    ],
+)

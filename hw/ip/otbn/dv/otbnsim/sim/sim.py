@@ -539,6 +539,26 @@ class OTBNSim:
     def dump_data(self) -> bytes:
         return self.state.dmem.dump_le_words()
 
+    def load_dmem_vars(self, dmem_vars: Dict[str, bytes]) -> None:
+        for label, value in dmem_vars.items():
+            offset = self.symbols.get(label)
+            if offset is None:
+                raise KeyError(f'Symbol {label} does not exist in the elf')
+            assert offset % 4 == 0, "Only word-aligned variables are supported."
+            self.state.dmem.load_le_words(value, has_validity=False,
+                                          word_offset=offset // 4)
+
+    def load_regs_vars(self, regs: Dict[str, int]) -> None:
+        for label, value in regs.items():
+            if label.startswith('x'):
+                gpr_idx = int(label[1:])
+                self.state.gprs.get_reg(gpr_idx).write_unsigned(value)
+            elif label.startswith('w'):
+                wdr_idx = int(label[1:])
+                self.state.wdrs.get_reg(wdr_idx).write_unsigned(value)
+            else:
+                self.state.ext_regs.write(label, value, from_hw=False)
+
     def _print_trace(self, pc: int, disasm: str, changes: List[Trace]) -> None:
         '''Print a trace of the current instruction'''
         changes_str = ', '.join([t.trace() for t in changes])

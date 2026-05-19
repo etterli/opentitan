@@ -511,10 +511,56 @@ module otbn_top_sim (
     return u_otbn_core.u_otbn_rf_bignum.gen_rf_bignum_ff.u_otbn_rf_bignum_inner.rf[index][word*39+:32];
   endfunction
 
+  // Encode a 32-bit value into a 39-bit inverted SECDED word, matching
+  // prim_secded_inv_39_32_enc.sv exactly (the encoder used by both RF modules).
+  function automatic logic [38:0] secded_inv_encode(int unsigned value);
+    logic [38:0] d;
+    d     = 39'(value);
+    d[32] = ^(d & 39'h002606BD25);
+    d[33] = ^(d & 39'h00DEBA8050);
+    d[34] = ^(d & 39'h00413D89AA);
+    d[35] = ^(d & 39'h0031234ED1);
+    d[36] = ^(d & 39'h00C2C1323B);
+    d[37] = ^(d & 39'h002DCC624C);
+    d[38] = ^(d & 39'h0098505586);
+    d    ^= 39'h2A00000000;
+    return d;
+  endfunction
+
+  export "DPI-C" function otbn_base_reg_set;
+
+  function automatic void otbn_base_reg_set(int index, int unsigned value);
+    u_otbn_core.u_otbn_rf_base.gen_rf_base_ff.u_otbn_rf_base_inner
+      .rf_reg[index] = secded_inv_encode(value);
+  endfunction
+
+  export "DPI-C" function otbn_bignum_reg_set;
+
+  function automatic void otbn_bignum_reg_set(int index, int word, int unsigned value);
+    u_otbn_core.u_otbn_rf_bignum.gen_rf_bignum_ff.u_otbn_rf_bignum_inner
+      .rf[index][word*39+:39] = secded_inv_encode(value);
+  endfunction
+
   export "DPI-C" function otbn_err_get;
 
   function automatic bit otbn_err_get();
     return err_latched;
   endfunction
+
+  // Called after the initial secure wipe to inject testcase register values.
+  // Fires on negedge after init_sec_wipe_done_q goes high — after the wipe
+  // randomises registers but before otbn_start is pulsed on the next posedge.
+  import "DPI-C" context function void OtbnTopSetInitialRegisters();
+  bit initial_regs_applied;
+  always_ff @(negedge IO_CLK or negedge IO_RST_N) begin
+    if (!IO_RST_N) begin
+      initial_regs_applied <= 1'b0;
+    end else begin
+      if (!initial_regs_applied && init_sec_wipe_done_q) begin
+        OtbnTopSetInitialRegisters();
+        initial_regs_applied <= 1'b1;
+      end
+    end
+  end
 
 endmodule
