@@ -372,7 +372,7 @@ interface keymgr_dpe_if(input clk, input rst_n);
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       valid_done_window <= 0;
-    end else if (kmac_data_req.last) begin
+    end else if (kmac_data_req.req_last) begin
       valid_done_window <= 1;
     end else if (kmac_data_rsp.done) begin
       valid_done_window <= 0;
