@@ -16,6 +16,7 @@ package kmac_app_agent_pkg;
   `include "dv_macros.svh"
 
   // parameters
+  // TODO: Make it dependent on kmac package and not keymanager.
   parameter int KMAC_REQ_DATA_WIDTH = keymgr_pkg::KmacDataIfWidth       // data width
                                       + keymgr_pkg::KmacDataIfWidth / 8 // data mask width
                                       + 1;                              // bit last

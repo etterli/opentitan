@@ -72,10 +72,10 @@ class kmac_app_monitor extends dv_reactive_monitor #(
       `uvm_info(`gfn, $sformatf("Write req item:\n%0s", req.sprint()), UVM_HIGH)
 
       `downcast(rsp, req.clone())
-      while (cfg.vif.rsp_done !== 1) @(cfg.vif.mon_cb);
-      rsp.rsp_error         = cfg.vif.rsp_error;
-      rsp.rsp_digest_share0 = cfg.vif.rsp_digest_share0;
-      rsp.rsp_digest_share1 = cfg.vif.rsp_digest_share1;
+      while (cfg.vif.rsp_valid !== 1) @(cfg.vif.mon_cb);
+      rsp.error     = cfg.vif.rsp_error;
+      rsp.digest_s0 = cfg.vif.rsp_digest_share0;
+      rsp.digest_s1 = cfg.vif.rsp_digest_share1;
       analysis_port.write(rsp);
       `uvm_info(`gfn, $sformatf("Write rsp item:\n%0s", rsp.sprint()), UVM_HIGH)
       ok_to_end = 1;
