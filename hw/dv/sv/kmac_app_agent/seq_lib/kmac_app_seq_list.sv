@@ -4,4 +4,5 @@
 
 `include "kmac_app_base_seq.sv"
 `include "kmac_app_host_seq.sv"
+`include "kmac_app_xof_host_seq.sv"
 `include "kmac_app_device_seq.sv"
