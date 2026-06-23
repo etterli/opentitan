@@ -9,6 +9,8 @@ package kmac_app_agent_pkg;
   import dv_base_agent_pkg::*;
   import dv_lib_pkg::*;
   import keymgr_pkg::*;
+  import sha3_pkg::*;
+  import kmac_pkg::*;
   import push_pull_agent_pkg::*;
 
   // macro includes
@@ -20,7 +22,11 @@ package kmac_app_agent_pkg;
                                       + kmac_pkg::MsgWidth / 8 // strobe
                                       + 2;                     // req_last + rsp_ready
 
+  parameter int KMAC_RSP_DATA_WIDTH = 2 * kmac_pkg::AppDigestW  // share0 + share1
+                                      + 2;                      // error + finished
+
   `define CONNECT_DATA_WIDTH .HostDataWidth(kmac_app_agent_pkg::KMAC_REQ_DATA_WIDTH)
+  `define RSP_CONNECT_DATA_WIDTH .HostDataWidth(kmac_app_agent_pkg::KMAC_RSP_DATA_WIDTH)
 
   // package sources
   `include "kmac_app_item.sv"
