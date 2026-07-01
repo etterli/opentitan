@@ -37,6 +37,9 @@ class kmac_scoreboard extends cip_base_scoreboard #(
   // this bit tracks the beginning and end of a KMAC_APP operation
   bit in_kmac_app;
 
+  // TODO: Clean up naming of:
+  // - app_mode -> app_id
+  // - in_kmac_app -> app_active
   // Indicates what application is using the app interface
   kmac_app_e app_mode;
 
@@ -55,7 +58,9 @@ class kmac_scoreboard extends cip_base_scoreboard #(
   bit kmac_en;
   bit sideload_en;
   sha3_pkg::sha3_mode_e hash_mode;
+  sha3_pkg::sha3_mode_e actual_hash_mode;
   sha3_pkg::keccak_strength_e strength;
+  sha3_pkg::keccak_strength_e actual_strength;
   entropy_mode_e entropy_mode = EntropyModeNone;
   bit entropy_fast_process;
   bit entropy_ready;
@@ -80,6 +85,9 @@ class kmac_scoreboard extends cip_base_scoreboard #(
   bit sha3_idle;
   bit sha3_absorb;
   bit sha3_squeeze;
+  // Set when an app transaction ends but SHA3 hasn't gone idle yet (CmdDone latency).
+  // All three SHA3 status bits stay masked until the DUT confirms sha3_idle=1.
+  bit post_app_sha3_draining = 0;
 
   // FIFO status bits
   bit cmd_process_triggered;
@@ -107,6 +115,9 @@ class kmac_scoreboard extends cip_base_scoreboard #(
   bit             app_fsm_active = 0;
   app_mux_sel_e   app_mux_sel = SelNone;
 
+  bit dyn_finish_req_seen = 0;
+  bit dyn_finish_rsp_seen = 0;
+
   // key length enum
   key_len_e key_len;
 
@@ -132,6 +143,10 @@ class kmac_scoreboard extends cip_base_scoreboard #(
   // output digest from static KMAC_APP interfaces
   bit [kmac_pkg::AppDigestW-1:0] kmac_app_digest_share0;
   bit [kmac_pkg::AppDigestW-1:0] kmac_app_digest_share1;
+
+  // Assembled digest shares for dynamic app interfaces
+  bit [7:0] kmac_app_dyn_digest_s0[];
+  bit [7:0] kmac_app_dyn_digest_s1[];
 
   // output digests
   bit [7:0] digest_share0[];
@@ -322,12 +337,19 @@ class kmac_scoreboard extends cip_base_scoreboard #(
             wait(!in_kmac_app && app_fsm_active &&
                  (`KMAC_APP_VALID_TRANS(AppKeymgr) ||
                   `KMAC_APP_VALID_TRANS(AppLc) ||
-                  `KMAC_APP_VALID_TRANS(AppRom)));
+                  `KMAC_APP_VALID_TRANS(AppRom) ||
+                  `KMAC_APP_VALID_TRANS(AppOtbn)));
             in_kmac_app = 1;
             sha3_idle = 0;
             sha3_absorb = 1;
 
             `uvm_info(`gfn, "Raised in_kmac_app and sha3_absorb. Dropped sha3_idle.", UVM_HIGH)
+
+            // SHA3 state transitions are not cycle-accurate in this scoreboard for any app
+            // interface. Mask both bits to prevent false failures when status is read when an
+            // operation is ongoing.
+            status_mask[KmacStatusSha3Absorb]  = 1;
+            status_mask[KmacStatusSha3Squeeze] = 1;
 
             // we need to choose the correct application interface
             if (`KMAC_APP_VALID_TRANS(AppKeymgr)) begin
@@ -341,8 +363,9 @@ class kmac_scoreboard extends cip_base_scoreboard #(
               app_mode = AppRom;
               strength = APP_CFG[app_mode].session_cfg.kstrength;
             end else if (`KMAC_APP_VALID_TRANS(AppOtbn)) begin
-              `uvm_fatal(get_full_name(),
-                         "Cannot start KMAC app for OTBN (no support for dynamic apps yet)")
+              app_mode = AppOtbn;
+              // Strength is encoded in the session config
+              strength = cfg.m_kmac_app_agent_cfg[AppOtbn].app_strength;
             end
 
             // sample sideload-related coverage
@@ -399,7 +422,8 @@ class kmac_scoreboard extends cip_base_scoreboard #(
                 if (!in_kmac_app &&
                     (cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.req_data_if.valid ||
                      cfg.m_kmac_app_agent_cfg[AppLc].vif.req_data_if.valid ||
-                     cfg.m_kmac_app_agent_cfg[AppRom].vif.req_data_if.valid)) begin
+                     cfg.m_kmac_app_agent_cfg[AppRom].vif.req_data_if.valid ||
+                     cfg.m_kmac_app_agent_cfg[AppOtbn].vif.req_data_if.valid)) begin
                   app_st = StAppCfg;
                   app_fsm_active = 1;
                 end else if (checked_kmac_cmd == CmdStart) begin
@@ -417,7 +441,9 @@ class kmac_scoreboard extends cip_base_scoreboard #(
               StAppMsg: begin
                 app_mux_sel = SelApp;
                 if (kmac_app_last) begin
+                  // TODO: consider also process command for dynamic interface
                   if (app_mode == AppKeymgr) begin
+                    // TODO: depend on app config and not fixed interface.
                     app_st = StAppOutLen;
                   end else begin
                     app_st = StAppProcess;
@@ -437,11 +463,22 @@ class kmac_scoreboard extends cip_base_scoreboard #(
                 end
               end
               StAppPushDigest: begin
-                app_st = StAppFinish;
+                if (APP_CFG[app_mode].if_type == AppStatic) begin
+                  app_st = StAppFinish;
+                end else begin
+                  if (dyn_finish_req_seen) app_st = StAppFinish;
+                end
               end
               StAppFinish: begin
-                app_st = StIdle;
-                app_fsm_active = 0;
+                if (APP_CFG[app_mode].if_type == AppStatic) begin
+                  app_st = StIdle;
+                  app_fsm_active = 0;
+                end else begin
+                  if (dyn_finish_rsp_seen) begin
+                    app_st = StIdle;
+                    app_fsm_active = 0;
+                  end
+                end
               end
               StSw: begin
                 app_mux_sel = SelSw;
@@ -456,6 +493,10 @@ class kmac_scoreboard extends cip_base_scoreboard #(
                 in_kmac_app = 0;
                 sha3_squeeze = 0;
                 sha3_idle = 1;
+                post_app_sha3_draining             = 0;
+                status_mask[KmacStatusSha3Idle]    = 0;
+                status_mask[KmacStatusSha3Absorb]  = 0;
+                status_mask[KmacStatusSha3Squeeze] = 0;
 
                 kmac_err.valid = 1;
                 kmac_err.code = kmac_pkg::ErrKeyNotValid;
@@ -501,37 +542,58 @@ class kmac_scoreboard extends cip_base_scoreboard #(
     push_pull_agent_pkg::push_pull_item#(
       .HostDataWidth(kmac_app_agent_pkg::KMAC_REQ_DATA_WIDTH)) kmac_app_block_item;
     forever begin
+        dyn_finish_req_seen = 0;
         wait(!cfg.under_reset);
         @(posedge in_kmac_app);
         `uvm_info(`gfn, $sformatf("req app_mode: %0s", app_mode.name()), UVM_HIGH)
         `DV_SPINWAIT_EXIT(
-            forever begin
+            // For a dynamic interface the first push_pull item is the config beat. Discard it
+            // before collecting the message.
+            if (APP_CFG[app_mode].if_type == AppDynamic) begin
               kmac_app_req_fifo[app_mode].get(kmac_app_block_item);
-              `uvm_info(`gfn,
-                        $sformatf("Detected KMAC_APP data transfer:\n%0s",
-                                  kmac_app_block_item.sprint()),
-                        UVM_HIGH)
-              {kmac_app_block_data, kmac_app_block_strb, kmac_app_last} =
-                  kmac_app_block_item.h_data;
-              kmac_app_block_strb_size = $countones(kmac_app_block_strb);
+              `uvm_info(`gfn, "Dynamic app: config beat received", UVM_HIGH)
+            end
+            begin
+              // Do not collect the finish request from dynamic interfaces after the message has
+              // been sent.
+              bit dyn_msg_done = 0;
+              forever begin
+                kmac_app_req_fifo[app_mode].get(kmac_app_block_item);
+                `uvm_info(`gfn,
+                          $sformatf("Detected KMAC_APP data transfer:\n%0s",
+                                    kmac_app_block_item.sprint()),
+                          UVM_HIGH)
+                {kmac_app_block_data, kmac_app_block_strb, kmac_app_last} =
+                    kmac_app_block_item.h_data;
+                kmac_app_block_strb_size = $countones(kmac_app_block_strb);
 
-              // sample coverage
-              if (cfg.en_cov) begin
-                cov.app_cg_wrappers[app_mode].app_sample(0,
-                    kmac_app_block_strb,
-                    0,
-                    kmac_app_last,
-                    in_keccak_rounds);
-              end
-
-              while (kmac_app_block_strb > 0) begin
-                if (kmac_app_block_strb[0]) begin
-                  kmac_app_msg.push_back(kmac_app_block_data[7:0]);
+                // sample coverage
+                if (cfg.en_cov) begin
+                  cov.app_cg_wrappers[app_mode].app_sample(0,
+                      kmac_app_block_strb,
+                      0,
+                      kmac_app_last,
+                      in_keccak_rounds);
                 end
-                kmac_app_block_data = kmac_app_block_data >> 8;
-                kmac_app_block_strb = kmac_app_block_strb >> 1;
+
+                if (!dyn_msg_done) begin
+                  while (kmac_app_block_strb > 0) begin
+                    if (kmac_app_block_strb[0]) begin
+                      kmac_app_msg.push_back(kmac_app_block_data[7:0]);
+                    end
+                    kmac_app_block_data = kmac_app_block_data >> 8;
+                    kmac_app_block_strb = kmac_app_block_strb >> 1;
+                  end
+                  `uvm_info(`gfn, $sformatf("kmac_app_msg: %0p", kmac_app_msg), UVM_HIGH)
+                  // TODO: Testing the case where the app interface violates the protocol order is
+                  // not supported with this logic. However, not sure if such a test is required.
+                  if (kmac_app_last && APP_CFG[app_mode].if_type == AppDynamic) dyn_msg_done = 1;
+                end else if (kmac_app_last && APP_CFG[app_mode].if_type == AppDynamic) begin
+                  // This beat is the finish request.
+                  dyn_finish_req_seen = 1;
+                  `uvm_info(`gfn, "Dynamic app: detected finish beat", UVM_HIGH)
+                end
               end
-              `uvm_info(`gfn, $sformatf("kmac_app_msg: %0p", kmac_app_msg), UVM_HIGH)
             end
             ,
             wait(cfg.under_reset || !in_kmac_app);
@@ -601,6 +663,33 @@ class kmac_scoreboard extends cip_base_scoreboard #(
                     "APP interface error, expect output to be all 0s")
                   `DV_CHECK_FATAL(kmac_app_rsp.digest_s1 == 0,
                     "APP interface error, expect output to be all 0s")
+                end else if (APP_CFG[app_mode].if_type == AppDynamic) begin
+                  // Dynamic interface: assemble byte array from 64-bit chunks.
+                  if (dyn_finish_req_seen) begin
+                    // Void responses once finish request has been sent. If finish response
+                    // arrives stop and check digest.
+                    if (kmac_app_rsp.finished) begin
+                      dyn_finish_rsp_seen = 1;
+                    end
+                  end else begin
+                    begin
+                      int num_chunks = kmac_app_rsp.digest_chunks_s0.size();
+                      int num_bytes  = num_chunks * (kmac_pkg::DynAppDigestW / 8);
+                      kmac_app_dyn_digest_s0 = new[num_bytes];
+                      kmac_app_dyn_digest_s1 = new[num_bytes];
+                      for (int ci = 0; ci < num_chunks; ci++) begin
+                        bit [kmac_pkg::DynAppDigestW-1:0] chunk_s0 = kmac_app_rsp.digest_chunks_s0[ci];
+                        bit [kmac_pkg::DynAppDigestW-1:0] chunk_s1 = kmac_app_rsp.digest_chunks_s1[ci];
+                        for (int bi = 0; bi < kmac_pkg::DynAppDigestW / 8; bi++) begin
+                          kmac_app_dyn_digest_s0[ci * (kmac_pkg::DynAppDigestW/8) + bi] =
+                              chunk_s0[bi*8 +: 8];
+                          kmac_app_dyn_digest_s1[ci * (kmac_pkg::DynAppDigestW/8) + bi] =
+                              chunk_s1[bi*8 +: 8];
+                        end
+                      end
+                    end
+                    if (do_check_digest) check_digest();
+                  end
                 end else begin
                   // Static app interface: assign digest values directly
                   kmac_app_digest_share0 = kmac_app_rsp.digest_s0;
@@ -609,10 +698,15 @@ class kmac_scoreboard extends cip_base_scoreboard #(
                   if (do_check_digest) check_digest();
                 end
 
+                // Keep all SHA3 state bits masked until DUT confirms sha3_idle=1 as Done Cmd
+                // takes effect a few cycles after the app response is seen here.
+                status_mask[KmacStatusSha3Idle] = 1;
+                post_app_sha3_draining          = 1;
                 in_kmac_app = 0;
                 sha3_squeeze = 0;
                 sha3_absorb = 0;
                 sha3_idle = 1;
+                dyn_finish_rsp_seen = 0;
                 `uvm_info(`gfn, "dropped in_kmac_app and raised sha3_idle", UVM_HIGH)
 
                 clear_state();
@@ -989,6 +1083,14 @@ class kmac_scoreboard extends cip_base_scoreboard #(
                  KMAC_FIFO_DEPTH,
                  $sformatf("Status (val:%0h) error! Depth cannot be %0h when fifo full is not set",
                  item.d_data, KMAC_FIFO_DEPTH))
+          end
+          // Once the DUT confirms sha3_idle=1, it is safe to stop masking the SHA3 state
+          // bits. This clears the post-app settling window started at app-end.
+          if (post_app_sha3_draining && item.d_data[KmacStatusSha3Idle]) begin
+            status_mask[KmacStatusSha3Idle]    = 0;
+            status_mask[KmacStatusSha3Absorb]  = 0;
+            status_mask[KmacStatusSha3Squeeze] = 0;
+            post_app_sha3_draining = 0;
           end
           `DV_CHECK_EQ(csr.get_mirrored_value() | status_mask, item.d_data | status_mask,
                        $sformatf("reg name: %0s", csr.get_full_name()))
@@ -1367,12 +1469,16 @@ class kmac_scoreboard extends cip_base_scoreboard #(
     first_op_after_rst = 1;
 
     // status tracking bits
-    sha3_idle         = ral.status.sha3_idle.get_reset();
-    sha3_absorb       = ral.status.sha3_absorb.get_reset();
-    sha3_squeeze      = ral.status.sha3_squeeze.get_reset();
-    fifo_empty_status = ral.status.fifo_empty.get_reset();
-    fifo_full_status  = ral.status.fifo_full.get_reset();
-    intr_fifo_empty   = ral.intr_state.fifo_empty.get_reset();
+    sha3_idle                          = ral.status.sha3_idle.get_reset();
+    sha3_absorb                        = ral.status.sha3_absorb.get_reset();
+    sha3_squeeze                       = ral.status.sha3_squeeze.get_reset();
+    post_app_sha3_draining             = 0;
+    status_mask[KmacStatusSha3Idle]    = 0;
+    status_mask[KmacStatusSha3Absorb]  = 0;
+    status_mask[KmacStatusSha3Squeeze] = 0;
+    fifo_empty_status                  = ral.status.fifo_empty.get_reset();
+    fifo_full_status                   = ral.status.fifo_full.get_reset();
+    intr_fifo_empty                    = ral.intr_state.fifo_empty.get_reset();
   endfunction
 
   // This function should be called to reset internal state to prepare for a new hash operation
@@ -1411,8 +1517,10 @@ class kmac_scoreboard extends cip_base_scoreboard #(
     digest_share0 = {};
     digest_share1 = {};
 
-    kmac_app_digest_share0 = '0;
-    kmac_app_digest_share1 = '0;
+    kmac_app_digest_share0    = '0;
+    kmac_app_digest_share1    = '0;
+    kmac_app_dyn_digest_s0    = {};
+    kmac_app_dyn_digest_s1    = {};
   endfunction
 
   // This function is called whenever a CmdDone command is issued to KMAC,
@@ -1435,6 +1543,8 @@ class kmac_scoreboard extends cip_base_scoreboard #(
 
     // Set this to the calculated output length for XOFs
     int output_len_bytes;
+
+    int total_len_bytes;
 
     // Array to hold the digest read from the state windows
     bit [7:0] unmasked_digest[];
@@ -1460,10 +1570,26 @@ class kmac_scoreboard extends cip_base_scoreboard #(
 
     int key_word_len, key_byte_len;
 
-    // Actual hash_mode based on interface or SW register
-    sha3_pkg::sha3_mode_e actual_hash_mode = in_kmac_app ? sha3_pkg::CShake : hash_mode;
+    // Extract the app configuration for mode and strength. Mode requires an additional cast to
+    // SHA3 type.
+    app_mode_e cfg_app_mode =
+        APP_CFG[app_mode].if_type == AppStatic ? APP_CFG[app_mode].session_cfg.mode :
+                                                 cfg.m_kmac_app_agent_cfg[app_mode].app_mode;
 
-    bit use_keymgr_keys = sideload_en || (in_kmac_app && app_mode == AppKeymgr);
+    bit use_keymgr_keys = sideload_en || (in_kmac_app && cfg_app_mode == AppKMAC);
+
+    // KMAC is based on CShake
+    sha3_pkg::sha3_mode_e cfg_app_mode_sha3 = cfg_app_mode == AppSHA3  ? sha3_pkg::Sha3  :
+                                              cfg_app_mode == AppShake ? sha3_pkg::Shake :
+                                                                         sha3_pkg::CShake;
+
+    sha3_pkg::keccak_strength_e cfg_app_strength =
+        APP_CFG[app_mode].if_type == AppStatic ? APP_CFG[app_mode].session_cfg.kstrength :
+                                                 cfg.m_kmac_app_agent_cfg[app_mode].app_strength;
+
+    actual_strength = in_kmac_app ? cfg_app_strength : strength;
+
+    actual_hash_mode = in_kmac_app ? cfg_app_mode_sha3 : hash_mode;
 
     if (cfg.en_scb == 0) return;
 
@@ -1478,48 +1604,62 @@ class kmac_scoreboard extends cip_base_scoreboard #(
     // - the expected output length in bytes
     // - if we are using the xof version of kmac
     if (in_kmac_app) begin
-      // Static app interfaces always return 384 bits (48 bytes).
-      output_len_bytes = AppDigestW / 8;
-      // xof_en is 1 when the padded output length is 0,
-      // but this will never happen in KMAC_APP
-      xof_en = 0;
+      if (APP_CFG[app_mode].if_type == AppDynamic) begin
+        // Dynamic mode: output_len_bytes represents the number of chunks requested.
+        output_len_bytes = int'(cfg.m_kmac_app_agent_cfg[app_mode].req_output_len);
+        total_len_bytes  = output_len_bytes * (kmac_pkg::DynAppDigestW / 8);
+        xof_en           = cfg.m_kmac_app_agent_cfg[app_mode].app_en_xof;
+      end else begin
+        // Static app interfaces always return 384 bits (48 bytes).
+        total_len_bytes  = AppDigestW / 8;
+        output_len_bytes = total_len_bytes;
+        xof_en           = 0;
+      end
+
     end else begin
       get_digest_len_and_xof(output_len_bytes, xof_en, msg);
+      total_len_bytes = output_len_bytes;
 
       // quick check that the calculated output length is the same
       // as the number of bytes read from the digest window
-      `DV_CHECK_EQ_FATAL(digest_share0.size(), output_len_bytes,
+      `DV_CHECK_EQ_FATAL(digest_share0.size(), total_len_bytes,
           $sformatf("Calculated output length(%0d) doesn't match actual output length(%0d)!",
-                    output_len_bytes, digest_share0.size()))
+                    total_len_bytes, digest_share0.size()))
     end
 
     if (cfg.en_cov) begin
       // sample configuration coverage, as only now do we know which KMAC variant is used
       // (xof/non-xof)
-      cov.sample_cfg(kmac_en, xof_en, strength, actual_hash_mode, key_len,
+      cov.sample_cfg(kmac_en, xof_en, actual_strength, actual_hash_mode, key_len,
                      `gmv(ral.cfg_shadowed.msg_endianness), `gmv(ral.cfg_shadowed.state_endianness),
                      `gmv(ral.cfg_shadowed.sideload), entropy_mode, entropy_fast_process);
 
       // sample coverage on the digest length
       if (cfg.en_cov) begin
-        cov.output_digest_len_cg.sample(output_len_bytes);
+        cov.output_digest_len_cg.sample(total_len_bytes);
       end
     end
 
 
-    `uvm_info(`gfn, $sformatf("output_len_bytes: %0d", output_len_bytes), UVM_HIGH)
+    `uvm_info(`gfn, $sformatf("total_len_bytes: %0d", total_len_bytes), UVM_HIGH)
     `uvm_info(`gfn, $sformatf("xof_en: %0d", xof_en), UVM_HIGH)
 
     // initialize arrays
-    dpi_digest = new[output_len_bytes];
-    unmasked_digest = new[output_len_bytes];
+    dpi_digest = new[total_len_bytes];
+    unmasked_digest = new[total_len_bytes];
 
     /////////////////////////////////
     // Calculate the actual digest //
     /////////////////////////////////
     if (cfg.enable_masking) begin
       if (in_kmac_app) begin
-       unmasked_digest = {<< byte {kmac_app_digest_share0 ^ kmac_app_digest_share1}};
+        if (APP_CFG[app_mode].if_type == AppDynamic) begin
+          foreach (unmasked_digest[i]) begin
+            unmasked_digest[i] = kmac_app_dyn_digest_s0[i] ^ kmac_app_dyn_digest_s1[i];
+          end
+        end else begin
+          unmasked_digest = {<< byte {kmac_app_digest_share0 ^ kmac_app_digest_share1}};
+        end
       end else begin
         foreach (unmasked_digest[i]) begin
           unmasked_digest[i] = digest_share0[i] ^ digest_share1[i];
@@ -1527,7 +1667,11 @@ class kmac_scoreboard extends cip_base_scoreboard #(
       end
     end else begin
       if (in_kmac_app) begin
-        unmasked_digest = {<< byte {kmac_app_digest_share0}};
+        if (APP_CFG[app_mode].if_type == AppDynamic) begin
+          unmasked_digest = kmac_app_dyn_digest_s0;
+        end else begin
+          unmasked_digest = {<< byte {kmac_app_digest_share0}};
+        end
       end else begin
         unmasked_digest = digest_share0;
       end
@@ -1547,43 +1691,58 @@ class kmac_scoreboard extends cip_base_scoreboard #(
       msg_arr = msg;
     end
     `uvm_info(`gfn, $sformatf("msg_arr for DPI mode: %0p", msg_arr), UVM_HIGH)
+    `uvm_info(`gfn, $sformatf("actual_hash_mode: %s", actual_hash_mode.name()), UVM_HIGH)
+    `uvm_info(`gfn, $sformatf("actual_strength:  %s", actual_strength.name()), UVM_HIGH)
 
     case (actual_hash_mode)
       ///////////
       // SHA-3 //
       ///////////
       sha3_pkg::Sha3: begin
-        case (strength)
-          sha3_pkg::L224: begin
-            digestpp_dpi_pkg::c_dpi_sha3_224(msg_arr, msg_arr.size(), dpi_digest);
-          end
-          sha3_pkg::L256: begin
-            digestpp_dpi_pkg::c_dpi_sha3_256(msg_arr, msg_arr.size(), dpi_digest);
-          end
-          sha3_pkg::L384: begin
-            digestpp_dpi_pkg::c_dpi_sha3_384(msg_arr, msg_arr.size(), dpi_digest);
-          end
-          sha3_pkg::L512: begin
-            digestpp_dpi_pkg::c_dpi_sha3_512(msg_arr, msg_arr.size(), dpi_digest);
-          end
-          default: begin
-            `uvm_fatal(`gfn, $sformatf("strength[%0s] is not allowed for sha3", strength.name()))
-          end
+        // SHA3 DPI functions produce a fixed-size digest. For partial reads of dynamic interfaces
+        // allocate a full-sized buffer and truncate.
+        int full_sha3_bytes;
+        bit [7:0] sha3_full_buf[];
+        // Determine buffer size
+        case (actual_strength)
+          sha3_pkg::L224: full_sha3_bytes = 28;
+          sha3_pkg::L256: full_sha3_bytes = 32;
+          sha3_pkg::L384: full_sha3_bytes = 48;
+          sha3_pkg::L512: full_sha3_bytes = 64;
+          default: `uvm_fatal(`gfn,
+              $sformatf("strength[%0s] is not allowed for sha3", actual_strength.name()))
         endcase
+
+        // Create buffer and get digest
+        sha3_full_buf = new[full_sha3_bytes];
+        case (actual_strength)
+          sha3_pkg::L224: digestpp_dpi_pkg::c_dpi_sha3_224(msg_arr, msg_arr.size(), sha3_full_buf);
+          sha3_pkg::L256: digestpp_dpi_pkg::c_dpi_sha3_256(msg_arr, msg_arr.size(), sha3_full_buf);
+          sha3_pkg::L384: digestpp_dpi_pkg::c_dpi_sha3_384(msg_arr, msg_arr.size(), sha3_full_buf);
+          sha3_pkg::L512: digestpp_dpi_pkg::c_dpi_sha3_512(msg_arr, msg_arr.size(), sha3_full_buf);
+          default: `uvm_fatal(`gfn,
+              $sformatf("strength[%0s] is not allowed for sha3", actual_strength.name()))
+        endcase
+
+        // Transfer digest
+        for (int i = 0; i < total_len_bytes; i++) begin
+          dpi_digest[i] = sha3_full_buf[i];
+        end
       end
       ///////////
       // SHAKE //
       ///////////
       sha3_pkg::Shake: begin
-        case (strength)
+        case (actual_strength)
           sha3_pkg::L128: begin
-            digestpp_dpi_pkg::c_dpi_shake128(msg_arr, msg_arr.size(), output_len_bytes, dpi_digest);
+            digestpp_dpi_pkg::c_dpi_shake128(msg_arr, msg_arr.size(), total_len_bytes, dpi_digest);
           end
           sha3_pkg::L256: begin
-            digestpp_dpi_pkg::c_dpi_shake256(msg_arr, msg_arr.size(), output_len_bytes, dpi_digest);
+            digestpp_dpi_pkg::c_dpi_shake256(msg_arr, msg_arr.size(), total_len_bytes, dpi_digest);
           end
           default: begin
-            `uvm_fatal(`gfn, $sformatf("strength[%0s] is not allowed for shake", strength.name()))
+            `uvm_fatal(`gfn,
+                $sformatf("strength[%0s] is not allowed for shake", actual_strength.name()))
           end
         endcase
       end
@@ -1612,18 +1771,18 @@ class kmac_scoreboard extends cip_base_scoreboard #(
           `uvm_info(`gfn, $sformatf("dpi_key_arr.size(): %0d", dpi_key_arr.size()), UVM_HIGH)
           `uvm_info(`gfn, $sformatf("dpi_key_arr: %0p", dpi_key_arr), UVM_HIGH)
 
-          case (strength)
+          case (actual_strength)
             sha3_pkg::L128: begin
               if (xof_en) begin
                 digestpp_dpi_pkg::c_dpi_kmac128_xof(msg_arr, msg_arr.size(),
                                                     dpi_key_arr, dpi_key_arr.size(),
                                                     custom_str,
-                                                    output_len_bytes, dpi_digest);
+                                                    total_len_bytes, dpi_digest);
               end else begin
                 digestpp_dpi_pkg::c_dpi_kmac128(msg_arr, msg_arr.size(),
                                                 dpi_key_arr, dpi_key_arr.size(),
                                                 custom_str,
-                                                output_len_bytes, dpi_digest);
+                                                total_len_bytes, dpi_digest);
               end
             end
             sha3_pkg::L256: begin
@@ -1631,31 +1790,33 @@ class kmac_scoreboard extends cip_base_scoreboard #(
                 digestpp_dpi_pkg::c_dpi_kmac256_xof(msg_arr, msg_arr.size(),
                                                     dpi_key_arr, dpi_key_arr.size(),
                                                     custom_str,
-                                                    output_len_bytes, dpi_digest);
+                                                    total_len_bytes, dpi_digest);
               end else begin
                 digestpp_dpi_pkg::c_dpi_kmac256(msg_arr, msg_arr.size(),
                                                 dpi_key_arr, dpi_key_arr.size(),
                                                 custom_str,
-                                                output_len_bytes, dpi_digest);
+                                                total_len_bytes, dpi_digest);
               end
             end
             default: begin
-              `uvm_fatal(`gfn, $sformatf("strength[%0s] is not allowed for kmac", strength.name()))
+              `uvm_fatal(`gfn, $sformatf("strength[%0s] is not allowed for kmac",
+                                         actual_strength.name()))
             end
           endcase
         end else begin
-          // regular cshake - used for otp_ctrl/rom_ctrl application interfaces
-          case (strength)
+          // regular cshake
+          case (actual_strength)
             sha3_pkg::L128: begin
               digestpp_dpi_pkg::c_dpi_cshake128(msg_arr, fname, custom_str, msg_arr.size(),
-                                                output_len_bytes, dpi_digest);
+                                                total_len_bytes, dpi_digest);
             end
             sha3_pkg::L256: begin
               digestpp_dpi_pkg::c_dpi_cshake256(msg_arr, fname, custom_str, msg_arr.size(),
-                                                output_len_bytes, dpi_digest);
+                                                total_len_bytes, dpi_digest);
             end
             default: begin
-              `uvm_fatal(`gfn, $sformatf("strength[%0s] is not allowed for cshake", strength.name()))
+              `uvm_fatal(`gfn, $sformatf("strength[%0s] is not allowed for cshake",
+                                         actual_strength.name()))
             end
           endcase
         end
@@ -1667,7 +1828,7 @@ class kmac_scoreboard extends cip_base_scoreboard #(
     /////////////////////////////////////////
     // Compare actual and expected digests //
     /////////////////////////////////////////
-    for (int i = 0; i < output_len_bytes; i++) begin
+    for (int i = 0; i < total_len_bytes; i++) begin
       `DV_CHECK_EQ_FATAL(unmasked_digest[i], dpi_digest[i],
           $sformatf("Mismatch between unmasked_digest[%0d] and dpi_digest[%0d]", i, i))
     end
@@ -1678,10 +1839,10 @@ class kmac_scoreboard extends cip_base_scoreboard #(
   virtual function void get_digest_len_and_xof(ref int output_len, ref bit xof_en,
                                                ref bit [7:0] msg[$]);
     xof_en = 0;
-    case (hash_mode)
+    case (actual_hash_mode)
       // For SHA3 hashes, the output length is the same as the security strength.
       sha3_pkg::Sha3: begin
-        case (strength)
+        case (actual_strength)
           sha3_pkg::L224: begin
             output_len = 224 / 8; // 28
           end
@@ -1695,7 +1856,8 @@ class kmac_scoreboard extends cip_base_scoreboard #(
             output_len = 512 / 8; // 64
           end
           default: begin
-            `uvm_fatal(`gfn, $sformatf("strength[%0s] is not allowed for sha3", strength.name()))
+            `uvm_fatal(`gfn, $sformatf("strength[%0s] is not allowed for sha3",
+                                       actual_strength.name()))
           end
         endcase
       end

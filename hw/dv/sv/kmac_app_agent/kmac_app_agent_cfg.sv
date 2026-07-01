@@ -12,7 +12,7 @@ class kmac_app_agent_cfg extends dv_reactive_agent_cfg;
 
   // delay between last message request and first digest response
   int unsigned rsp_delay_min = 0;
-  int unsigned rsp_delay_max = 100;
+  int unsigned rsp_delay_max = 10;
 
   // Enables/disable all protocol delays.
   rand bit zero_delays;
@@ -31,6 +31,24 @@ class kmac_app_agent_cfg extends dv_reactive_agent_cfg;
   bit inject_zero_in_host_strb = 0;
 
   rand push_pull_agent_cfg#(`CONNECT_DATA_WIDTH) m_data_push_agent_cfg;
+
+  rand push_pull_agent_cfg#(`RSP_CONNECT_DATA_WIDTH) m_rsp_push_agent_cfg;
+
+  // Handle to the response push-pull sequencer
+  uvm_sequencer_base m_rsp_push_sequencer;
+
+  // Type of app interface
+  // Set once from the environment before the test starts.
+  kmac_pkg::app_type_e app_type = kmac_pkg::AppStatic;
+
+  // For AppDynamic: mode and strength encoded in the config beat.
+  kmac_pkg::app_mode_e        app_mode     = kmac_pkg::AppShake;
+  sha3_pkg::keccak_strength_e app_strength = sha3_pkg::L256;
+  bit                         app_en_xof   = 1'b0;
+
+  // How many digest responses should be collected by a dynamic app.
+  // The vseq sets this before starting a sequence.
+  int unsigned req_output_len = 0;
 
   // KMAC digest share0/1 that can be set from test env.
   kmac_pkg::rsp_digest_t rsp_digest_hs[$];
@@ -68,6 +86,8 @@ class kmac_app_agent_cfg extends dv_reactive_agent_cfg;
     super.new(name);
     m_data_push_agent_cfg = push_pull_agent_cfg#(`CONNECT_DATA_WIDTH)::type_id::create(
         "m_data_push_agent_cfg");
+    m_rsp_push_agent_cfg = push_pull_agent_cfg#(`RSP_CONNECT_DATA_WIDTH)::type_id::create(
+        "m_rsp_push_agent_cfg");
   endfunction : new
 
 endclass

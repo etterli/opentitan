@@ -16,25 +16,16 @@ interface kmac_app_intf (input clk, input rst_n);
   // interface pins used in driver/monitor
   push_pull_if #(.HostDataWidth(kmac_app_agent_pkg::KMAC_REQ_DATA_WIDTH))
       req_data_if(.clk(clk), .rst_n(rst_n));
+  // Response channel: push_pull_if in Device mode when kmac_app is Host (TB drives ready),
+  // or in Host mode when kmac_app is Device.  h_data packs
+  // {rsp_digest_share0, rsp_digest_share1, rsp_error, rsp_finish}.
+  push_pull_if #(.HostDataWidth(kmac_app_agent_pkg::KMAC_RSP_DATA_WIDTH))
+      rsp_data_if(.clk(clk), .rst_n(rst_n));
   wire rsp_valid;
   wire [kmac_pkg::AppDigestW-1:0] rsp_digest_share0;
   wire [kmac_pkg::AppDigestW-1:0] rsp_digest_share1;
   wire rsp_error;
   wire rsp_finish;
-
-  // all the host pins are handled by push_pull driver, only include clk and rst here
-  clocking host_cb @(posedge clk);
-    input  rst_n;
-  endclocking
-
-  clocking device_cb @(posedge clk);
-    input  rst_n;
-    output rsp_valid;
-    output rsp_digest_share0;
-    output rsp_digest_share1;
-    output rsp_error;
-    output rsp_finish;
-  endclocking
 
   clocking mon_cb @(posedge clk);
     input rst_n;
@@ -43,14 +34,42 @@ interface kmac_app_intf (input clk, input rst_n);
     input rsp_digest_share1;
     input rsp_error;
     input rsp_finish;
+    input rsp_ready = rsp_data_if.ready;
   endclocking
 
   always @(if_mode) req_data_if.if_mode = if_mode;
 
+  // Host mode: feed DUT response signals into rsp_data_if so the push_pull monitor sees
+  // valid/ready handshakes.  The push_pull device driver drives rsp_data_if.ready.
+  assign rsp_data_if.valid  = (if_mode == dv_utils_pkg::Host) ? rsp_valid : 'z;
+  assign rsp_data_if.h_data = (if_mode == dv_utils_pkg::Host) ?
+      {rsp_digest_share0, rsp_digest_share1, rsp_error, rsp_finish} : 'z;
+
+  // Device mode: push_pull host driver drives rsp_data_if.valid/h_data; the app DUT's
+  // rsp_ready feeds back as rsp_data_if.ready so the push_pull monitor sees the handshake.
+  assign rsp_data_if.ready          = (if_mode == dv_utils_pkg::Device) ?
+      kmac_data_req.rsp_ready : 'z;
+  assign rsp_valid                  = (if_mode == dv_utils_pkg::Device) ?
+      rsp_data_if.valid : 'z;
+  assign {rsp_digest_share0, rsp_digest_share1, rsp_error, rsp_finish} =
+      (if_mode == dv_utils_pkg::Device) ? rsp_data_if.h_data : 'z;
+
+  // Explicitly pack struct fields to handle the two-share req format. data_s1 is
+  // not driven by the push_pull_if (single-share / unmasked operations only).
   assign kmac_data_req = (if_mode == dv_utils_pkg::Host) ?
-                         {req_data_if.valid, req_data_if.h_data} : 'z;
+      {req_data_if.valid,
+       req_data_if.h_data[KmacDataIfWidth + KmacDataIfWidth/8 : KmacDataIfWidth/8 + 1],
+       {KmacDataIfWidth{1'b0}},
+       req_data_if.h_data[KmacDataIfWidth/8 : 1],
+       req_data_if.h_data[0],
+       rsp_data_if.ready}
+      : 'z;
   assign {req_data_if.valid, req_data_if.h_data} = (if_mode == dv_utils_pkg::Device) ?
-                                                   kmac_data_req : 'z;
+      {kmac_data_req.req_valid,
+       kmac_data_req.data_s0,
+       kmac_data_req.strb,
+       kmac_data_req.req_last}
+      : 'z;
 
   assign {req_data_if.ready, rsp_valid, rsp_digest_share0, rsp_digest_share1, rsp_error,
           rsp_finish} =

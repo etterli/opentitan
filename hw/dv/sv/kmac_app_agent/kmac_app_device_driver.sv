@@ -7,37 +7,65 @@ class kmac_app_device_driver extends kmac_app_driver;
   `uvm_component_new
 
   task on_enter_reset();
-    invalidate_signals();
+    // Response signals are driven through the m_rsp_push_agent push_pull sub-agent. As of this
+    // there is nothing to invalidate directly here.
   endtask
-
-  virtual function void invalidate_signals();
-    cfg.vif.device_cb.rsp_valid         <= 0;
-    cfg.vif.device_cb.rsp_digest_share0 <= 'x;
-    cfg.vif.device_cb.rsp_digest_share1 <= 'x;
-    cfg.vif.device_cb.rsp_error         <= 'x;
-    cfg.vif.device_cb.rsp_finish        <= 'x;
-  endfunction
 
   // drive trans received from sequencer
   virtual task get_and_drive();
     forever begin
+      push_pull_host_seq#(`RSP_CONNECT_DATA_WIDTH) rsp_seq;
+      bit [kmac_app_agent_pkg::KMAC_RSP_DATA_WIDTH-1:0] h_data;
+
       seq_item_port.get_next_item(req);
       $cast(rsp, req.clone());
       rsp.set_id_info(req);
       `uvm_info(`gfn, $sformatf("rcvd item:\n%0s", req.sprint()), UVM_HIGH)
 
-      `DV_SPINWAIT_EXIT(repeat (rsp.rsp_delay) @(cfg.vif.device_cb);,
-                        wait(!cfg.vif.rst_n))
+      if (req.app_type == kmac_pkg::AppDynamic) begin
+        // Wait for config beat: req_valid=1, last=0.
+        while (!(cfg.vif.kmac_data_req.req_valid && !cfg.vif.kmac_data_req.req_last))
+          @(posedge cfg.vif.clk);
 
-      cfg.vif.device_cb.rsp_valid         <= 1;
-      cfg.vif.device_cb.rsp_digest_share0 <= rsp.digest_s0;
-      cfg.vif.device_cb.rsp_digest_share1 <= rsp.digest_s1;
-      cfg.vif.device_cb.rsp_error         <= rsp.error;
-      cfg.vif.device_cb.rsp_finish        <= 0;
+        // Advance past config beat, then wait for last message beat: req_valid=1, req_last=1.
+        @(posedge cfg.vif.clk);
+        while (!(cfg.vif.kmac_data_req.req_valid && cfg.vif.kmac_data_req.req_last))
+          @(posedge cfg.vif.clk);
 
-      `DV_SPINWAIT_EXIT(@(cfg.vif.device_cb);,
-                        wait(!cfg.vif.rst_n))
-      invalidate_signals();
+        // Send all digest chunks with finished=0. Each 64-bit chunk is placed in the
+        // lower DynAppDigestW bits of the 384-bit share field; upper bits are zero.
+        for (int i = 0; i < req.digest_chunks_s0.size(); i++) begin
+          h_data = {
+            {(kmac_pkg::AppDigestW - kmac_pkg::DynAppDigestW){1'b0}}, req.digest_chunks_s0[i],
+            {(kmac_pkg::AppDigestW - kmac_pkg::DynAppDigestW){1'b0}}, req.digest_chunks_s1[i],
+            req.error, 1'b0};
+          cfg.m_rsp_push_agent_cfg.add_h_user_data(h_data);
+          rsp_seq = push_pull_host_seq#(`RSP_CONNECT_DATA_WIDTH)::type_id::create("rsp_seq");
+          `DV_CHECK_RANDOMIZE_FATAL(rsp_seq)
+          rsp_seq.start(cfg.m_rsp_push_sequencer);
+        end
+
+        // Wait for finish beat from DUT: req_valid=1, last=1 again (after chunk reception).
+        @(posedge cfg.vif.clk);
+        while (!(cfg.vif.kmac_data_req.req_valid && cfg.vif.kmac_data_req.req_last))
+          @(posedge cfg.vif.clk);
+
+        // Send session-end response with finished=1.
+        h_data = {'0, req.error, 1'b1};
+        cfg.m_rsp_push_agent_cfg.add_h_user_data(h_data);
+        rsp_seq = push_pull_host_seq#(`RSP_CONNECT_DATA_WIDTH)::type_id::create("rsp_seq");
+        `DV_CHECK_RANDOMIZE_FATAL(rsp_seq)
+        rsp_seq.start(cfg.m_rsp_push_sequencer);
+      end else begin
+        // AppStatic: single full-width digest. The push_pull host seq drives rsp_valid/h_data
+        // and waits for rsp_ready (fed back from kmac_data_req.rsp_ready via rsp_data_if.ready).
+        // host_delay_min/max (set from rsp_delay_min/max) provide the response latency.
+        h_data = {rsp.digest_s0, rsp.digest_s1, rsp.error, 1'b0};
+        cfg.m_rsp_push_agent_cfg.add_h_user_data(h_data);
+        rsp_seq = push_pull_host_seq#(`RSP_CONNECT_DATA_WIDTH)::type_id::create("rsp_seq");
+        `DV_CHECK_RANDOMIZE_FATAL(rsp_seq)
+        rsp_seq.start(cfg.m_rsp_push_sequencer);
+      end
 
       `uvm_info(`gfn, "item sent", UVM_HIGH)
       seq_item_port.item_done(rsp);
