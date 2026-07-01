@@ -5,6 +5,7 @@
 /* Polynomial expansion routines for ML-DSA-87 sign. */
 
 .globl expand_mask
+.globl expand_mask2
 
 .text
 
@@ -30,6 +31,22 @@ expand_mask:
   sw  x20, 0(x6)
 
   jal x1, sample_mask_poly
+
+  /* Subtract r again from kappa to maintain consistency over multiple
+     rejection loops. */
+  lw x20, 0(x6)
+  sub x20, x20, x7
+  sw  x20, 0(x6)
+
+  ret
+
+expand_mask2:
+  /* Add r to kappa. */
+  lw x20, 0(x6)
+  add x20, x20, x7
+  sw  x20, 0(x6)
+
+  jal x1, sample_mask_poly2
 
   /* Subtract r again from kappa to maintain consistency over multiple
      rejection loops. */

@@ -13,6 +13,8 @@
 #include "sw/device/lib/crypto/include/sha2.h"
 #include "sw/device/lib/crypto/include/sha3.h"
 
+#include "sw/device/lib/runtime/log.h"
+
 // Module ID for status codes.
 #define MODULE_ID MAKE_MODULE_ID('m', 'l', 'd')
 
@@ -123,11 +125,14 @@ otcrypto_status_t otcrypto_mldsa87_keygen(
 
 otcrypto_status_t otcrypto_mldsa87_sign(
     const otcrypto_blinded_key_t *private_key,
-    const otcrypto_const_byte_buf_t message,
-    const otcrypto_const_byte_buf_t context,
-    otcrypto_mldsa_hash_mode_t hash_mode, otcrypto_word32_buf_t signature) {
-  // TODO: Connect ML-DSA operations to API.
-  return OTCRYPTO_NOT_IMPLEMENTED;
+    const otcrypto_const_byte_buf_t *message,
+    const otcrypto_const_byte_buf_t *context,
+    otcrypto_mldsa_hash_mode_t hash_mode,
+    otcrypto_mldsa_sign_mode_t sign_mode,
+    otcrypto_word32_buf_t *signature) {
+  HARDENED_TRY(otcrypto_mldsa87_sign_async_start(private_key, message, context,
+                                                 hash_mode, sign_mode));
+  return otcrypto_mldsa87_sign_async_finalize(signature);
 }
 
 otcrypto_status_t otcrypto_mldsa87_verify(
@@ -166,20 +171,113 @@ otcrypto_status_t otcrypto_mldsa87_keygen_async_finalize(
 
 otcrypto_status_t otcrypto_mldsa87_sign_async_start(
     const otcrypto_blinded_key_t *private_key,
-    const otcrypto_const_byte_buf_t message,
-    const otcrypto_const_byte_buf_t context,
-    otcrypto_mldsa_hash_mode_t hash_mode, otcrypto_word32_buf_t signature) {
-  // TODO: Connect ML-DSA operations to API.
-  return OTCRYPTO_NOT_IMPLEMENTED;
+    const otcrypto_const_byte_buf_t *message,
+    const otcrypto_const_byte_buf_t *context,
+    otcrypto_mldsa_hash_mode_t hash_mode,
+    otcrypto_mldsa_sign_mode_t sign_mode) {
+
+  
+  uint32_t rnd_data[8] = {0};
+  otcrypto_const_word32_buf_t rnd = OTCRYPTO_MAKE_BUF(otcrypto_const_word32_buf_t, rnd_data, 8);
+
+  uint32_t kappa_data[1] = {0};
+  otcrypto_const_word32_buf_t kappa = OTCRYPTO_MAKE_BUF(otcrypto_const_word32_buf_t, kappa_data, 1);
+  
+
+  // Allocate the M' buffer (10 KiB).
+  // TODO: This is only temporary until we have a SHA3 streaming mode.
+  uint8_t m[kOtCryptoMldsaBufferBytes];
+
+  HARDENED_TRY(randomized_bytecopy(m, private_key->keyblob + 24, kOtcryptoMldsaTrBytes));
+
+  // Context and message length in bytes.
+  uint8_t ctx_len = (context != NULL) ? (uint8_t)context->len : 0;
+  size_t msg_len = (message != NULL) ? message->len : 0;
+  // Effective size of M'.
+  size_t m_len = 0;
+
+  LOG_INFO("------------------- %d %d", ctx_len, msg_len);
+
+
+ if (hash_mode == kOtcryptoMldsaHashModePure) {
+    HARDENED_CHECK_EQ(hash_mode, kOtcryptoMldsaHashModePure);
+
+    // Assemble M' in the buffer.
+    m[kOtcryptoMldsaTrBytes] = 0;
+    m[kOtcryptoMldsaTrBytes + 1] = ctx_len;
+    HARDENED_TRY(randomized_bytecopy(m + kOtcryptoMldsaTrBytes + 2,
+                                     context->data, ctx_len));
+    HARDENED_TRY(randomized_bytecopy(m + kOtcryptoMldsaTrBytes + 2 + ctx_len,
+                                     message->data, message->len));
+    m_len = kOtcryptoMldsaTrBytes + 2 + ctx_len + msg_len;
+
+
+    /* uint32_t *mm = (uint32_t*)m; */
+
+    /* for (int i = 0; i < 100; i++) { */
+    /*   LOG_INFO("------ %08x", mm[i]); */
+    /* } */
+    
+  } else {
+    HARDENED_CHECK_NE(hash_mode, kOtcryptoMldsaHashModePure);
+
+    uint8_t oid_suffix = EXTRACT_HASH_OID(hash_mode);
+    uint8_t dig_length = EXTRACT_HASH_LEN(hash_mode);
+
+    // Perform the hash function lookup twice and compare.
+    otcrypto_status_t (*hash)(const otcrypto_const_byte_buf_t *,
+                              otcrypto_hash_digest_t *) = hashes[oid_suffix];
+    if (hash == NULL) {
+      return OTCRYPTO_BAD_ARGS;
+    }
+    HARDENED_CHECK_NE(hash, NULL);
+
+    // Allocate the pre-hash buffer ph.
+    uint32_t ph_data[kOtcryptoMldsaPhMaxWords];
+    otcrypto_hash_digest_t ph = {
+        .data = ph_data,
+        .len = dig_length / sizeof(uint32_t),
+    };
+
+    // Hash the message.
+    HARDENED_TRY(hash(message, &ph));
+
+    // Assemble M' in the buffer.
+    m[kOtcryptoMldsaTrBytes] = 1;
+    m[kOtcryptoMldsaTrBytes + 1] = ctx_len;
+    HARDENED_TRY(randomized_bytecopy(m + kOtcryptoMldsaTrBytes + 2,
+                                     context->data, ctx_len));
+    HARDENED_TRY(randomized_bytecopy(m + kOtcryptoMldsaTrBytes + 2 + ctx_len,
+                                     oid_prefix, 10));
+    m[kOtcryptoMldsaTrBytes + 2 + ctx_len + 10] = oid_suffix;
+    HARDENED_TRY(randomized_bytecopy(
+        m + kOtcryptoMldsaTrBytes + 2 + ctx_len + 11, ph.data, dig_length));
+    m_len = kOtcryptoMldsaTrBytes + 2 + ctx_len + 11 + dig_length;
+  }
+
+  // Allocate the 64-byte mu digest.
+  uint32_t mu_data[kOtcryptoMldsaMuWords] = {0};
+  otcrypto_hash_digest_t mu = {
+      .data = mu_data,
+      .len = kOtcryptoMldsaMuWords,
+  };
+
+  // Calculate mu.
+  otcrypto_const_byte_buf_t buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, m, m_len);
+  HARDENED_TRY(otcrypto_shake256(&buf, &mu));
+
+  // Pass public key, signature and mu to the OTBN app and invoke it.
+  HARDENED_TRY_WIPE_DMEM(
+      mldsa87_sign_internal_start(private_key, &rnd, &kappa, &mu));
+  
+  return otcrypto_eval_exit(OTCRYPTO_OK);
 }
 
 otcrypto_status_t otcrypto_mldsa87_sign_async_finalize(
-    const otcrypto_blinded_key_t *private_key,
-    const otcrypto_const_byte_buf_t message,
-    const otcrypto_const_byte_buf_t context,
-    otcrypto_mldsa_hash_mode_t hash_mode, otcrypto_word32_buf_t signature) {
-  // TODO: Connect ML-DSA operations to API.
-  return OTCRYPTO_NOT_IMPLEMENTED;
+    otcrypto_word32_buf_t *signature) {
+  return otcrypto_eval_exit(
+      mldsa87_sign_internal_finalize(signature));
 }
 
 otcrypto_status_t otcrypto_mldsa87_verify_async_start(

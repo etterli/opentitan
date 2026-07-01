@@ -21,12 +21,30 @@ enum {
    */
   kMldsa87CTildePrimeWords = 16,
 
+  kMldsa87CTildeBytes = 64,
+  kMldsa87CTildeWords = kMldsa87CTildeBytes / sizeof(uint32_t),
+
+  kMldsa87ZBytes = 4480,
+  kMldsa87ZWords = kMldsa87ZBytes / sizeof(uint32_t),
+
+  kMldsa87HBytes = 83 + 1,
+  kMldsa87HWords = kMldsa87HBytes / sizeof(uint32_t),
+
   /**
    * 32-bit success and error indicators.
    */
   kMldsa87StatusOk = 0x7baf73d2,
   kMldsa87StatusFail = 0xadf1aebd,
 };
+
+status_t mldsa87_sign_internal_start(
+    const otcrypto_blinded_key_t *secret_key,
+    const otcrypto_const_word32_buf_t *rnd,
+    const otcrypto_const_word32_buf_t *kappa,
+    const otcrypto_hash_digest_t *mu);
+
+status_t mldsa87_sign_internal_finalize(
+    otcrypto_word32_buf_t *signature);
 
 /**
  * Start an async ML-DSA-87 signature verification on the OTBN.

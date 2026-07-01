@@ -52,6 +52,22 @@ _mai_poll:
   bne x20, x0, _mai_poll
   ret
 
+_poll_busy:
+  csrrs x21, MAI_STATUS, x0
+  andi x21, x21, 0x1
+  bne x21, x0, _poll_busy
+  ret
+
+/**
+ * Polls the MAI_STATUS ready bit until the MAI is ready for inputs.
+ * Clobbers: x2
+ */
+_poll_ready:
+  csrrs x21, MAI_STATUS, x0
+  andi x21, x21, 0x2
+  beq x21, x0, _poll_ready
+  ret
+
 /**
  * Convert the arithmetic sharing of a vector of 8 coefficients (x0_A, x1_A) to
  * a Boolean sharing (x0_B, x1_B).
@@ -69,10 +85,12 @@ sec_a2b_8x32:
   bn.wsrw MAI_IN0_S1, w1
 
   /* Trigger the conversion. */
+  jal x1, _poll_ready
   csrrw x0, MAI_CTRL, x20
+  jal x1, _poll_busy
 
   /* TODO: Replace with deterministic wait, once exact latency is known. */
-  jal x1, _mai_poll
+  /* jal x1, _mai_poll */
 
   /* Read back the result. */
   bn.wsrr w0, MAI_RES_S0
@@ -98,12 +116,14 @@ sec_b2a_8x32:
   bn.wsrw MAI_IN0_S1, w1
 
   /* Trigger the conversion. */
+  jal x1, _poll_ready
   csrrw x0, MAI_CTRL, x20
+  jal x1, _poll_busy
 
-  /* TODO: Replace with deterministic wait, once latency is known. */
-  jal x1, _mai_poll
+  /* /\* TODO: Replace with deterministic wait, once latency is known. *\/ */
+  /* /\* jal x1, _mai_poll *\/ */
 
-  /* Read back the result. */
+  /* /\* Read back the result. *\/ */
   bn.wsrr w0, MAI_RES_S0
   bn.xor w31, w31, w31 /* dummy */
   bn.wsrr w1, MAI_RES_S1
@@ -132,10 +152,12 @@ sec_add_8x32:
   bn.wsrw MAI_IN1_S1, w3
 
   /* Trigger the conversion. */
+  jal x1, _poll_ready
   csrrw x0, MAI_CTRL, x20
+  jal x1, _poll_busy
 
   /* TODO: Replace with deterministic wait, once latency is known. */
-  jal x1, _mai_poll
+  /* jal x1, _mai_poll */
 
   /* Read back the result. */
   bn.wsrr w0, MAI_RES_S0

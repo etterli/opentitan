@@ -6,7 +6,7 @@
 
 .globl mldsa87_sign
 
-.text
+.section .text.start
 
 /*
  * Direct implementation of the `ML-DSA.sign_internal` function (Algorithm 7)
@@ -42,7 +42,7 @@ mldsa87_sign:
 
   /* Absorb MU. */
   addi x20, x0, 64
-  la x21, mldsa87_sign_msg_mu
+  la x21, mldsa87_sign_mu
   addi x22, x0, 0
   jal x1, xof_absorb
 
@@ -64,15 +64,21 @@ mldsa87_sign:
 
   jal x1, xof_finish
 
-  /* Set the nonce to 0 (after the previous loop x2 points to the nonce). */
-  sw x0, 0(x2)
+  /* /\* Set the nonce to 0 (after the previous loop x2 points to the nonce). *\/ */
+  /* sw x0, 0(x2) */
+
+  /* Copy RHO. */
+  la x2, mldsa87_sign_sk_rho
+  la x3, mldsa87_sign_var_rho
+  bn.lid x0, 0(x2)
+  bn.sid x0, 0(x3)
 
 _rej_loop:
 
   /* Compute W and place in the vector slots. */
   la x2, mldsa87_sign_vector_slot0
   la x3, mldsa87_sign_vector_slot1
-  la x4, mldsa87_sign_sk_rho
+  la x4, mldsa87_sign_var_rho
   la x5, mldsa87_sign_var_rho_prime_share0
   la x6, mldsa87_sign_var_rho_prime_share1
   la x7, mldsa87_sign_kappa
@@ -87,7 +93,7 @@ _rej_loop:
   jal x1, decompose_w
 
   /* Compute C_TILDE. */
-  la x2, mldsa87_sign_msg_mu
+  la x2, mldsa87_sign_mu
   la x3, mldsa87_sign_var_w1_enc
   la x4, mldsa87_sign_sig_c_tilde
   jal x1, challenge_hash
@@ -131,33 +137,33 @@ _rej_loop:
   la x9, mldsa87_sign_vector_slot1
   la x10, mldsa87_sign_poly_slot0
   jal x1, compute_z
-  jal x1, _rejection_check
+  /* jal x1, _rejection_check */
 
-  /* Compute the hint H and place in vector slot 0. */
-  la x2, mldsa87_sign_vector_slot0
-  la x3, mldsa87_sign_var_w1_enc
-  la x4, mldsa87_sign_poly_slot0
-  jal x1, make_hint
+  /* /\* Compute the hint H and place in vector slot 0. *\/ */
+  /* la x2, mldsa87_sign_vector_slot0 */
+  /* la x3, mldsa87_sign_var_w1_enc */
+  /* la x4, mldsa87_sign_poly_slot0 */
+  /* jal x1, make_hint */
 
-  /* Make sure the Hamming weight of the hint is not too large. */
-  la x2, mldsa87_sign_vector_slot0
-  jal x1, hw_check_hint
-  jal x1, _rejection_check
+  /* /\* Make sure the Hamming weight of the hint is not too large. *\/ */
+  /* la x2, mldsa87_sign_vector_slot0 */
+  /* jal x1, hw_check_hint */
+  /* jal x1, _rejection_check */
 
-  /* Compress the hint. */
-  la x2, mldsa87_sign_vector_slot0
-  la x3, mldsa87_sign_sig_h
-  la x4, mldsa87_sign_poly_slot0
-  jal x1, compress_hint
+  /* /\* Compress the hint. *\/ */
+  /* la x2, mldsa87_sign_vector_slot0 */
+  /* la x3, mldsa87_sign_sig_h */
+  /* la x4, mldsa87_sign_poly_slot0 */
+  /* jal x1, compress_hint */
 
-  /* Encode the signature vector Z. */
-  la x2, mldsa87_sign_vector_slot1
-  la x3, mldsa87_sign_sig_z
-  loopi 7, 3
-    jal x1, encode_z
-    addi x2, x2, 1024
-    addi x3, x3, 640
-    /* End of loop */
+  /* /\* Encode the signature vector Z. *\/ */
+  /* la x2, mldsa87_sign_vector_slot1 */
+  /* la x3, mldsa87_sign_sig_z */
+  /* loopi 7, 3 */
+  /*   jal x1, encode_z */
+  /*   addi x2, x2, 1024 */
+  /*   addi x3, x3, 640 */
+  /*   /\* End of loop *\/ */
 
   ecall
 

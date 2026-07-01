@@ -316,40 +316,49 @@ _compute_z_norm_check_loop:
   addi x17, x17, 96
 
   /* Loop until all the Z[s] have been norm-checked. */
-  addi x2, x0, 7
+  addi x2, x0, 6
   bne x18, x2, _compute_z_norm_check_loop
 
-  /*
-   * Part 2: Compute all the Z[s] polynomials.
-   */
+  addi x2, x10, 0    /* Slot 0 */
+  addi x3, x10, 1024 /* Slot 1 */
+  addi x4, x12, 0
+  addi x5, x13, 0
+  addi x6, x14, 0
+  addi x7, x18, 0
+  jal x1, expand_mask2
 
-  /* Reset the loop index s and the S1 pointers. */
-  addi x18, x0, 0
-  addi x16, x16, -672
-  addi x17, x17, -672
 
-  loopi 7, 9
-    /* Compute the arithmetic shares of Z[s]. */
-    jal x1, _compute_z_kernel
+  /* /\* */
+  /*  * Part 2: Compute all the Z[s] polynomials. */
+  /*  *\/ */
 
-    /* At this point, due to the passed infinity norm check, Z0 and Z1 are not
-       considered sensitive anymore and can be unmasked (see Section 3.2 in [1]).
-         Z[s] = D0 + D1 (unmasking). */
-    addi x2, x10, 0    /* Slot 0 */
-    addi x3, x10, 1024 /* Slot 1 */
-    addi x4, x9, 0
-    jal x1, sec_unmask
+  /* /\* Reset the loop index s and the S1 pointers. *\/ */
+  /* addi x18, x0, 0 */
+  /* addi x16, x16, -672 */
+  /* addi x17, x17, -672 */
 
-    /* Increment s, advance S1 and Z pointers. */
-    addi x18, x18, 1
-    addi x16, x16, 96
-    addi x17, x17, 96
-    addi x9, x9, 1024
-    /* End of loop */
+  /* loopi 7, 9 */
+  /*   /\* Compute the arithmetic shares of Z[s]. *\/ */
+  /*   jal x1, _compute_z_kernel */
 
-  /* At this point, all the signature polynomials have been computed and have
-     passed the infinity norm check. */
-  bn.not w0, w31
+  /*   /\* At this point, due to the passed infinity norm check, Z0 and Z1 are not */
+  /*      considered sensitive anymore and can be unmasked (see Section 3.2 in [1]). */
+  /*        Z[s] = D0 + D1 (unmasking). *\/ */
+  /*   addi x2, x10, 0    /\* Slot 0 *\/ */
+  /*   addi x3, x10, 1024 /\* Slot 1 *\/ */
+  /*   addi x4, x9, 0 */
+  /*   jal x1, sec_unmask */
+
+  /*   /\* Increment s, advance S1 and Z pointers. *\/ */
+  /*   addi x18, x18, 1 */
+  /*   addi x16, x16, 96 */
+  /*   addi x17, x17, 96 */
+  /*   addi x9, x9, 1024 */
+  /*   /\* End of loop *\/ */
+
+  /* /\* At this point, all the signature polynomials have been computed and have */
+  /*    passed the infinity norm check. *\/ */
+  /* bn.not w0, w31 */
   ret
 
 /*

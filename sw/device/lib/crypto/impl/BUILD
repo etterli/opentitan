@@ -174,6 +174,7 @@ cc_library(
         "//sw/device/lib/base:hardened_memory",
         "//sw/device/lib/crypto/impl/mldsa",
         "//sw/device/lib/crypto/include:datatypes",
+        "//sw/device/lib/runtime:log"
     ],
 )
 

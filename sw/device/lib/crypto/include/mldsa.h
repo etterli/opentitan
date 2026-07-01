@@ -25,7 +25,7 @@ enum {
   /**
    * Size of a ML-DSA-87 secret key.
    */
-  kOtcryptoMldsa87SkBytes = 4896,
+  kOtcryptoMldsa87SkBytes = 6368,
   kOtcryptoMldsa87SkWords = kOtcryptoMldsa87SkBytes / sizeof(uint32_t),
   /**
    * Size of a ML-DSA-87 signature with 1-byte zero-padding.
@@ -40,6 +40,10 @@ enum {
    * Maximum size of a ML-DSA message.
    */
   kOtcryptoMldsa87MsgMaxBytes = 8192,
+  /**
+   * Size of the entropy string.
+   */
+  kOtcryptoMldsa87RndBytes = 32,
 };
 
 /**
@@ -78,6 +82,11 @@ typedef enum otcrypto_mldsa_hash_mode {
   kOtcryptoMldsaHashModeShake256 = 0x2f2d620c,
   // Unsupported pre-hash modes: SHA2_224, SHA2_256/224 and SHA2_512/256.
 } otcrypto_mldsa_hash_mode_t;
+
+typedef enum otcrypto_mldsa_sign_mode {
+  kOtcryptoMldsaSignModeRnd = 0x0,
+  kOtcryptoMldsaSignModeDet = 0x1,
+} otcrypto_mldsa_sign_mode_t;
 
 /**
  * Generates a key pair for ML-DSA-87 (WIP not yet finalized).
@@ -132,9 +141,11 @@ otcrypto_status_t otcrypto_mldsa87_keygen(
 OT_WARN_UNUSED_RESULT
 otcrypto_status_t otcrypto_mldsa87_sign(
     const otcrypto_blinded_key_t *private_key,
-    const otcrypto_const_byte_buf_t message,
-    const otcrypto_const_byte_buf_t context,
-    otcrypto_mldsa_hash_mode_t hash_mode, otcrypto_word32_buf_t signature);
+    const otcrypto_const_byte_buf_t *message,
+    const otcrypto_const_byte_buf_t *context,
+    otcrypto_mldsa_hash_mode_t hash_mode,
+    otcrypto_mldsa_sign_mode_t sign_mode,
+    otcrypto_word32_buf_t *signature);
 
 /**
  * Verifies a ML-DSA-87 signature (WIP not yet finalized).
@@ -226,9 +237,10 @@ otcrypto_status_t otcrypto_mldsa87_keygen_async_finalize(
 OT_WARN_UNUSED_RESULT
 otcrypto_status_t otcrypto_mldsa87_sign_async_start(
     const otcrypto_blinded_key_t *private_key,
-    const otcrypto_const_byte_buf_t message,
-    const otcrypto_const_byte_buf_t context,
-    otcrypto_mldsa_hash_mode_t hash_mode, otcrypto_word32_buf_t signature);
+    const otcrypto_const_byte_buf_t *message,
+    const otcrypto_const_byte_buf_t *context,
+    otcrypto_mldsa_hash_mode_t hash_mode,
+    otcrypto_mldsa_sign_mode_t sign_mode);
 
 /**
  * Finalizes asynchronous signature generation for ML-DSA-87 (WIP not yet
@@ -247,10 +259,7 @@ otcrypto_status_t otcrypto_mldsa87_sign_async_start(
  */
 OT_WARN_UNUSED_RESULT
 otcrypto_status_t otcrypto_mldsa87_sign_async_finalize(
-    const otcrypto_blinded_key_t *private_key,
-    const otcrypto_const_byte_buf_t message,
-    const otcrypto_const_byte_buf_t context,
-    otcrypto_mldsa_hash_mode_t hash_mode, otcrypto_word32_buf_t signature);
+    otcrypto_word32_buf_t *signature);
 
 /**
  * Starts asynchronous signature verification for ML-DSA-87 (WIP not yet
