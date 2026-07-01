@@ -3222,6 +3222,9 @@ opentitan_test(
         "//sw/device/lib/testing:otbn_testutils",
         "//sw/device/lib/testing/test_framework:ottf_main",
         "//sw/otbn/mai:mai_tlt_test",
+        "//sw/device/lib/crypto/drivers:kmac",
+        "//sw/device/lib/crypto/impl:sha3",
+        "//sw/device/lib/crypto/impl:integrity",
     ],
 )
 

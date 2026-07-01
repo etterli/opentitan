@@ -5,6 +5,7 @@
 /* Polynomial expansion routines for ML-DSA-87 sign. */
 
 .globl expand_mask
+.globl expand_mask2
 
 .text
 

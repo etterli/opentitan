@@ -100,7 +100,7 @@ xof_shake256_init:
    * EN_XOF_INV=0, STRENGTH_INV=3'b101, MODE_INV=2'b10.
    */
   li x24, 0x2a0015
-  csrrw x0, KMAC_CFG, x24
+  /* csrrw x0, KMAC_CFG, x24 */
   addi x28, x0, KMAC_SHAKE256_RATE
   addi x29, x0, KMAC_SHAKE256_RATE
 _xof_shake_init:
@@ -154,6 +154,9 @@ _xof_rsp_valid_poll_time_remaining:
  * session.
  */
 xof_finish:
+  /* Poll until the interface is ready to accept a command. */
+  jal x1, _xof_ready_poll
+
   /* Send the `DONE` command. */
   addi x24, x0, KMAC_CTRL_DONE
   csrrs x0, KMAC_CTRL, x24

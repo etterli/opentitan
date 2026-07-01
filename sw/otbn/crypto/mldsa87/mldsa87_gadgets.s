@@ -6,6 +6,7 @@
 
 .globl sec_a2b_8x32
 .globl sec_b2a_8x32
+.globl sec_b2a_8x322
 .globl sec_add_8x32
 .globl sec_unmask_8x32
 .globl sec_leq_8x32
@@ -52,6 +53,22 @@ _mai_poll:
   bne x20, x0, _mai_poll
   ret
 
+_poll_busy:
+  csrrs x21, MAI_STATUS, x0
+  andi x21, x21, 0x1
+  bne x21, x0, _poll_busy
+  ret
+
+/**
+ * Polls the MAI_STATUS ready bit until the MAI is ready for inputs.
+ * Clobbers: x2
+ */
+_poll_ready:
+  csrrs x21, MAI_STATUS, x0
+  andi x21, x21, 0x2
+  beq x21, x0, _poll_ready
+  ret
+
 /**
  * Convert the arithmetic sharing of a vector of 8 coefficients (x0_A, x1_A) to
  * a Boolean sharing (x0_B, x1_B).
@@ -64,15 +81,22 @@ _mai_poll:
 sec_a2b_8x32:
   /* Write the two shares to the input WSRs (intersperse with configuration of
      MAI_CTRL to not access both shares in subsequent instructions). */
+ 
+  /* ----------------------------
+    This ready poll loops, without it it works fine.
+  -------------------------------*/
+  /* jal x1, _poll_ready */
   bn.wsrw MAI_IN0_S0, w0
   addi x20, x0, MAI_CTRL_A2B
   bn.wsrw MAI_IN0_S1, w1
 
   /* Trigger the conversion. */
+  jal x1, _poll_busy
   csrrw x0, MAI_CTRL, x20
+  jal x1, _poll_busy
 
   /* TODO: Replace with deterministic wait, once exact latency is known. */
-  jal x1, _mai_poll
+  /* jal x1, _mai_poll */
 
   /* Read back the result. */
   bn.wsrr w0, MAI_RES_S0
@@ -93,17 +117,20 @@ sec_a2b_8x32:
 sec_b2a_8x32:
   /* Write the two shares to the input WSRs (intersperse with configuration of
      MAI_CTRL to not access both shares in subsequent instructions). */
+  jal x1, _poll_ready           # <------- poll until we can write the new data
   bn.wsrw MAI_IN0_S0, w0
   addi x20, x0, MAI_CTRL_B2A
   bn.wsrw MAI_IN0_S1, w1
 
   /* Trigger the conversion. */
+  jal x1, _poll_busy    #  <--- poll until the previous execution has finished
   csrrw x0, MAI_CTRL, x20
+  jal x1, _poll_busy
 
-  /* TODO: Replace with deterministic wait, once latency is known. */
-  jal x1, _mai_poll
+  /* /\* TODO: Replace with deterministic wait, once latency is known. *\/ */
+  /* /\* jal x1, _mai_poll *\/ */
 
-  /* Read back the result. */
+  /* /\* Read back the result. *\/ */
   bn.wsrr w0, MAI_RES_S0
   bn.xor w31, w31, w31 /* dummy */
   bn.wsrr w1, MAI_RES_S1
@@ -123,6 +150,8 @@ sec_b2a_8x32:
 sec_add_8x32:
   /* Write the two summands to the input WSRs (intersperse with configuration of
      MAI_CTRL to not access both shares in subsequent instructions). */
+  jal x1, _poll_ready  
+
   bn.wsrw MAI_IN0_S0, w0
   bn.wsrw MAI_IN1_S0, w2
 
@@ -132,10 +161,12 @@ sec_add_8x32:
   bn.wsrw MAI_IN1_S1, w3
 
   /* Trigger the conversion. */
+  jal x1, _poll_busy
   csrrw x0, MAI_CTRL, x20
+  jal x1, _poll_busy
 
   /* TODO: Replace with deterministic wait, once latency is known. */
-  jal x1, _mai_poll
+  /* jal x1, _mai_poll */
 
   /* Read back the result. */
   bn.wsrr w0, MAI_RES_S0

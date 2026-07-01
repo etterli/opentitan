@@ -77,7 +77,7 @@ sample_mask_poly:
   bn.wsrr w12, URND
 
   /* In each iteration, we sample 64 coefficients. */
-  loopi 4, 49
+  loopi 4, 49 # 4
 
     /*
      * Each coefficient of the mask polynomial has a size of 20 bits. Since
@@ -112,10 +112,10 @@ sample_mask_poly:
     bn.mov w12, w30
 
     /* Sample 64 coefficients in steps of eight at at time. */
-    loopi 8, 27
+    loopi 8, 27 # 8
 
       /* Sample one shared vector of eight coefficients. */
-      loopi 8, 17
+      loopi 8, 17 # 8
 
         /* Randomness to shift into registers when a coefficient is extracted.
            This avoids that few secrets bits are isolated in an all-zero WDR. */
