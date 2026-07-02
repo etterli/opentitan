@@ -1262,6 +1262,14 @@
       run_opts: ["+sw_test_timeout_ns=18_000_000","+rng_srate_value=30"]
     }
     {
+      name: chip_sw_otbn_mldsa87_sign
+      uvm_test_seq: chip_sw_base_vseq
+      sw_images: ["sw/device/tests/crypto:mldsa87_sign_functest:1:new_rules"]
+      en_run_modes: ["sw_test_mode_test_rom"]
+      reseed: 1
+      run_opts: ["+sw_test_timeout_ns=90_000_000"]
+    }
+    {
       name: chip_sw_otbn_ecdsa_op_irq
       uvm_test_seq: chip_sw_base_vseq
       sw_images: ["//sw/device/tests:otbn_ecdsa_op_irq_test:1:new_rules"]
