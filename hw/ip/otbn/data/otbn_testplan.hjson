@@ -106,7 +106,7 @@
             - Check that when restoring the state, SW can read back the provided state before URND is started again.
             '''
       stage: V2
-      tests: []
+      tests: ["otbn_urnd_ctrl"]
     }
 
     {
