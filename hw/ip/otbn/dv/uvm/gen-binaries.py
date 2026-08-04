@@ -99,6 +99,12 @@ def main() -> int:
                               'link each .s file that it can find in the '
                               'given directory. This is useful for building '
                               'the smoke test or other directed tests.'))
+    parser.add_argument('--src-file',
+                        help=('If supplied, gen-binaries.py will not generate '
+                              'random binaries. Instead, it will assemble and '
+                              'link the given .s file. This is useful for '
+                              'building the smoke test or other directed'
+                              'tests.'))
     parser.add_argument('--verbose', '-v', action='store_true')
     parser.add_argument('--jobs',
                         '-j',
@@ -117,7 +123,12 @@ def main() -> int:
     args = parser.parse_args()
 
     # Argument consistency checks
-    if args.src_dir is None:
+    if args.src_dir and args.src_file:
+        raise RuntimeError('Invalid combination: --src-dir and --src-file '
+                           'both supplied.')
+
+    sources = None
+    if args.src_dir is None and args.src_file is None:
         if args.count is None:
             args.count = 10
         if args.seed is None:
@@ -125,6 +136,8 @@ def main() -> int:
         if args.size is None:
             args.size = 100
     else:
+        # Either src_dir or src_file is provided.
+        sources = args.src_dir if args.src_dir is not None else args.src_file
         if args.count is not None:
             raise RuntimeError('Invalid combination: --count and --src-dir '
                                'both supplied.')
@@ -151,11 +164,11 @@ def main() -> int:
         ninja_fname += '.' + args.ninja_suffix
 
     with open(os.path.join(args.destdir, ninja_fname), 'w') as ninja_handle:
-        if args.src_dir is None:
+        if sources is None:
             write_ninja_rnd(ninja_handle, toolchain, otbn_dir, args.count,
                             args.seed, args.size, args.config)
         else:
-            write_ninja_fixed(ninja_handle, toolchain, otbn_dir, args.src_dir)
+            write_ninja_fixed(ninja_handle, toolchain, otbn_dir, sources)
 
     if args.gen_only:
         return 0
@@ -228,8 +241,9 @@ def write_ninja_rnd(handle: TextIO, toolchain: Toolchain, otbn_dir: str,
 
 
 def write_ninja_fixed(handle: TextIO, toolchain: Toolchain, otbn_dir: str,
-                      src_dir: str) -> None:
-    '''Write a build.ninja to build a fixed set of binaries
+                      sources: str) -> None:
+    '''Write a build.ninja to build a fixed set of binaries. Either all found
+    programs in a directory or a single program file.
 
     The rules build everything in the same directory as the build.ninja file.
     OTBN tooling is found through the toolchain argument.
@@ -247,19 +261,24 @@ def write_ninja_fixed(handle: TextIO, toolchain: Toolchain, otbn_dir: str,
             rv32_ld=toolchain.rv32_tool_ld, otbn_ld=toolchain.otbn_ld))
 
     count = 0
-    for fname in os.listdir(src_dir):
-        if not fname.endswith('.s'):
+    if os.path.isfile(sources):
+        list_of_files = [os.path.abspath(sources)]
+    elif os.path.isdir(sources):
+        list_of_files = [os.path.abspath(os.path.join(sources, fname))
+                         for fname in os.listdir(sources)]
+
+    for abs_path in list_of_files:
+        if not abs_path.endswith('.s'):
             continue
 
-        abs_path = os.path.abspath(os.path.join(src_dir, fname))
-        basename = fname[:-2]
+        basename = os.path.basename(abs_path)[:-2]
 
         handle.write(f'build {basename}.o: as {abs_path}\n')
         handle.write(f'build {basename}.elf: ld {basename}.o\n\n')
         count += 1
 
     if not count:
-        raise RuntimeError(f'No .s files in {src_dir}')
+        raise RuntimeError(f'No .s files in {sources}')
 
 
 if __name__ == '__main__':
