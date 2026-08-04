@@ -127,6 +127,7 @@
               "otbn_controller_ispr_rdata_err",
               "otbn_mac_bignum_acc_err",
               "otbn_urnd_err"]
+              // TODO: Add tests for internal states of MAI, KMAC_IF, and URND Ctrl.
     }
     {
       name: back_to_back
