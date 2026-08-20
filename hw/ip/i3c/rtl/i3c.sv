@@ -62,21 +62,24 @@ module i3c
   input  top_racl_pkg::racl_policy_vec_t    racl_policies_i,
   output top_racl_pkg::racl_error_log_t     racl_error_o,
 
-  // I3C Controller I/O signaling.
-  output i3c_io_pkg::i3c_ctrl_bus_drv_t     cio_ctrl_bus_drv_o,
-  input  i3c_io_pkg::i3c_ctrl_bus_obs_t     cio_ctrl_bus_obs_i,
+  // SCL and SDA pins
+  input        cio_scl_i,
+  input        cio_sda_i,
+
+  output logic cio_scl_o,
+  output logic cio_scl_en_o,
+  output logic cio_sda_o,
+  output logic cio_sda_en_o,
 
   // Pull-up enables for open drain intervals.
   output logic                              cio_ctrl_scl_pu_en_o,
   output logic                              cio_ctrl_sda_pu_en_o,
 
   // High-keeper enables.
+  output logic                              cio_scl_hk_o,
   output logic                              cio_scl_hk_en_o,
+  output logic                              cio_sda_hk_o,
   output logic                              cio_sda_hk_en_o,
-
-  // I3C Target I/O signaling.
-  output i3c_io_pkg::i3c_targ_bus_drv_t     cio_targ_bus_drv_o,
-  input  i3c_io_pkg::i3c_targ_bus_obs_t     cio_targ_bus_obs_i,
 
   // Target Reset Detector request/response.
   output                                    rstdet_enable_o,
@@ -100,12 +103,6 @@ module i3c
   input                                     scan_clk_i,
   input                                     scan_rst_ni,
   input prim_mubi_pkg::mubi4_t              scanmode_i
-
-  // TODO: Dummy ports for top-level integration. These are presently required because `topgen`
-  // creates enables for all output signals.
-  ,
-  output cio_ctrl_bus_drv_en_o,
-  output cio_targ_bus_drv_en_o
 );
 
   localparam int unsigned DataWidth = top_pkg::TL_DW;
@@ -123,6 +120,67 @@ module i3c
   localparam int unsigned SWDirAddrW = $clog2(I3C_BUFFER_SIZE * 8 / DataWidth);
 
   logic [NumAlerts-1:0] alert_test, alerts;
+
+  // controller and target I/O signals.
+  i3c_io_pkg::i3c_ctrl_bus_drv_t cio_ctrl_bus_drv;
+  i3c_io_pkg::i3c_ctrl_bus_obs_t cio_ctrl_bus_obs;
+  i3c_io_pkg::i3c_targ_bus_drv_t cio_targ_bus_drv;
+  i3c_io_pkg::i3c_targ_bus_obs_t cio_targ_bus_obs;
+
+  /////////////////////////////
+  // SCL and SDA observation //
+  /////////////////////////////
+  assign cio_ctrl_bus_obs = '{
+    scl: cio_scl_i,
+    sda: {NumSDALanes{cio_sda_i}}
+  };
+
+  assign cio_targ_bus_obs = '{
+    scl: cio_scl_i,
+    sda: {NumSDALanes{cio_sda_i}}
+  };
+
+  /////////////////////////////
+  // SCL and SDA arbitration //
+  /////////////////////////////
+  // SCL is only driven by the controller so no arbitration is required
+  assign cio_scl_o    = cio_ctrl_bus_drv.scl;
+  assign cio_scl_en_o = cio_ctrl_bus_drv.scl_en;
+
+  // SDA bus access rules
+  // - Any pull-down has priority.
+  // - Otherwise, a push-pull high drives SDA to 1.
+  // - Otherwise, the line floats -> output disabled.
+  //
+  // High-keepers are expected to be outside of the chip. The OpenDrain and PushPull states can be
+  // implemented using a regular pad with output value and enable signal.
+  // State | Out | En |
+  // OD-0  |   0 |  1 |
+  // OD-1  |   x |  0 |
+  // PP-0  |   0 |  1 |
+  // PP-1  |   1 |  1 |
+  logic ctrl_pp_en, ctrl_od_en, targ_pp_en, targ_od_en;
+  logic ctrl_sda, targ_sda;
+  logic pp_low, pp_high, od_low, any_low;
+
+  // For now we only consider SDA[0] as the IP does not support any other configuration yet.
+  assign ctrl_sda   = cio_ctrl_bus_drv.sda[0];
+  assign ctrl_pp_en = cio_ctrl_bus_drv.sda_pp_en;
+  assign ctrl_od_en = cio_ctrl_bus_drv.sda_od_en;
+  assign targ_sda   = cio_targ_bus_drv.sda[0];
+  assign targ_pp_en = cio_targ_bus_drv.sda_pp_en;
+  assign targ_od_en = cio_targ_bus_drv.sda_od_en;
+
+  assign pp_low  = (ctrl_pp_en && !ctrl_sda) || (targ_pp_en && !targ_sda);
+  assign pp_high = (ctrl_pp_en &&  ctrl_sda) || (targ_pp_en &&  targ_sda);
+  assign od_low  = (ctrl_od_en && !ctrl_sda) || (targ_od_en && !targ_sda);
+  assign any_low = pp_low || od_low;
+
+  assign cio_sda_o    = !any_low;
+  assign cio_sda_en_o = od_low || pp_low || (pp_high && !any_low);
+
+  `ASSERT_INIT(Only1SdaLine_A, NumSDALanes == 1)
+  `ASSERT(SdaLowAndHigh_A, !(any_low && pp_high))
 
   // Registers.
   i3c_reg2hw_t reg2hw;
@@ -431,8 +489,8 @@ module i3c
     .sw_buf_rdata_o  (sw_buf_rdata),
 
     // I3C Controller I/O signaling.
-    .ctrl_bus_drv_o  (cio_ctrl_bus_drv_o),
-    .ctrl_bus_obs_i  (cio_ctrl_bus_obs_i),
+    .ctrl_bus_drv_o  (cio_ctrl_bus_drv),
+    .ctrl_bus_obs_i  (cio_ctrl_bus_obs),
 
     // Pull-up enables for open drain intervals.
     .ctrl_scl_pu_en_o(cio_ctrl_scl_pu_en_o),
@@ -443,8 +501,8 @@ module i3c
     .sda_hk_en_o     (cio_sda_hk_en_o),
 
     // I3C Target I/O signaling.
-    .targ_bus_drv_o  (cio_targ_bus_drv_o),
-    .targ_bus_obs_i  (cio_targ_bus_obs_i),
+    .targ_bus_drv_o  (cio_targ_bus_drv),
+    .targ_bus_obs_i  (cio_targ_bus_obs),
 
     // Target Reset Detector request/response.
     .rstdet_enable_o (rstdet_enable_o),
@@ -467,6 +525,11 @@ module i3c
     .scan_rst_ni     (scan_rst_ni),
     .scanmode_i      (scanmode_i)
   );
+
+  // We are only interested in the enable signals. The high-keeper pins should either pull up or
+  // stay tristate.
+  assign cio_scl_hk_o = 1'b1;
+  assign cio_sda_hk_o = 1'b1;
 
   // Alerts
   assign alert_test = {
@@ -492,20 +555,24 @@ module i3c
   end
 
   // Assert Known for I3C Controller outputs
-  `ASSERT_KNOWN(CtrlSCLEnKnown_A, cio_ctrl_bus_drv_o.scl_en, clk_i, !rst_ni)
-  `ASSERT_KNOWN(CtrlSCLKnown_A, cio_ctrl_bus_drv_o.scl, clk_i, !rst_ni ||
-                !cio_ctrl_bus_drv_o.scl_en)
+  `ASSERT_KNOWN(CtrlSCLEnKnown_A, cio_ctrl_bus_drv.scl_en, clk_i, !rst_ni)
+  // TODO: Should scl also be known at all times? This depends on how the pad handles X when
+  // en = 0.
+  `ASSERT_KNOWN(CtrlSCLKnown_A, cio_ctrl_bus_drv.scl, clk_i, !rst_ni ||
+                !cio_ctrl_bus_drv.scl_en)
 
-  `ASSERT_KNOWN(CtrlSDAPPEnKnown_A, cio_ctrl_bus_drv_o.sda_pp_en, clk_i, !rst_ni)
-  `ASSERT_KNOWN(CtrlSDAODEnKnown_A, cio_ctrl_bus_drv_o.sda_od_en, clk_i, !rst_ni)
-  `ASSERT_KNOWN(CtrlSDAKnown_A, cio_ctrl_bus_drv_o.sda, clk_i, !rst_ni ||
-                (!cio_ctrl_bus_drv_o.sda_pp_en & !cio_ctrl_bus_drv_o.sda_od_en))
+  `ASSERT_KNOWN(CtrlSDAPPEnKnown_A, cio_ctrl_bus_drv.sda_pp_en, clk_i, !rst_ni)
+  `ASSERT_KNOWN(CtrlSDAODEnKnown_A, cio_ctrl_bus_drv.sda_od_en, clk_i, !rst_ni)
+  // TODO: Same question as for SCL. Must it be known at all times?
+  `ASSERT_KNOWN(CtrlSDAKnown_A, cio_ctrl_bus_drv.sda, clk_i, !rst_ni ||
+                (!cio_ctrl_bus_drv.sda_pp_en & !cio_ctrl_bus_drv.sda_od_en))
 
   // Assert Known for I3C Target outputs
-  `ASSERT_KNOWN(TargSDAPPEnKnown_A, cio_targ_bus_drv_o.sda_pp_en, clk_i, !rst_ni)
-  `ASSERT_KNOWN(TargSDAODEnKnown_A, cio_targ_bus_drv_o.sda_od_en, clk_i, !rst_ni)
-  `ASSERT_KNOWN(TargSDAKnown_A, cio_targ_bus_drv_o.sda, clk_i, !rst_ni ||
-                (!cio_targ_bus_drv_o.sda_pp_en & !cio_targ_bus_drv_o.sda_od_en))
+  `ASSERT_KNOWN(TargSDAPPEnKnown_A, cio_targ_bus_drv.sda_pp_en, clk_i, !rst_ni)
+  `ASSERT_KNOWN(TargSDAODEnKnown_A, cio_targ_bus_drv.sda_od_en, clk_i, !rst_ni)
+  // TODO: Same question as for SCL. Must it be known at all times?
+  `ASSERT_KNOWN(TargSDAKnown_A, cio_targ_bus_drv.sda, clk_i, !rst_ni ||
+                (!cio_targ_bus_drv.sda_pp_en & !cio_targ_bus_drv.sda_od_en))
 
   // Assert Known for alerts
   `ASSERT_KNOWN(AlertsKnown_A, alert_tx_o)
@@ -518,6 +585,6 @@ module i3c
   `ASSERT_KNOWN(IntrTargKnown_A, intr_targ_o)
 
   // Check that the bus width meets the requirements of the message buffer, DAT and DCT tables.
-  if (DataWidth != 32) $fatal(1, "This design presently supports only 32-bit system buses.");
+  `ASSERT_INIT(DataWidthIs32_A, DataWidth == 32)
 
 endmodule
