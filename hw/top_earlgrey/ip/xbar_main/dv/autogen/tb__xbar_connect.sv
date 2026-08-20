@@ -11,12 +11,16 @@ xbar_main dut();
 `DRIVE_CLK(clk_usb_i)
 `DRIVE_CLK(clk_spi_host0_i)
 `DRIVE_CLK(clk_spi_host1_i)
+`DRIVE_CLK(clk_i3c0_i)
+`DRIVE_CLK(clk_i3c1_i)
 
 initial force dut.clk_main_i = clk_main_i;
 initial force dut.clk_fixed_i = clk_fixed_i;
 initial force dut.clk_usb_i = clk_usb_i;
 initial force dut.clk_spi_host0_i = clk_spi_host0_i;
 initial force dut.clk_spi_host1_i = clk_spi_host1_i;
+initial force dut.clk_i3c0_i = clk_i3c0_i;
+initial force dut.clk_i3c1_i = clk_i3c1_i;
 
 // TODO, all resets tie together
 initial force dut.rst_main_ni = rst_n;
@@ -24,6 +28,8 @@ initial force dut.rst_fixed_ni = rst_n;
 initial force dut.rst_usb_ni = rst_n;
 initial force dut.rst_spi_host0_ni = rst_n;
 initial force dut.rst_spi_host1_ni = rst_n;
+initial force dut.rst_i3c0_ni = rst_n;
+initial force dut.rst_i3c1_ni = rst_n;
 
 // Host TileLink interface connections
 `CONNECT_TL_HOST_IF(rv_core_ibex__corei, dut, clk_main_i, rst_n)
@@ -39,6 +45,8 @@ initial force dut.rst_spi_host1_ni = rst_n;
 `CONNECT_TL_DEVICE_IF(spi_host0, dut, clk_spi_host0_i, rst_n)
 `CONNECT_TL_DEVICE_IF(spi_host1, dut, clk_spi_host1_i, rst_n)
 `CONNECT_TL_DEVICE_IF(usbdev, dut, clk_usb_i, rst_n)
+`CONNECT_TL_DEVICE_IF(i3c0, dut, clk_i3c0_i, rst_n)
+`CONNECT_TL_DEVICE_IF(i3c1, dut, clk_i3c1_i, rst_n)
 `CONNECT_TL_DEVICE_IF(flash_ctrl__core, dut, clk_main_i, rst_n)
 `CONNECT_TL_DEVICE_IF(flash_ctrl__prim, dut, clk_main_i, rst_n)
 `CONNECT_TL_DEVICE_IF(flash_ctrl__mem, dut, clk_main_i, rst_n)

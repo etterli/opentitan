@@ -4,9 +4,9 @@
 { name: "main",
   type: "xbar",
   clock_primary: "clk_main_i", // Main clock, used in sockets
-  other_clock_list: [ "clk_fixed_i", "clk_spi_host0_i", "clk_spi_host1_i", "clk_usb_i"] // Secondary clocks used by specific nodes
+  other_clock_list: [ "clk_fixed_i", "clk_spi_host0_i", "clk_spi_host1_i", "clk_usb_i", "clk_i3c0_i", "clk_i3c1_i" ] // Secondary clocks used by specific nodes
   reset_primary: "rst_main_ni", // Main reset, used in sockets
-  other_reset_list: [ "rst_fixed_ni", "rst_spi_host0_ni", "rst_spi_host1_ni", "rst_usb_ni"] // Secondary clocks used by specific nodes
+  other_reset_list: [ "rst_fixed_ni", "rst_spi_host0_ni", "rst_spi_host1_ni", "rst_usb_ni", "rst_i3c0_ni", "rst_i3c1_ni" ] // Secondary clocks used by specific nodes
 
   // Rationale for pipeline and req/rsp_fifo_pass:
   // For host interfaces that are used during production state (corei/cored),
@@ -99,6 +99,20 @@
       type:      "device",
       clock:     "clk_usb_i",
       reset:     "rst_usb_ni",
+      req_fifo_pass: false,
+      rsp_fifo_pass: false,
+    },
+    { name:      "i3c0",
+      type:      "device",
+      clock:     "clk_i3c0_i",
+      reset:     "rst_i3c0_ni",
+      req_fifo_pass: false,
+      rsp_fifo_pass: false,
+    },
+    { name:      "i3c1",
+      type:      "device",
+      clock:     "clk_i3c1_i",
+      reset:     "rst_i3c1_ni",
       req_fifo_pass: false,
       rsp_fifo_pass: false,
     },
@@ -257,7 +271,7 @@
     ],
     rv_core_ibex.cored:  [
       "rom_ctrl.rom", "rom_ctrl.regs", "rv_dm.mem", "rv_dm.regs",
-      "sram_ctrl_main.ram", "sram_ctrl_sec.ram", "peri", "spi_host0", "spi_host1", "usbdev",
+      "sram_ctrl_main.ram", "sram_ctrl_sec.ram", "peri", "spi_host0", "spi_host1", "usbdev", "i3c0", "i3c1",
       "flash_ctrl.core", "flash_ctrl.prim", "flash_ctrl.mem",
       "rram_ctrl.core", "rram_ctrl.host", "rram_macro.prim",
       "aes", "entropy_src", "csrng", "edn0", "edn1", "hmac",
@@ -266,7 +280,7 @@
     ],
     rv_dm.sba: [
       "rom_ctrl.rom", "rom_ctrl.regs", "rv_dm.mem", "rv_dm.regs",
-      "sram_ctrl_main.ram", "sram_ctrl_sec.ram", "peri", "spi_host0", "spi_host1", "usbdev",
+      "sram_ctrl_main.ram", "sram_ctrl_sec.ram", "peri", "spi_host0", "spi_host1", "usbdev", "i3c0", "i3c1",
       "flash_ctrl.core", "flash_ctrl.prim", "flash_ctrl.mem",
       "rram_ctrl.core", "rram_ctrl.host", "rram_macro.prim",
       "aes", "entropy_src", "csrng", "edn0", "edn1", "hmac",

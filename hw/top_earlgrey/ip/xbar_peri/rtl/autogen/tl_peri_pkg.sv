@@ -42,7 +42,7 @@ package tl_peri_pkg;
   localparam logic [31:0] ADDR_MASK_SPI_DEVICE          = 32'h 00001fff;
   localparam logic [31:0] ADDR_MASK_RV_TIMER            = 32'h 000001ff;
   localparam logic [31:0] ADDR_MASK_PWRMGR              = 32'h 0000007f;
-  localparam logic [31:0] ADDR_MASK_RSTMGR              = 32'h 0000007f;
+  localparam logic [31:0] ADDR_MASK_RSTMGR              = 32'h 000000ff;
   localparam logic [31:0] ADDR_MASK_CLKMGR              = 32'h 0000007f;
   localparam logic [31:0] ADDR_MASK_PINMUX              = 32'h 00000fff;
   localparam logic [31:0] ADDR_MASK_OTP_CTRL__CORE      = 32'h 00000fff;

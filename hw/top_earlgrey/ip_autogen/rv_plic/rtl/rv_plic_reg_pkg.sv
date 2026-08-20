@@ -7,7 +7,7 @@
 package rv_plic_reg_pkg;
 
   // Param list
-  parameter int NumSrc = 190;
+  parameter int NumSrc = 194;
   parameter int NumTarget = 1;
   parameter int PrioWidth = 2;
   parameter int NumAlerts = 1;
@@ -16,7 +16,7 @@ package rv_plic_reg_pkg;
   parameter int BlockAw = 27;
 
   // Number of registers for every interface
-  parameter int NumRegs = 206;
+  parameter int NumRegs = 212;
 
   // Alert indices
   typedef enum int {
@@ -65,8 +65,8 @@ package rv_plic_reg_pkg;
 
   // Register -> HW type
   typedef struct packed {
-    rv_plic_reg2hw_prio_mreg_t [189:0] prio; // [584:205]
-    rv_plic_reg2hw_ie0_mreg_t [189:0] ie0; // [204:15]
+    rv_plic_reg2hw_prio_mreg_t [193:0] prio; // [596:209]
+    rv_plic_reg2hw_ie0_mreg_t [193:0] ie0; // [208:15]
     rv_plic_reg2hw_threshold0_reg_t threshold0; // [14:13]
     rv_plic_reg2hw_cc0_reg_t cc0; // [12:3]
     rv_plic_reg2hw_msip0_reg_t msip0; // [2:2]
@@ -75,7 +75,7 @@ package rv_plic_reg_pkg;
 
   // HW -> register type
   typedef struct packed {
-    rv_plic_hw2reg_ip_mreg_t [189:0] ip; // [387:8]
+    rv_plic_hw2reg_ip_mreg_t [193:0] ip; // [395:8]
     rv_plic_hw2reg_cc0_reg_t cc0; // [7:0]
   } rv_plic_hw2reg_t;
 
@@ -270,18 +270,24 @@ package rv_plic_reg_pkg;
   parameter logic [BlockAw-1:0] RV_PLIC_PRIO_187_OFFSET = 27'h 2ec;
   parameter logic [BlockAw-1:0] RV_PLIC_PRIO_188_OFFSET = 27'h 2f0;
   parameter logic [BlockAw-1:0] RV_PLIC_PRIO_189_OFFSET = 27'h 2f4;
+  parameter logic [BlockAw-1:0] RV_PLIC_PRIO_190_OFFSET = 27'h 2f8;
+  parameter logic [BlockAw-1:0] RV_PLIC_PRIO_191_OFFSET = 27'h 2fc;
+  parameter logic [BlockAw-1:0] RV_PLIC_PRIO_192_OFFSET = 27'h 300;
+  parameter logic [BlockAw-1:0] RV_PLIC_PRIO_193_OFFSET = 27'h 304;
   parameter logic [BlockAw-1:0] RV_PLIC_IP_0_OFFSET = 27'h 1000;
   parameter logic [BlockAw-1:0] RV_PLIC_IP_1_OFFSET = 27'h 1004;
   parameter logic [BlockAw-1:0] RV_PLIC_IP_2_OFFSET = 27'h 1008;
   parameter logic [BlockAw-1:0] RV_PLIC_IP_3_OFFSET = 27'h 100c;
   parameter logic [BlockAw-1:0] RV_PLIC_IP_4_OFFSET = 27'h 1010;
   parameter logic [BlockAw-1:0] RV_PLIC_IP_5_OFFSET = 27'h 1014;
+  parameter logic [BlockAw-1:0] RV_PLIC_IP_6_OFFSET = 27'h 1018;
   parameter logic [BlockAw-1:0] RV_PLIC_IE0_0_OFFSET = 27'h 2000;
   parameter logic [BlockAw-1:0] RV_PLIC_IE0_1_OFFSET = 27'h 2004;
   parameter logic [BlockAw-1:0] RV_PLIC_IE0_2_OFFSET = 27'h 2008;
   parameter logic [BlockAw-1:0] RV_PLIC_IE0_3_OFFSET = 27'h 200c;
   parameter logic [BlockAw-1:0] RV_PLIC_IE0_4_OFFSET = 27'h 2010;
   parameter logic [BlockAw-1:0] RV_PLIC_IE0_5_OFFSET = 27'h 2014;
+  parameter logic [BlockAw-1:0] RV_PLIC_IE0_6_OFFSET = 27'h 2018;
   parameter logic [BlockAw-1:0] RV_PLIC_THRESHOLD0_OFFSET = 27'h 200000;
   parameter logic [BlockAw-1:0] RV_PLIC_CC0_OFFSET = 27'h 200004;
   parameter logic [BlockAw-1:0] RV_PLIC_MSIP0_OFFSET = 27'h 4000000;
@@ -483,18 +489,24 @@ package rv_plic_reg_pkg;
     RV_PLIC_PRIO_187,
     RV_PLIC_PRIO_188,
     RV_PLIC_PRIO_189,
+    RV_PLIC_PRIO_190,
+    RV_PLIC_PRIO_191,
+    RV_PLIC_PRIO_192,
+    RV_PLIC_PRIO_193,
     RV_PLIC_IP_0,
     RV_PLIC_IP_1,
     RV_PLIC_IP_2,
     RV_PLIC_IP_3,
     RV_PLIC_IP_4,
     RV_PLIC_IP_5,
+    RV_PLIC_IP_6,
     RV_PLIC_IE0_0,
     RV_PLIC_IE0_1,
     RV_PLIC_IE0_2,
     RV_PLIC_IE0_3,
     RV_PLIC_IE0_4,
     RV_PLIC_IE0_5,
+    RV_PLIC_IE0_6,
     RV_PLIC_THRESHOLD0,
     RV_PLIC_CC0,
     RV_PLIC_MSIP0,
@@ -502,7 +514,7 @@ package rv_plic_reg_pkg;
   } rv_plic_id_e;
 
   // Register width information to check illegal writes
-  parameter logic [3:0] RV_PLIC_PERMIT [206] = '{
+  parameter logic [3:0] RV_PLIC_PERMIT [212] = '{
     4'b 0001, // index[  0] RV_PLIC_PRIO_0
     4'b 0001, // index[  1] RV_PLIC_PRIO_1
     4'b 0001, // index[  2] RV_PLIC_PRIO_2
@@ -693,22 +705,28 @@ package rv_plic_reg_pkg;
     4'b 0001, // index[187] RV_PLIC_PRIO_187
     4'b 0001, // index[188] RV_PLIC_PRIO_188
     4'b 0001, // index[189] RV_PLIC_PRIO_189
-    4'b 1111, // index[190] RV_PLIC_IP_0
-    4'b 1111, // index[191] RV_PLIC_IP_1
-    4'b 1111, // index[192] RV_PLIC_IP_2
-    4'b 1111, // index[193] RV_PLIC_IP_3
-    4'b 1111, // index[194] RV_PLIC_IP_4
-    4'b 1111, // index[195] RV_PLIC_IP_5
-    4'b 1111, // index[196] RV_PLIC_IE0_0
-    4'b 1111, // index[197] RV_PLIC_IE0_1
-    4'b 1111, // index[198] RV_PLIC_IE0_2
-    4'b 1111, // index[199] RV_PLIC_IE0_3
-    4'b 1111, // index[200] RV_PLIC_IE0_4
-    4'b 1111, // index[201] RV_PLIC_IE0_5
-    4'b 0001, // index[202] RV_PLIC_THRESHOLD0
-    4'b 0001, // index[203] RV_PLIC_CC0
-    4'b 0001, // index[204] RV_PLIC_MSIP0
-    4'b 0001  // index[205] RV_PLIC_ALERT_TEST
+    4'b 0001, // index[190] RV_PLIC_PRIO_190
+    4'b 0001, // index[191] RV_PLIC_PRIO_191
+    4'b 0001, // index[192] RV_PLIC_PRIO_192
+    4'b 0001, // index[193] RV_PLIC_PRIO_193
+    4'b 1111, // index[194] RV_PLIC_IP_0
+    4'b 1111, // index[195] RV_PLIC_IP_1
+    4'b 1111, // index[196] RV_PLIC_IP_2
+    4'b 1111, // index[197] RV_PLIC_IP_3
+    4'b 1111, // index[198] RV_PLIC_IP_4
+    4'b 1111, // index[199] RV_PLIC_IP_5
+    4'b 0001, // index[200] RV_PLIC_IP_6
+    4'b 1111, // index[201] RV_PLIC_IE0_0
+    4'b 1111, // index[202] RV_PLIC_IE0_1
+    4'b 1111, // index[203] RV_PLIC_IE0_2
+    4'b 1111, // index[204] RV_PLIC_IE0_3
+    4'b 1111, // index[205] RV_PLIC_IE0_4
+    4'b 1111, // index[206] RV_PLIC_IE0_5
+    4'b 0001, // index[207] RV_PLIC_IE0_6
+    4'b 0001, // index[208] RV_PLIC_THRESHOLD0
+    4'b 0001, // index[209] RV_PLIC_CC0
+    4'b 0001, // index[210] RV_PLIC_MSIP0
+    4'b 0001  // index[211] RV_PLIC_ALERT_TEST
   };
 
 endpackage

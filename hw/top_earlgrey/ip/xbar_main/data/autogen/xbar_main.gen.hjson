@@ -15,6 +15,8 @@
     clk_usb_i: usb
     clk_spi_host0_i: io
     clk_spi_host1_i: io_div2
+    clk_i3c0_i: io
+    clk_i3c1_i: io
   }
   clock_group: infra
   reset: rst_main_ni
@@ -45,6 +47,16 @@
       name: lc_io_div2
       domain: Main
     }
+    rst_i3c0_ni:
+    {
+      name: lc_io
+      domain: Main
+    }
+    rst_i3c1_ni:
+    {
+      name: lc_io
+      domain: Main
+    }
   }
   clock_connections:
   {
@@ -53,6 +65,8 @@
     clk_usb_i: clkmgr_clocks_i.clk_usb_infra
     clk_spi_host0_i: clkmgr_clocks_i.clk_io_infra
     clk_spi_host1_i: clkmgr_clocks_i.clk_io_div2_infra
+    clk_i3c0_i: clkmgr_clocks_i.clk_io_infra
+    clk_i3c1_i: clkmgr_clocks_i.clk_io_infra
   }
   domain: Main
   connections:
@@ -78,6 +92,8 @@
       spi_host0
       spi_host1
       usbdev
+      i3c0
+      i3c1
       flash_ctrl.core
       flash_ctrl.prim
       flash_ctrl.mem
@@ -110,6 +126,8 @@
       spi_host0
       spi_host1
       usbdev
+      i3c0
+      i3c1
       flash_ctrl.core
       flash_ctrl.prim
       flash_ctrl.mem
@@ -349,6 +367,50 @@
             hart: 0x40320000
           }
           size_byte: 0x1000
+        }
+      ]
+      xbar: false
+      stub: false
+      pipeline: true
+    }
+    {
+      name: i3c0
+      type: device
+      clock: clk_i3c0_i
+      reset: rst_i3c0_ni
+      req_fifo_pass: false
+      rsp_fifo_pass: false
+      inst_type: i3c
+      addr_range:
+      [
+        {
+          base_addrs:
+          {
+            hart: 0x40330000
+          }
+          size_byte: 0x2000
+        }
+      ]
+      xbar: false
+      stub: false
+      pipeline: true
+    }
+    {
+      name: i3c1
+      type: device
+      clock: clk_i3c1_i
+      reset: rst_i3c1_ni
+      req_fifo_pass: false
+      rsp_fifo_pass: false
+      inst_type: i3c
+      addr_range:
+      [
+        {
+          base_addrs:
+          {
+            hart: 0x40340000
+          }
+          size_byte: 0x2000
         }
       ]
       xbar: false
@@ -969,6 +1031,32 @@
       default: ""
       domain: Main
       top_signame: usbdev_tl
+      index: -1
+    }
+    {
+      name: tl_i3c0
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: req
+      inst_name: main
+      width: 1
+      default: ""
+      domain: Main
+      top_signame: i3c0_tl
+      index: -1
+    }
+    {
+      name: tl_i3c1
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: req
+      inst_name: main
+      width: 1
+      default: ""
+      domain: Main
+      top_signame: i3c1_tl
       index: -1
     }
     {

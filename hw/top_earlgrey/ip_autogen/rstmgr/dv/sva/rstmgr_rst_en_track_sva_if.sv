@@ -383,4 +383,56 @@ interface rstmgr_rst_en_track_sva_if (
           clk_io_div4_i,
           !rst_por_ni)
 
+  `ASSERT(DMainRstI3c0EnTracksRstI3c0Active_A,
+          $fell(resets_i.rst_i3c0_n[DomainMainSel]) |-> ##[0:DELAY]
+          reset_en_i.i3c0[DomainMainSel] == prim_mubi_pkg::MuBi4True,
+          clk_io_i,
+          !rst_por_ni)
+
+  `ASSERT(DMainRstI3c0EnTracksRstI3c0Inactive_A,
+          $rose(resets_i.rst_i3c0_n[DomainMainSel]) |-> ##DELAY
+          !resets_i.rst_i3c0_n[DomainMainSel] ||
+          reset_en_i.i3c0[DomainMainSel] == prim_mubi_pkg::MuBi4False,
+          clk_io_i,
+          !rst_por_ni)
+
+  `ASSERT(DMainRstI3c0AonEnTracksRstI3c0AonActive_A,
+          $fell(resets_i.rst_i3c0_aon_n[DomainMainSel]) |-> ##[0:DELAY]
+          reset_en_i.i3c0_aon[DomainMainSel] == prim_mubi_pkg::MuBi4True,
+          clk_aon_i,
+          !rst_por_ni)
+
+  `ASSERT(DMainRstI3c0AonEnTracksRstI3c0AonInactive_A,
+          $rose(resets_i.rst_i3c0_aon_n[DomainMainSel]) |-> ##DELAY
+          !resets_i.rst_i3c0_aon_n[DomainMainSel] ||
+          reset_en_i.i3c0_aon[DomainMainSel] == prim_mubi_pkg::MuBi4False,
+          clk_aon_i,
+          !rst_por_ni)
+
+  `ASSERT(DMainRstI3c1EnTracksRstI3c1Active_A,
+          $fell(resets_i.rst_i3c1_n[DomainMainSel]) |-> ##[0:DELAY]
+          reset_en_i.i3c1[DomainMainSel] == prim_mubi_pkg::MuBi4True,
+          clk_io_i,
+          !rst_por_ni)
+
+  `ASSERT(DMainRstI3c1EnTracksRstI3c1Inactive_A,
+          $rose(resets_i.rst_i3c1_n[DomainMainSel]) |-> ##DELAY
+          !resets_i.rst_i3c1_n[DomainMainSel] ||
+          reset_en_i.i3c1[DomainMainSel] == prim_mubi_pkg::MuBi4False,
+          clk_io_i,
+          !rst_por_ni)
+
+  `ASSERT(DMainRstI3c1AonEnTracksRstI3c1AonActive_A,
+          $fell(resets_i.rst_i3c1_aon_n[DomainMainSel]) |-> ##[0:DELAY]
+          reset_en_i.i3c1_aon[DomainMainSel] == prim_mubi_pkg::MuBi4True,
+          clk_aon_i,
+          !rst_por_ni)
+
+  `ASSERT(DMainRstI3c1AonEnTracksRstI3c1AonInactive_A,
+          $rose(resets_i.rst_i3c1_aon_n[DomainMainSel]) |-> ##DELAY
+          !resets_i.rst_i3c1_aon_n[DomainMainSel] ||
+          reset_en_i.i3c1_aon[DomainMainSel] == prim_mubi_pkg::MuBi4False,
+          clk_aon_i,
+          !rst_por_ni)
+
 endinterface

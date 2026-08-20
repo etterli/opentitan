@@ -502,6 +502,62 @@
         parent: lc_src
         clock: io_div4
       }
+      {
+        name: i3c0
+        gen: true
+        type: top
+        domains:
+        [
+          Main
+        ]
+        shadowed: false
+        sw: true
+        path: rst_i3c0_n
+        parent: lc_src
+        clock: io
+      }
+      {
+        name: i3c0_aon
+        gen: true
+        type: top
+        domains:
+        [
+          Main
+        ]
+        shadowed: false
+        sw: true
+        path: rst_i3c0_aon_n
+        parent: lc_src
+        clock: aon
+      }
+      {
+        name: i3c1
+        gen: true
+        type: top
+        domains:
+        [
+          Main
+        ]
+        shadowed: false
+        sw: true
+        path: rst_i3c1_n
+        parent: lc_src
+        clock: io
+      }
+      {
+        name: i3c1_aon
+        gen: true
+        type: top
+        domains:
+        [
+          Main
+        ]
+        shadowed: false
+        sw: true
+        path: rst_i3c1_aon_n
+        parent: lc_src
+        clock: aon
+      }
     ]
   }
   reset_requests:
@@ -582,6 +638,8 @@
             spi_host0
             spi_host1
             usbdev
+            i3c0
+            i3c1
             pwrmgr
             rstmgr
             clkmgr
@@ -3411,6 +3469,368 @@
         null:
         {
           hart: 0x40320000
+        }
+      }
+      generate_dif: true
+      domain: Main
+    }
+    {
+      name: i3c0
+      type: i3c
+      clock_srcs:
+      {
+        clk_i: io
+        clk_aon_i: aon
+        scan_clk_i: io_div2
+      }
+      clock_group: peri
+      reset_connections:
+      {
+        rst_ni:
+        {
+          name: i3c0
+          domain: Main
+        }
+        rst_aon_ni:
+        {
+          name: i3c0_aon
+          domain: Main
+        }
+      }
+      clock_connections:
+      {
+        clk_i: clkmgr_clocks_i.clk_io_peri
+        clk_aon_i: clkmgr_clocks_i.clk_aon_peri
+        scan_clk_i: clkmgr_clocks_i.clk_io_div2_peri
+      }
+      param_decl: {}
+      memory: {}
+      param_list:
+      [
+        {
+          name: ClkFreq
+          desc:
+            '''
+            Frequency of the main clock, in Hz.
+            Used to calculate default timer values for I3C timing.
+            '''
+          type: int unsigned
+          default: "96000000"
+          local: "false"
+          expose: "true"
+          name_top: I3c0ClkFreq
+        }
+        {
+          name: HalfCycleScl
+          desc:
+            '''
+            If 1 include the half-cycle SCL extension for additional IP clock frequency support.
+            Required for clock frequencies that are not an integer multiple of four times the desired SCL frequency.
+            '''
+          type: bit
+          default: "1"
+          local: "false"
+          expose: "true"
+          name_top: I3c0HalfCycleScl
+        }
+      ]
+      inter_signal_list:
+      [
+        {
+          name: rstdet_enable
+          struct: logic
+          type: uni
+          act: req
+          width: 1
+          inst_name: i3c0
+          index: -1
+        }
+        {
+          name: rstdet_req
+          struct: i3c_rstdet_req
+          package: i3c_pkg
+          type: uni
+          act: req
+          width: 1
+          inst_name: i3c0
+          index: -1
+        }
+        {
+          name: rstdet_rsp
+          struct: i3c_rstdet_rsp
+          package: i3c_pkg
+          type: uni
+          act: rcv
+          width: 1
+          inst_name: i3c0
+          index: -1
+        }
+        {
+          name: mbist_en
+          struct: logic
+          type: uni
+          act: rcv
+          width: 1
+          inst_name: i3c0
+          index: -1
+        }
+        {
+          name: ram_cfg
+          struct: ram_1p_cfg
+          package: prim_ram_1p_pkg
+          type: req_rsp
+          act: rsp
+          width: 1
+          inst_name: i3c0
+          index: -1
+        }
+        {
+          name: dat_cfg
+          struct: ram_1p_cfg
+          package: prim_ram_1p_pkg
+          type: req_rsp
+          act: rsp
+          width: 1
+          inst_name: i3c0
+          index: -1
+        }
+        {
+          name: dct_cfg
+          struct: ram_1p_cfg
+          package: prim_ram_1p_pkg
+          type: req_rsp
+          act: rsp
+          width: 1
+          inst_name: i3c0
+          index: -1
+        }
+        {
+          name: racl_policies
+          desc:
+            '''
+            Incoming RACL policy vector from a racl_ctrl instance.
+            The policy selection vector (parameter) selects the policy for each register.
+            '''
+          struct: racl_policy_vec
+          package: top_racl_pkg
+          type: uni
+          act: rcv
+          width: 1
+          inst_name: i3c0
+          index: -1
+        }
+        {
+          name: racl_error
+          desc: RACL error log information of this module.
+          struct: racl_error_log
+          package: top_racl_pkg
+          type: uni
+          act: req
+          width: 1
+          inst_name: i3c0
+          index: -1
+        }
+        {
+          name: tl
+          struct: tl
+          package: tlul_pkg
+          type: req_rsp
+          act: rsp
+          width: 1
+          inst_name: i3c0
+          default: ""
+          end_idx: -1
+          top_type: one-to-one
+          top_signame: i3c0_tl
+          index: -1
+        }
+      ]
+      base_addrs:
+      {
+        null:
+        {
+          hart: 0x40330000
+        }
+      }
+      generate_dif: true
+      domain: Main
+    }
+    {
+      name: i3c1
+      type: i3c
+      clock_srcs:
+      {
+        clk_i: io
+        clk_aon_i: aon
+        scan_clk_i: io_div2
+      }
+      clock_group: peri
+      reset_connections:
+      {
+        rst_ni:
+        {
+          name: i3c1
+          domain: Main
+        }
+        rst_aon_ni:
+        {
+          name: i3c1_aon
+          domain: Main
+        }
+      }
+      clock_connections:
+      {
+        clk_i: clkmgr_clocks_i.clk_io_peri
+        clk_aon_i: clkmgr_clocks_i.clk_aon_peri
+        scan_clk_i: clkmgr_clocks_i.clk_io_div2_peri
+      }
+      param_decl: {}
+      memory: {}
+      param_list:
+      [
+        {
+          name: ClkFreq
+          desc:
+            '''
+            Frequency of the main clock, in Hz.
+            Used to calculate default timer values for I3C timing.
+            '''
+          type: int unsigned
+          default: "96000000"
+          local: "false"
+          expose: "true"
+          name_top: I3c1ClkFreq
+        }
+        {
+          name: HalfCycleScl
+          desc:
+            '''
+            If 1 include the half-cycle SCL extension for additional IP clock frequency support.
+            Required for clock frequencies that are not an integer multiple of four times the desired SCL frequency.
+            '''
+          type: bit
+          default: "1"
+          local: "false"
+          expose: "true"
+          name_top: I3c1HalfCycleScl
+        }
+      ]
+      inter_signal_list:
+      [
+        {
+          name: rstdet_enable
+          struct: logic
+          type: uni
+          act: req
+          width: 1
+          inst_name: i3c1
+          index: -1
+        }
+        {
+          name: rstdet_req
+          struct: i3c_rstdet_req
+          package: i3c_pkg
+          type: uni
+          act: req
+          width: 1
+          inst_name: i3c1
+          index: -1
+        }
+        {
+          name: rstdet_rsp
+          struct: i3c_rstdet_rsp
+          package: i3c_pkg
+          type: uni
+          act: rcv
+          width: 1
+          inst_name: i3c1
+          index: -1
+        }
+        {
+          name: mbist_en
+          struct: logic
+          type: uni
+          act: rcv
+          width: 1
+          inst_name: i3c1
+          index: -1
+        }
+        {
+          name: ram_cfg
+          struct: ram_1p_cfg
+          package: prim_ram_1p_pkg
+          type: req_rsp
+          act: rsp
+          width: 1
+          inst_name: i3c1
+          index: -1
+        }
+        {
+          name: dat_cfg
+          struct: ram_1p_cfg
+          package: prim_ram_1p_pkg
+          type: req_rsp
+          act: rsp
+          width: 1
+          inst_name: i3c1
+          index: -1
+        }
+        {
+          name: dct_cfg
+          struct: ram_1p_cfg
+          package: prim_ram_1p_pkg
+          type: req_rsp
+          act: rsp
+          width: 1
+          inst_name: i3c1
+          index: -1
+        }
+        {
+          name: racl_policies
+          desc:
+            '''
+            Incoming RACL policy vector from a racl_ctrl instance.
+            The policy selection vector (parameter) selects the policy for each register.
+            '''
+          struct: racl_policy_vec
+          package: top_racl_pkg
+          type: uni
+          act: rcv
+          width: 1
+          inst_name: i3c1
+          index: -1
+        }
+        {
+          name: racl_error
+          desc: RACL error log information of this module.
+          struct: racl_error_log
+          package: top_racl_pkg
+          type: uni
+          act: req
+          width: 1
+          inst_name: i3c1
+          index: -1
+        }
+        {
+          name: tl
+          struct: tl
+          package: tlul_pkg
+          type: req_rsp
+          act: rsp
+          width: 1
+          inst_name: i3c1
+          default: ""
+          end_idx: -1
+          top_type: one-to-one
+          top_signame: i3c1_tl
+          index: -1
+        }
+      ]
+      base_addrs:
+      {
+        null:
+        {
+          hart: 0x40340000
         }
       }
       generate_dif: true
@@ -10846,6 +11266,14 @@
       [
         main.tl_usbdev
       ]
+      i3c0.tl:
+      [
+        main.tl_i3c0
+      ]
+      i3c1.tl:
+      [
+        main.tl_i3c1
+      ]
       flash_ctrl.core_tl:
       [
         main.tl_flash_ctrl__core
@@ -11125,6 +11553,8 @@
         clk_usb_i: usb
         clk_spi_host0_i: io
         clk_spi_host1_i: io_div2
+        clk_i3c0_i: io
+        clk_i3c1_i: io
       }
       clock_group: infra
       reset: rst_main_ni
@@ -11155,6 +11585,16 @@
           name: lc_io_div2
           domain: Main
         }
+        rst_i3c0_ni:
+        {
+          name: lc_io
+          domain: Main
+        }
+        rst_i3c1_ni:
+        {
+          name: lc_io
+          domain: Main
+        }
       }
       clock_connections:
       {
@@ -11163,6 +11603,8 @@
         clk_usb_i: clkmgr_clocks_i.clk_usb_infra
         clk_spi_host0_i: clkmgr_clocks_i.clk_io_infra
         clk_spi_host1_i: clkmgr_clocks_i.clk_io_div2_infra
+        clk_i3c0_i: clkmgr_clocks_i.clk_io_infra
+        clk_i3c1_i: clkmgr_clocks_i.clk_io_infra
       }
       domain: Main
       connections:
@@ -11188,6 +11630,8 @@
           spi_host0
           spi_host1
           usbdev
+          i3c0
+          i3c1
           flash_ctrl.core
           flash_ctrl.prim
           flash_ctrl.mem
@@ -11220,6 +11664,8 @@
           spi_host0
           spi_host1
           usbdev
+          i3c0
+          i3c1
           flash_ctrl.core
           flash_ctrl.prim
           flash_ctrl.mem
@@ -11459,6 +11905,50 @@
                 hart: 0x40320000
               }
               size_byte: 0x1000
+            }
+          ]
+          xbar: false
+          stub: false
+          pipeline: true
+        }
+        {
+          name: i3c0
+          type: device
+          clock: clk_i3c0_i
+          reset: rst_i3c0_ni
+          req_fifo_pass: false
+          rsp_fifo_pass: false
+          inst_type: i3c
+          addr_range:
+          [
+            {
+              base_addrs:
+              {
+                hart: 0x40330000
+              }
+              size_byte: 0x2000
+            }
+          ]
+          xbar: false
+          stub: false
+          pipeline: true
+        }
+        {
+          name: i3c1
+          type: device
+          clock: clk_i3c1_i
+          reset: rst_i3c1_ni
+          req_fifo_pass: false
+          rsp_fifo_pass: false
+          inst_type: i3c
+          addr_range:
+          [
+            {
+              base_addrs:
+              {
+                hart: 0x40340000
+              }
+              size_byte: 0x2000
             }
           ]
           xbar: false
@@ -12082,6 +12572,32 @@
           index: -1
         }
         {
+          name: tl_i3c0
+          struct: tl
+          package: tlul_pkg
+          type: req_rsp
+          act: req
+          inst_name: main
+          width: 1
+          default: ""
+          domain: Main
+          top_signame: i3c0_tl
+          index: -1
+        }
+        {
+          name: tl_i3c1
+          struct: tl
+          package: tlul_pkg
+          type: req_rsp
+          act: req
+          inst_name: main
+          width: 1
+          default: ""
+          domain: Main
+          top_signame: i3c1_tl
+          index: -1
+        }
+        {
           name: tl_flash_ctrl__core
           struct: tl
           package: tlul_pkg
@@ -12667,7 +13183,7 @@
               {
                 hart: 0x40410000
               }
-              size_byte: 0x80
+              size_byte: 0x100
             }
           ]
           xbar: false
@@ -16351,6 +16867,28 @@
       lpg_idx: 9
     }
     {
+      name: i3c0_fatal_fault
+      width: 1
+      type: alert
+      async: "1"
+      handler: alert_handler
+      module_name: i3c0
+      desc: i3c0 fatal_fault alert
+      lpg_name: peri_i3c0_Main
+      lpg_idx: 10
+    }
+    {
+      name: i3c1_fatal_fault
+      width: 1
+      type: alert
+      async: "1"
+      handler: alert_handler
+      module_name: i3c1
+      desc: i3c1 fatal_fault alert
+      lpg_name: peri_i3c1_Main
+      lpg_idx: 11
+    }
+    {
       name: pwrmgr_fatal_fault
       width: 1
       type: alert
@@ -16359,7 +16897,7 @@
       module_name: pwrmgr
       desc: pwrmgr fatal_fault alert
       lpg_name: powerup_por_io_div4_Aon
-      lpg_idx: 10
+      lpg_idx: 12
     }
     {
       name: rstmgr_fatal_fault
@@ -16370,7 +16908,7 @@
       module_name: rstmgr
       desc: rstmgr fatal_fault alert
       lpg_name: powerup_lc_io_div4_Aon
-      lpg_idx: 11
+      lpg_idx: 13
     }
     {
       name: rstmgr_fatal_cnsty_fault
@@ -16381,7 +16919,7 @@
       module_name: rstmgr
       desc: rstmgr fatal_cnsty_fault alert
       lpg_name: powerup_lc_io_div4_Aon
-      lpg_idx: 11
+      lpg_idx: 13
     }
     {
       name: clkmgr_recov_fault
@@ -16392,7 +16930,7 @@
       module_name: clkmgr
       desc: clkmgr recov_fault alert
       lpg_name: powerup_lc_io_div4_Aon
-      lpg_idx: 11
+      lpg_idx: 13
     }
     {
       name: clkmgr_fatal_fault
@@ -16403,7 +16941,7 @@
       module_name: clkmgr
       desc: clkmgr fatal_fault alert
       lpg_name: powerup_lc_io_div4_Aon
-      lpg_idx: 11
+      lpg_idx: 13
     }
     {
       name: sysrst_ctrl_fatal_fault
@@ -16414,7 +16952,7 @@
       module_name: sysrst_ctrl
       desc: sysrst_ctrl fatal_fault alert
       lpg_name: secure_lc_io_div4_Aon
-      lpg_idx: 12
+      lpg_idx: 14
     }
     {
       name: adc_ctrl_fatal_fault
@@ -16425,7 +16963,7 @@
       module_name: adc_ctrl
       desc: adc_ctrl fatal_fault alert
       lpg_name: peri_lc_io_div4_Aon
-      lpg_idx: 13
+      lpg_idx: 15
     }
     {
       name: pinmux_fatal_fault
@@ -16436,7 +16974,7 @@
       module_name: pinmux
       desc: pinmux fatal_fault alert
       lpg_name: powerup_lc_io_div4_Aon
-      lpg_idx: 11
+      lpg_idx: 13
     }
     {
       name: aon_timer_fatal_fault
@@ -16447,7 +16985,7 @@
       module_name: aon_timer
       desc: aon_timer fatal_fault alert
       lpg_name: timers_lc_io_div4_Aon
-      lpg_idx: 14
+      lpg_idx: 16
     }
     {
       name: sensor_ctrl_recov_alert
@@ -16458,7 +16996,7 @@
       module_name: sensor_ctrl
       desc: sensor_ctrl recov_alert alert
       lpg_name: secure_lc_io_div4_Aon
-      lpg_idx: 12
+      lpg_idx: 14
     }
     {
       name: sensor_ctrl_fatal_alert
@@ -16469,7 +17007,7 @@
       module_name: sensor_ctrl
       desc: sensor_ctrl fatal_alert alert
       lpg_name: secure_lc_io_div4_Aon
-      lpg_idx: 12
+      lpg_idx: 14
     }
     {
       name: sram_ctrl_ret_fatal_error
@@ -16480,7 +17018,7 @@
       module_name: sram_ctrl_ret
       desc: sram_ctrl_ret fatal_error alert
       lpg_name: infra_lc_io_div4_Aon
-      lpg_idx: 16
+      lpg_idx: 18
     }
     {
       name: flash_ctrl_recov_err
@@ -16491,7 +17029,7 @@
       module_name: flash_ctrl
       desc: flash_ctrl recov_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: flash_ctrl_fatal_std_err
@@ -16502,7 +17040,7 @@
       module_name: flash_ctrl
       desc: flash_ctrl fatal_std_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: flash_ctrl_fatal_err
@@ -16513,7 +17051,7 @@
       module_name: flash_ctrl
       desc: flash_ctrl fatal_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: flash_ctrl_fatal_prim_flash_alert
@@ -16524,7 +17062,7 @@
       module_name: flash_ctrl
       desc: flash_ctrl fatal_prim_flash_alert alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: flash_ctrl_recov_prim_flash_alert
@@ -16535,7 +17073,7 @@
       module_name: flash_ctrl
       desc: flash_ctrl recov_prim_flash_alert alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: rram_ctrl_recov_err
@@ -16546,7 +17084,7 @@
       module_name: rram_ctrl
       desc: rram_ctrl recov_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: rram_ctrl_fatal_std_err
@@ -16557,7 +17095,7 @@
       module_name: rram_ctrl
       desc: rram_ctrl fatal_std_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: rram_ctrl_fatal_err
@@ -16568,7 +17106,7 @@
       module_name: rram_ctrl
       desc: rram_ctrl fatal_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: rram_ctrl_fatal_macro_err
@@ -16579,7 +17117,7 @@
       module_name: rram_ctrl
       desc: rram_ctrl fatal_macro_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: rram_ctrl_recov_macro_err
@@ -16590,7 +17128,7 @@
       module_name: rram_ctrl
       desc: rram_ctrl recov_macro_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: rv_dm_fatal_fault
@@ -16601,7 +17139,7 @@
       module_name: rv_dm
       desc: rv_dm fatal_fault alert
       lpg_name: infra_sys_Main
-      lpg_idx: 18
+      lpg_idx: 20
     }
     {
       name: rv_plic_fatal_fault
@@ -16612,7 +17150,7 @@
       module_name: rv_plic
       desc: rv_plic fatal_fault alert
       lpg_name: secure_lc_Main
-      lpg_idx: 19
+      lpg_idx: 21
     }
     {
       name: aes_recov_ctrl_update_err
@@ -16623,7 +17161,7 @@
       module_name: aes
       desc: aes recov_ctrl_update_err alert
       lpg_name: aes_trans_lc_Main
-      lpg_idx: 20
+      lpg_idx: 22
     }
     {
       name: aes_fatal_fault
@@ -16634,7 +17172,7 @@
       module_name: aes
       desc: aes fatal_fault alert
       lpg_name: aes_trans_lc_Main
-      lpg_idx: 20
+      lpg_idx: 22
     }
     {
       name: hmac_fatal_fault
@@ -16645,7 +17183,7 @@
       module_name: hmac
       desc: hmac fatal_fault alert
       lpg_name: hmac_trans_lc_Main
-      lpg_idx: 21
+      lpg_idx: 23
     }
     {
       name: kmac_recov_operation_err
@@ -16656,7 +17194,7 @@
       module_name: kmac
       desc: kmac recov_operation_err alert
       lpg_name: kmac_trans_lc_Main
-      lpg_idx: 22
+      lpg_idx: 24
     }
     {
       name: kmac_fatal_fault_err
@@ -16667,7 +17205,7 @@
       module_name: kmac
       desc: kmac fatal_fault_err alert
       lpg_name: kmac_trans_lc_Main
-      lpg_idx: 22
+      lpg_idx: 24
     }
     {
       name: otbn_fatal
@@ -16678,7 +17216,7 @@
       module_name: otbn
       desc: otbn fatal alert
       lpg_name: otbn_trans_lc_Main
-      lpg_idx: 23
+      lpg_idx: 25
     }
     {
       name: otbn_recov
@@ -16689,7 +17227,7 @@
       module_name: otbn
       desc: otbn recov alert
       lpg_name: otbn_trans_lc_Main
-      lpg_idx: 23
+      lpg_idx: 25
     }
     {
       name: keymgr_dpe_recov_operation_err
@@ -16700,7 +17238,7 @@
       module_name: keymgr_dpe
       desc: keymgr_dpe recov_operation_err alert
       lpg_name: secure_lc_Main
-      lpg_idx: 19
+      lpg_idx: 21
     }
     {
       name: keymgr_dpe_fatal_fault_err
@@ -16711,7 +17249,7 @@
       module_name: keymgr_dpe
       desc: keymgr_dpe fatal_fault_err alert
       lpg_name: secure_lc_Main
-      lpg_idx: 19
+      lpg_idx: 21
     }
     {
       name: csrng_recov_alert
@@ -16722,7 +17260,7 @@
       module_name: csrng
       desc: csrng recov_alert alert
       lpg_name: secure_lc_Main
-      lpg_idx: 19
+      lpg_idx: 21
     }
     {
       name: csrng_fatal_alert
@@ -16733,7 +17271,7 @@
       module_name: csrng
       desc: csrng fatal_alert alert
       lpg_name: secure_lc_Main
-      lpg_idx: 19
+      lpg_idx: 21
     }
     {
       name: entropy_src_recov_alert
@@ -16744,7 +17282,7 @@
       module_name: entropy_src
       desc: entropy_src recov_alert alert
       lpg_name: secure_lc_Main
-      lpg_idx: 19
+      lpg_idx: 21
     }
     {
       name: entropy_src_fatal_alert
@@ -16755,7 +17293,7 @@
       module_name: entropy_src
       desc: entropy_src fatal_alert alert
       lpg_name: secure_lc_Main
-      lpg_idx: 19
+      lpg_idx: 21
     }
     {
       name: edn0_recov_alert
@@ -16766,7 +17304,7 @@
       module_name: edn0
       desc: edn0 recov_alert alert
       lpg_name: secure_lc_Main
-      lpg_idx: 19
+      lpg_idx: 21
     }
     {
       name: edn0_fatal_alert
@@ -16777,7 +17315,7 @@
       module_name: edn0
       desc: edn0 fatal_alert alert
       lpg_name: secure_lc_Main
-      lpg_idx: 19
+      lpg_idx: 21
     }
     {
       name: edn1_recov_alert
@@ -16788,7 +17326,7 @@
       module_name: edn1
       desc: edn1 recov_alert alert
       lpg_name: secure_lc_Main
-      lpg_idx: 19
+      lpg_idx: 21
     }
     {
       name: edn1_fatal_alert
@@ -16799,7 +17337,7 @@
       module_name: edn1
       desc: edn1 fatal_alert alert
       lpg_name: secure_lc_Main
-      lpg_idx: 19
+      lpg_idx: 21
     }
     {
       name: sram_ctrl_main_fatal_error
@@ -16810,7 +17348,7 @@
       module_name: sram_ctrl_main
       desc: sram_ctrl_main fatal_error alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: sram_ctrl_sec_fatal_error
@@ -16821,7 +17359,7 @@
       module_name: sram_ctrl_sec
       desc: sram_ctrl_sec fatal_error alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: rom_ctrl_fatal
@@ -16832,7 +17370,7 @@
       module_name: rom_ctrl
       desc: rom_ctrl fatal alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: rv_core_ibex_fatal_sw_err
@@ -16843,7 +17381,7 @@
       module_name: rv_core_ibex
       desc: rv_core_ibex fatal_sw_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: rv_core_ibex_recov_sw_err
@@ -16854,7 +17392,7 @@
       module_name: rv_core_ibex
       desc: rv_core_ibex recov_sw_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: rv_core_ibex_fatal_hw_err
@@ -16865,7 +17403,7 @@
       module_name: rv_core_ibex
       desc: rv_core_ibex fatal_hw_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
     {
       name: rv_core_ibex_recov_hw_err
@@ -16876,7 +17414,7 @@
       module_name: rv_core_ibex
       desc: rv_core_ibex recov_hw_err alert
       lpg_name: infra_lc_Main
-      lpg_idx: 17
+      lpg_idx: 19
     }
   ]
   outgoing_alert: {}
@@ -18430,6 +18968,58 @@
       outgoing: false
     }
     {
+      name: i3c0_hci
+      width: 1
+      type: interrupt
+      module_name: i3c0
+      desc: i3c0 hci interrupt
+      intr_type: IntrType.Status
+      default_val: false
+      incoming: false
+      domain: Main
+      plic: rv_plic
+      outgoing: false
+    }
+    {
+      name: i3c0_targ
+      width: 1
+      type: interrupt
+      module_name: i3c0
+      desc: i3c0 targ interrupt
+      intr_type: IntrType.Status
+      default_val: false
+      incoming: false
+      domain: Main
+      plic: rv_plic
+      outgoing: false
+    }
+    {
+      name: i3c1_hci
+      width: 1
+      type: interrupt
+      module_name: i3c1
+      desc: i3c1 hci interrupt
+      intr_type: IntrType.Status
+      default_val: false
+      incoming: false
+      domain: Main
+      plic: rv_plic
+      outgoing: false
+    }
+    {
+      name: i3c1_targ
+      width: 1
+      type: interrupt
+      module_name: i3c1
+      desc: i3c1 targ interrupt
+      intr_type: IntrType.Status
+      default_val: false
+      incoming: false
+      domain: Main
+      plic: rv_plic
+      outgoing: false
+    }
+    {
       name: pwrmgr_wakeup
       width: 1
       type: interrupt
@@ -18943,11 +19533,11 @@
     rv_plic:
     {
       domain: Main
-      count_tot: 190
+      count_tot: 194
       count_pd:
       {
         Aon: 7
-        Main: 182
+        Main: 186
       }
     }
   }
@@ -19841,6 +20431,8 @@
     spi_host0
     spi_host1
     usbdev
+    i3c0
+    i3c1
     pwrmgr
     rstmgr
     clkmgr
@@ -20026,213 +20618,222 @@
         alert_handler[20]: fatal_fault
       ]
     }
-    module_pwrmgr:
+    module_i3c0:
     {
-      tx_expr: alert_tx_o[0]
-      rx_expr: alert_rx_i[0]
+      tx_expr: alert_tx[21]
+      rx_expr: alert_rx[21]
       async_expr: alert_handler_reg_pkg::AsyncOn[21]
       comments:
       [
         alert_handler[21]: fatal_fault
       ]
     }
+    module_i3c1:
+    {
+      tx_expr: alert_tx[22]
+      rx_expr: alert_rx[22]
+      async_expr: alert_handler_reg_pkg::AsyncOn[22]
+      comments:
+      [
+        alert_handler[22]: fatal_fault
+      ]
+    }
+    module_pwrmgr:
+    {
+      tx_expr: alert_tx_o[0]
+      rx_expr: alert_rx_i[0]
+      async_expr: alert_handler_reg_pkg::AsyncOn[23]
+      comments:
+      [
+        alert_handler[23]: fatal_fault
+      ]
+    }
     module_rstmgr:
     {
       tx_expr: alert_tx_o[2:1]
       rx_expr: alert_rx_i[2:1]
-      async_expr: alert_handler_reg_pkg::AsyncOn[23:22]
+      async_expr: alert_handler_reg_pkg::AsyncOn[25:24]
       comments:
       [
-        alert_handler[22]: fatal_fault
-        alert_handler[23]: fatal_cnsty_fault
+        alert_handler[24]: fatal_fault
+        alert_handler[25]: fatal_cnsty_fault
       ]
     }
     module_clkmgr:
     {
       tx_expr: alert_tx_o[4:3]
       rx_expr: alert_rx_i[4:3]
-      async_expr: alert_handler_reg_pkg::AsyncOn[25:24]
+      async_expr: alert_handler_reg_pkg::AsyncOn[27:26]
       comments:
       [
-        alert_handler[24]: recov_fault
-        alert_handler[25]: fatal_fault
+        alert_handler[26]: recov_fault
+        alert_handler[27]: fatal_fault
       ]
     }
     module_sysrst_ctrl:
     {
       tx_expr: alert_tx_o[5]
       rx_expr: alert_rx_i[5]
-      async_expr: alert_handler_reg_pkg::AsyncOn[26]
-      comments:
-      [
-        alert_handler[26]: fatal_fault
-      ]
-    }
-    module_adc_ctrl:
-    {
-      tx_expr: alert_tx_o[6]
-      rx_expr: alert_rx_i[6]
-      async_expr: alert_handler_reg_pkg::AsyncOn[27]
-      comments:
-      [
-        alert_handler[27]: fatal_fault
-      ]
-    }
-    module_pinmux:
-    {
-      tx_expr: alert_tx[28]
-      rx_expr: alert_rx[28]
       async_expr: alert_handler_reg_pkg::AsyncOn[28]
       comments:
       [
         alert_handler[28]: fatal_fault
       ]
     }
-    module_aon_timer:
+    module_adc_ctrl:
     {
-      tx_expr: alert_tx_o[7]
-      rx_expr: alert_rx_i[7]
+      tx_expr: alert_tx_o[6]
+      rx_expr: alert_rx_i[6]
       async_expr: alert_handler_reg_pkg::AsyncOn[29]
       comments:
       [
         alert_handler[29]: fatal_fault
       ]
     }
+    module_pinmux:
+    {
+      tx_expr: alert_tx[30]
+      rx_expr: alert_rx[30]
+      async_expr: alert_handler_reg_pkg::AsyncOn[30]
+      comments:
+      [
+        alert_handler[30]: fatal_fault
+      ]
+    }
+    module_aon_timer:
+    {
+      tx_expr: alert_tx_o[7]
+      rx_expr: alert_rx_i[7]
+      async_expr: alert_handler_reg_pkg::AsyncOn[31]
+      comments:
+      [
+        alert_handler[31]: fatal_fault
+      ]
+    }
     module_sensor_ctrl:
     {
       tx_expr: alert_tx_o[9:8]
       rx_expr: alert_rx_i[9:8]
-      async_expr: alert_handler_reg_pkg::AsyncOn[31:30]
+      async_expr: alert_handler_reg_pkg::AsyncOn[33:32]
       comments:
       [
-        alert_handler[30]: recov_alert
-        alert_handler[31]: fatal_alert
+        alert_handler[32]: recov_alert
+        alert_handler[33]: fatal_alert
       ]
     }
     module_sram_ctrl_ret:
     {
       tx_expr: alert_tx_o[10]
       rx_expr: alert_rx_i[10]
-      async_expr: alert_handler_reg_pkg::AsyncOn[32]
+      async_expr: alert_handler_reg_pkg::AsyncOn[34]
       comments:
       [
-        alert_handler[32]: fatal_error
+        alert_handler[34]: fatal_error
       ]
     }
     module_flash_ctrl:
     {
-      tx_expr: alert_tx[37:33]
-      rx_expr: alert_rx[37:33]
-      async_expr: alert_handler_reg_pkg::AsyncOn[37:33]
+      tx_expr: alert_tx[39:35]
+      rx_expr: alert_rx[39:35]
+      async_expr: alert_handler_reg_pkg::AsyncOn[39:35]
       comments:
       [
-        alert_handler[33]: recov_err
-        alert_handler[34]: fatal_std_err
-        alert_handler[35]: fatal_err
-        alert_handler[36]: fatal_prim_flash_alert
-        alert_handler[37]: recov_prim_flash_alert
+        alert_handler[35]: recov_err
+        alert_handler[36]: fatal_std_err
+        alert_handler[37]: fatal_err
+        alert_handler[38]: fatal_prim_flash_alert
+        alert_handler[39]: recov_prim_flash_alert
       ]
     }
     module_rram_ctrl:
     {
-      tx_expr: alert_tx[42:38]
-      rx_expr: alert_rx[42:38]
-      async_expr: alert_handler_reg_pkg::AsyncOn[42:38]
+      tx_expr: alert_tx[44:40]
+      rx_expr: alert_rx[44:40]
+      async_expr: alert_handler_reg_pkg::AsyncOn[44:40]
       comments:
       [
-        alert_handler[38]: recov_err
-        alert_handler[39]: fatal_std_err
-        alert_handler[40]: fatal_err
-        alert_handler[41]: fatal_macro_err
-        alert_handler[42]: recov_macro_err
+        alert_handler[40]: recov_err
+        alert_handler[41]: fatal_std_err
+        alert_handler[42]: fatal_err
+        alert_handler[43]: fatal_macro_err
+        alert_handler[44]: recov_macro_err
       ]
     }
     module_rv_dm:
     {
-      tx_expr: alert_tx[43]
-      rx_expr: alert_rx[43]
-      async_expr: alert_handler_reg_pkg::AsyncOn[43]
+      tx_expr: alert_tx[45]
+      rx_expr: alert_rx[45]
+      async_expr: alert_handler_reg_pkg::AsyncOn[45]
       comments:
       [
-        alert_handler[43]: fatal_fault
+        alert_handler[45]: fatal_fault
       ]
     }
     module_rv_plic:
     {
-      tx_expr: alert_tx[44]
-      rx_expr: alert_rx[44]
-      async_expr: alert_handler_reg_pkg::AsyncOn[44]
+      tx_expr: alert_tx[46]
+      rx_expr: alert_rx[46]
+      async_expr: alert_handler_reg_pkg::AsyncOn[46]
       comments:
       [
-        alert_handler[44]: fatal_fault
+        alert_handler[46]: fatal_fault
       ]
     }
     module_aes:
     {
-      tx_expr: alert_tx[46:45]
-      rx_expr: alert_rx[46:45]
-      async_expr: alert_handler_reg_pkg::AsyncOn[46:45]
+      tx_expr: alert_tx[48:47]
+      rx_expr: alert_rx[48:47]
+      async_expr: alert_handler_reg_pkg::AsyncOn[48:47]
       comments:
       [
-        alert_handler[45]: recov_ctrl_update_err
-        alert_handler[46]: fatal_fault
+        alert_handler[47]: recov_ctrl_update_err
+        alert_handler[48]: fatal_fault
       ]
     }
     module_hmac:
     {
-      tx_expr: alert_tx[47]
-      rx_expr: alert_rx[47]
-      async_expr: alert_handler_reg_pkg::AsyncOn[47]
+      tx_expr: alert_tx[49]
+      rx_expr: alert_rx[49]
+      async_expr: alert_handler_reg_pkg::AsyncOn[49]
       comments:
       [
-        alert_handler[47]: fatal_fault
+        alert_handler[49]: fatal_fault
       ]
     }
     module_kmac:
-    {
-      tx_expr: alert_tx[49:48]
-      rx_expr: alert_rx[49:48]
-      async_expr: alert_handler_reg_pkg::AsyncOn[49:48]
-      comments:
-      [
-        alert_handler[48]: recov_operation_err
-        alert_handler[49]: fatal_fault_err
-      ]
-    }
-    module_otbn:
     {
       tx_expr: alert_tx[51:50]
       rx_expr: alert_rx[51:50]
       async_expr: alert_handler_reg_pkg::AsyncOn[51:50]
       comments:
       [
-        alert_handler[50]: fatal
-        alert_handler[51]: recov
+        alert_handler[50]: recov_operation_err
+        alert_handler[51]: fatal_fault_err
       ]
     }
-    module_keymgr_dpe:
+    module_otbn:
     {
       tx_expr: alert_tx[53:52]
       rx_expr: alert_rx[53:52]
       async_expr: alert_handler_reg_pkg::AsyncOn[53:52]
       comments:
       [
-        alert_handler[52]: recov_operation_err
-        alert_handler[53]: fatal_fault_err
+        alert_handler[52]: fatal
+        alert_handler[53]: recov
       ]
     }
-    module_csrng:
+    module_keymgr_dpe:
     {
       tx_expr: alert_tx[55:54]
       rx_expr: alert_rx[55:54]
       async_expr: alert_handler_reg_pkg::AsyncOn[55:54]
       comments:
       [
-        alert_handler[54]: recov_alert
-        alert_handler[55]: fatal_alert
+        alert_handler[54]: recov_operation_err
+        alert_handler[55]: fatal_fault_err
       ]
     }
-    module_entropy_src:
+    module_csrng:
     {
       tx_expr: alert_tx[57:56]
       rx_expr: alert_rx[57:56]
@@ -20243,7 +20844,7 @@
         alert_handler[57]: fatal_alert
       ]
     }
-    module_edn0:
+    module_entropy_src:
     {
       tx_expr: alert_tx[59:58]
       rx_expr: alert_rx[59:58]
@@ -20254,7 +20855,7 @@
         alert_handler[59]: fatal_alert
       ]
     }
-    module_edn1:
+    module_edn0:
     {
       tx_expr: alert_tx[61:60]
       rx_expr: alert_rx[61:60]
@@ -20265,47 +20866,58 @@
         alert_handler[61]: fatal_alert
       ]
     }
+    module_edn1:
+    {
+      tx_expr: alert_tx[63:62]
+      rx_expr: alert_rx[63:62]
+      async_expr: alert_handler_reg_pkg::AsyncOn[63:62]
+      comments:
+      [
+        alert_handler[62]: recov_alert
+        alert_handler[63]: fatal_alert
+      ]
+    }
     module_sram_ctrl_main:
-    {
-      tx_expr: alert_tx[62]
-      rx_expr: alert_rx[62]
-      async_expr: alert_handler_reg_pkg::AsyncOn[62]
-      comments:
-      [
-        alert_handler[62]: fatal_error
-      ]
-    }
-    module_sram_ctrl_sec:
-    {
-      tx_expr: alert_tx[63]
-      rx_expr: alert_rx[63]
-      async_expr: alert_handler_reg_pkg::AsyncOn[63]
-      comments:
-      [
-        alert_handler[63]: fatal_error
-      ]
-    }
-    module_rom_ctrl:
     {
       tx_expr: alert_tx[64]
       rx_expr: alert_rx[64]
       async_expr: alert_handler_reg_pkg::AsyncOn[64]
       comments:
       [
-        alert_handler[64]: fatal
+        alert_handler[64]: fatal_error
+      ]
+    }
+    module_sram_ctrl_sec:
+    {
+      tx_expr: alert_tx[65]
+      rx_expr: alert_rx[65]
+      async_expr: alert_handler_reg_pkg::AsyncOn[65]
+      comments:
+      [
+        alert_handler[65]: fatal_error
+      ]
+    }
+    module_rom_ctrl:
+    {
+      tx_expr: alert_tx[66]
+      rx_expr: alert_rx[66]
+      async_expr: alert_handler_reg_pkg::AsyncOn[66]
+      comments:
+      [
+        alert_handler[66]: fatal
       ]
     }
     module_rv_core_ibex:
     {
-      tx_expr: alert_tx[68:65]
-      rx_expr: alert_rx[68:65]
-      async_expr: alert_handler_reg_pkg::AsyncOn[68:65]
+      tx_expr: alert_tx[70:67]
+      rx_expr: alert_rx[70:67]
+      async_expr: alert_handler_reg_pkg::AsyncOn[70:67]
       comments:
       [
-        alert_handler[65]: fatal_sw_err
-        alert_handler[66]: recov_sw_err
-        alert_handler[67]: fatal_hw_err
-        alert_handler[68]: recov_hw_err
+        alert_handler[67]: fatal_sw_err
+        alert_handler[68]: recov_sw_err
+        alert_handler[69]: fatal_hw_err
+        alert_handler[70]: recov_hw_err
       ]
     }
   }
@@ -20314,65 +20926,65 @@
     alert_handler:
     {
       domain: Main
-      count_tot: 69
+      count_tot: 71
       count_pd:
       {
         Aon: 11
-        Main: 58
+        Main: 60
       }
       connect_pd:
       {
-        21:
+        23:
         {
           src_pd: Aon
           idx: 0
         }
-        22:
+        24:
         {
           src_pd: Aon
           idx: 1
         }
-        23:
+        25:
         {
           src_pd: Aon
           idx: 2
         }
-        24:
+        26:
         {
           src_pd: Aon
           idx: 3
         }
-        25:
+        27:
         {
           src_pd: Aon
           idx: 4
         }
-        26:
+        28:
         {
           src_pd: Aon
           idx: 5
         }
-        27:
+        29:
         {
           src_pd: Aon
           idx: 6
         }
-        29:
+        31:
         {
           src_pd: Aon
           idx: 7
         }
-        30:
+        32:
         {
           src_pd: Aon
           idx: 8
         }
-        31:
+        33:
         {
           src_pd: Aon
           idx: 9
         }
-        32:
+        34:
         {
           src_pd: Aon
           idx: 10
@@ -20397,6 +21009,8 @@
     spi_host0
     spi_host1
     usbdev
+    i3c0
+    i3c1
     pwrmgr
     sysrst_ctrl
     adc_ctrl
@@ -20669,6 +21283,58 @@
       reset_connection:
       {
         name: usb
+        domain: Main
+      }
+    }
+    {
+      name: peri_i3c0_Main
+      clock_group:
+      {
+        name: peri
+        src: top
+        sw_cg: yes
+        unique: no
+        clocks:
+        {
+          clk_io_div4_peri: io_div4
+          clk_io_div2_peri: io_div2
+          clk_io_peri: io
+          clk_usb_peri: usb
+          clk_aon_peri: aon
+        }
+      }
+      clock_connection: clkmgr_clocks_i.clk_io_peri
+      unmanaged_clock: false
+      unmanaged_reset: false
+      reset_connection:
+      {
+        name: i3c0
+        domain: Main
+      }
+    }
+    {
+      name: peri_i3c1_Main
+      clock_group:
+      {
+        name: peri
+        src: top
+        sw_cg: yes
+        unique: no
+        clocks:
+        {
+          clk_io_div4_peri: io_div4
+          clk_io_div2_peri: io_div2
+          clk_io_peri: io
+          clk_usb_peri: usb
+          clk_aon_peri: aon
+        }
+      }
+      clock_connection: clkmgr_clocks_i.clk_io_peri
+      unmanaged_clock: false
+      unmanaged_reset: false
+      reset_connection:
+      {
+        name: i3c1
         domain: Main
       }
     }
@@ -22964,6 +23630,222 @@
         end_idx: -1
         top_type: one-to-one
         top_signame: usbdev_tl
+        index: -1
+      }
+      {
+        name: rstdet_enable
+        struct: logic
+        type: uni
+        act: req
+        width: 1
+        inst_name: i3c0
+        index: -1
+      }
+      {
+        name: rstdet_req
+        struct: i3c_rstdet_req
+        package: i3c_pkg
+        type: uni
+        act: req
+        width: 1
+        inst_name: i3c0
+        index: -1
+      }
+      {
+        name: rstdet_rsp
+        struct: i3c_rstdet_rsp
+        package: i3c_pkg
+        type: uni
+        act: rcv
+        width: 1
+        inst_name: i3c0
+        index: -1
+      }
+      {
+        name: mbist_en
+        struct: logic
+        type: uni
+        act: rcv
+        width: 1
+        inst_name: i3c0
+        index: -1
+      }
+      {
+        name: ram_cfg
+        struct: ram_1p_cfg
+        package: prim_ram_1p_pkg
+        type: req_rsp
+        act: rsp
+        width: 1
+        inst_name: i3c0
+        index: -1
+      }
+      {
+        name: dat_cfg
+        struct: ram_1p_cfg
+        package: prim_ram_1p_pkg
+        type: req_rsp
+        act: rsp
+        width: 1
+        inst_name: i3c0
+        index: -1
+      }
+      {
+        name: dct_cfg
+        struct: ram_1p_cfg
+        package: prim_ram_1p_pkg
+        type: req_rsp
+        act: rsp
+        width: 1
+        inst_name: i3c0
+        index: -1
+      }
+      {
+        name: racl_policies
+        desc:
+          '''
+          Incoming RACL policy vector from a racl_ctrl instance.
+          The policy selection vector (parameter) selects the policy for each register.
+          '''
+        struct: racl_policy_vec
+        package: top_racl_pkg
+        type: uni
+        act: rcv
+        width: 1
+        inst_name: i3c0
+        index: -1
+      }
+      {
+        name: racl_error
+        desc: RACL error log information of this module.
+        struct: racl_error_log
+        package: top_racl_pkg
+        type: uni
+        act: req
+        width: 1
+        inst_name: i3c0
+        index: -1
+      }
+      {
+        name: tl
+        struct: tl
+        package: tlul_pkg
+        type: req_rsp
+        act: rsp
+        width: 1
+        inst_name: i3c0
+        default: ""
+        end_idx: -1
+        top_type: one-to-one
+        top_signame: i3c0_tl
+        index: -1
+      }
+      {
+        name: rstdet_enable
+        struct: logic
+        type: uni
+        act: req
+        width: 1
+        inst_name: i3c1
+        index: -1
+      }
+      {
+        name: rstdet_req
+        struct: i3c_rstdet_req
+        package: i3c_pkg
+        type: uni
+        act: req
+        width: 1
+        inst_name: i3c1
+        index: -1
+      }
+      {
+        name: rstdet_rsp
+        struct: i3c_rstdet_rsp
+        package: i3c_pkg
+        type: uni
+        act: rcv
+        width: 1
+        inst_name: i3c1
+        index: -1
+      }
+      {
+        name: mbist_en
+        struct: logic
+        type: uni
+        act: rcv
+        width: 1
+        inst_name: i3c1
+        index: -1
+      }
+      {
+        name: ram_cfg
+        struct: ram_1p_cfg
+        package: prim_ram_1p_pkg
+        type: req_rsp
+        act: rsp
+        width: 1
+        inst_name: i3c1
+        index: -1
+      }
+      {
+        name: dat_cfg
+        struct: ram_1p_cfg
+        package: prim_ram_1p_pkg
+        type: req_rsp
+        act: rsp
+        width: 1
+        inst_name: i3c1
+        index: -1
+      }
+      {
+        name: dct_cfg
+        struct: ram_1p_cfg
+        package: prim_ram_1p_pkg
+        type: req_rsp
+        act: rsp
+        width: 1
+        inst_name: i3c1
+        index: -1
+      }
+      {
+        name: racl_policies
+        desc:
+          '''
+          Incoming RACL policy vector from a racl_ctrl instance.
+          The policy selection vector (parameter) selects the policy for each register.
+          '''
+        struct: racl_policy_vec
+        package: top_racl_pkg
+        type: uni
+        act: rcv
+        width: 1
+        inst_name: i3c1
+        index: -1
+      }
+      {
+        name: racl_error
+        desc: RACL error log information of this module.
+        struct: racl_error_log
+        package: top_racl_pkg
+        type: uni
+        act: req
+        width: 1
+        inst_name: i3c1
+        index: -1
+      }
+      {
+        name: tl
+        struct: tl
+        package: tlul_pkg
+        type: req_rsp
+        act: rsp
+        width: 1
+        inst_name: i3c1
+        default: ""
+        end_idx: -1
+        top_type: one-to-one
+        top_signame: i3c1_tl
         index: -1
       }
       {
@@ -27304,6 +28186,32 @@
         default: ""
         domain: Main
         top_signame: usbdev_tl
+        index: -1
+      }
+      {
+        name: tl_i3c0
+        struct: tl
+        package: tlul_pkg
+        type: req_rsp
+        act: req
+        inst_name: main
+        width: 1
+        default: ""
+        domain: Main
+        top_signame: i3c0_tl
+        index: -1
+      }
+      {
+        name: tl_i3c1
+        struct: tl
+        package: tlul_pkg
+        type: req_rsp
+        act: req
+        inst_name: main
+        width: 1
+        default: ""
+        domain: Main
+        top_signame: i3c1_tl
         index: -1
       }
       {
@@ -33743,6 +34651,54 @@
         struct: tl_d2h
         domain: Main
         signame: usbdev_tl_rsp
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: rsp
+        default: ""
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Main
+        signame: i3c0_tl_req
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: req
+        default: tlul_pkg::TL_H2D_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Main
+        signame: i3c0_tl_rsp
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: rsp
+        default: ""
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Main
+        signame: i3c1_tl_req
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: req
+        default: tlul_pkg::TL_H2D_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Main
+        signame: i3c1_tl_rsp
         width: 1
         type: req_rsp
         end_idx: -1

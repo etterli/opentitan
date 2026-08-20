@@ -16,7 +16,7 @@
  * `top_earlgrey_alert_peripheral_t`.
  */
 const top_earlgrey_alert_peripheral_t
-    top_earlgrey_alert_for_peripheral[69] = {
+    top_earlgrey_alert_for_peripheral[71] = {
   [kTopEarlgreyAlertIdUart0FatalFault] = kTopEarlgreyAlertPeripheralUart0,
   [kTopEarlgreyAlertIdUart1FatalFault] = kTopEarlgreyAlertPeripheralUart1,
   [kTopEarlgreyAlertIdUart2FatalFault] = kTopEarlgreyAlertPeripheralUart2,
@@ -38,6 +38,8 @@ const top_earlgrey_alert_peripheral_t
   [kTopEarlgreyAlertIdSpiHost0FatalFault] = kTopEarlgreyAlertPeripheralSpiHost0,
   [kTopEarlgreyAlertIdSpiHost1FatalFault] = kTopEarlgreyAlertPeripheralSpiHost1,
   [kTopEarlgreyAlertIdUsbdevFatalFault] = kTopEarlgreyAlertPeripheralUsbdev,
+  [kTopEarlgreyAlertIdI3c0FatalFault] = kTopEarlgreyAlertPeripheralI3c0,
+  [kTopEarlgreyAlertIdI3c1FatalFault] = kTopEarlgreyAlertPeripheralI3c1,
   [kTopEarlgreyAlertIdPwrmgrFatalFault] = kTopEarlgreyAlertPeripheralPwrmgr,
   [kTopEarlgreyAlertIdRstmgrFatalFault] = kTopEarlgreyAlertPeripheralRstmgr,
   [kTopEarlgreyAlertIdRstmgrFatalCnstyFault] = kTopEarlgreyAlertPeripheralRstmgr,
@@ -95,7 +97,7 @@ const top_earlgrey_alert_peripheral_t
  * `top_earlgrey_plic_peripheral_t`.
  */
 const top_earlgrey_plic_peripheral_t
-    top_earlgrey_plic_interrupt_for_peripheral[190] = {
+    top_earlgrey_plic_interrupt_for_peripheral[194] = {
   [kTopEarlgreyPlicIrqIdNone] = kTopEarlgreyPlicPeripheralUnknown,
   [kTopEarlgreyPlicIrqIdUart0TxWatermark] = kTopEarlgreyPlicPeripheralUart0,
   [kTopEarlgreyPlicIrqIdUart0RxWatermark] = kTopEarlgreyPlicPeripheralUart0,
@@ -247,6 +249,10 @@ const top_earlgrey_plic_peripheral_t
   [kTopEarlgreyPlicIrqIdUsbdevPowered] = kTopEarlgreyPlicPeripheralUsbdev,
   [kTopEarlgreyPlicIrqIdUsbdevLinkOutErr] = kTopEarlgreyPlicPeripheralUsbdev,
   [kTopEarlgreyPlicIrqIdUsbdevAvSetupEmpty] = kTopEarlgreyPlicPeripheralUsbdev,
+  [kTopEarlgreyPlicIrqIdI3c0Hci] = kTopEarlgreyPlicPeripheralI3c0,
+  [kTopEarlgreyPlicIrqIdI3c0Targ] = kTopEarlgreyPlicPeripheralI3c0,
+  [kTopEarlgreyPlicIrqIdI3c1Hci] = kTopEarlgreyPlicPeripheralI3c1,
+  [kTopEarlgreyPlicIrqIdI3c1Targ] = kTopEarlgreyPlicPeripheralI3c1,
   [kTopEarlgreyPlicIrqIdPwrmgrWakeup] = kTopEarlgreyPlicPeripheralPwrmgr,
   [kTopEarlgreyPlicIrqIdSysrstCtrlEventDetected] = kTopEarlgreyPlicPeripheralSysrstCtrl,
   [kTopEarlgreyPlicIrqIdAdcCtrlMatchPending] = kTopEarlgreyPlicPeripheralAdcCtrl,

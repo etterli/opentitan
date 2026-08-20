@@ -74,6 +74,18 @@ module xbar_main_bind;
     .h2d    (tl_usbdev_o),
     .d2h    (tl_usbdev_i)
   );
+  bind xbar_main tlul_assert #(.EndpointType("Host")) tlul_assert_device_i3c0 (
+    .clk_i  (clk_i3c0_i),
+    .rst_ni (rst_i3c0_ni),
+    .h2d    (tl_i3c0_o),
+    .d2h    (tl_i3c0_i)
+  );
+  bind xbar_main tlul_assert #(.EndpointType("Host")) tlul_assert_device_i3c1 (
+    .clk_i  (clk_i3c1_i),
+    .rst_ni (rst_i3c1_ni),
+    .h2d    (tl_i3c1_o),
+    .d2h    (tl_i3c1_i)
+  );
   bind xbar_main tlul_assert #(.EndpointType("Host")) tlul_assert_device_flash_ctrl__core (
     .clk_i  (clk_main_i),
     .rst_ni (rst_main_ni),

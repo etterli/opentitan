@@ -30,8 +30,10 @@ The main address space, shared between the CPU and DM
 | spi_host0      | default     | `0x40300000`   | `0x40`         | `0x10`         | spi_host0                     |
 | spi_host1      | default     | `0x40310000`   | `0x40`         | `0x10`         | spi_host1                     |
 | usbdev         | default     | `0x40320000`   | `0x1000`       | `0x400`        | usbdev                        |
+| i3c0           | default     | `0x40330000`   | `0x2000`       | `0x800`        | i3c0                          |
+| i3c1           | default     | `0x40340000`   | `0x2000`       | `0x800`        | i3c1                          |
 | pwrmgr         | default     | `0x40400000`   | `0x80`         | `0x20`         | pwrmgr                        |
-| rstmgr         | default     | `0x40410000`   | `0x80`         | `0x20`         | rstmgr                        |
+| rstmgr         | default     | `0x40410000`   | `0x100`        | `0x40`         | rstmgr                        |
 | clkmgr         | default     | `0x40420000`   | `0x80`         | `0x20`         | clkmgr                        |
 | sysrst_ctrl    | default     | `0x40430000`   | `0x100`        | `0x40`         | sysrst_ctrl                   |
 | adc_ctrl       | default     | `0x40440000`   | `0x80`         | `0x20`         | adc_ctrl                      |

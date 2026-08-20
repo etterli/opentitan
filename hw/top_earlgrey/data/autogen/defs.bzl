@@ -20,6 +20,7 @@ load("//hw/top_earlgrey/ip_autogen/flash_ctrl:defs.bzl", "FLASH_CTRL")
 load("//hw/top_earlgrey/ip_autogen/gpio:defs.bzl", "GPIO")
 load("//hw/ip/hmac:defs.bzl", "HMAC")
 load("//hw/ip/i2c:defs.bzl", "I2C")
+load("//hw/ip/i3c:defs.bzl", "I3C")
 load("//hw/ip/keymgr_dpe:defs.bzl", "KEYMGR_DPE")
 load("//hw/ip/kmac:defs.bzl", "KMAC")
 load("//hw/ip/lc_ctrl:defs.bzl", "LC_CTRL")
@@ -57,6 +58,7 @@ EARLGREY_IPS = [
     GPIO,
     HMAC,
     I2C,
+    I3C,
     KEYMGR_DPE,
     KMAC,
     LC_CTRL,
@@ -103,6 +105,8 @@ EARLGREY_ALERTS = [
     "spi_host0_fatal_fault",
     "spi_host1_fatal_fault",
     "usbdev_fatal_fault",
+    "i3c0_fatal_fault",
+    "i3c1_fatal_fault",
     "pwrmgr_fatal_fault",
     "rstmgr_fatal_fault",
     "rstmgr_fatal_cnsty_fault",

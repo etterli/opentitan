@@ -38,6 +38,8 @@
     { protocol: "tlul", direction: "device", racl_support: true }
   ],
   available_inout_list: [
+    { name: "scl", desc: "Serial clock bit"}
+    { name: "sda", desc: "Serial data bit", width: "1"} // Keep width in sync with NumSDALanes.
   ],
   available_input_list: [
   ],
@@ -65,30 +67,6 @@
     }
   ],
   inter_signal_list: [
-    { struct:  "i3c_ctrl_bus_drv",
-      package: "i3c_io_pkg",
-      type:    "uni",
-      name:    "cio_ctrl_bus_drv",
-      act:     "req"
-    }
-    { struct:  "i3c_ctrl_bus_obs",
-      package: "i3c_io_pkg",
-      type:    "uni",
-      name:    "cio_ctrl_bus_obs",
-      act:     "rcv"
-    }
-    { struct:  "i3c_targ_bus_drv",
-      package: "i3c_io_pkg",
-      type:    "uni",
-      name:    "cio_targ_bus_drv",
-      act:     "req"
-    }
-    { struct:  "i3c_targ_bus_obs",
-      package: "i3c_io_pkg",
-      type:    "uni",
-      name:    "cio_targ_bus_obs",
-      act:     "rcv"
-    }
     { struct:  "logic",
       package: "",
       type:    "uni",

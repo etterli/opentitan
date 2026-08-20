@@ -36,6 +36,12 @@ module top_earlgrey #(
   // parameters for usbdev
   parameter bit UsbdevStub = 0,
   parameter int UsbdevRcvrWakeTimeUs = 100,
+  // parameters for i3c0
+  parameter int unsigned I3c0ClkFreq = 96000000,
+  parameter bit I3c0HalfCycleScl = 1,
+  // parameters for i3c1
+  parameter int unsigned I3c1ClkFreq = 96000000,
+  parameter bit I3c1HalfCycleScl = 1,
   // parameters for rstmgr
   parameter bit SecRstmgrCheck = 1'b1,
   parameter int SecRstmgrMaxSyncDelay = 2,
@@ -349,6 +355,10 @@ module top_earlgrey #(
   .AlertHandlerEscPingCountWidth(AlertHandlerEscPingCountWidth),
   .UsbdevStub(UsbdevStub),
   .UsbdevRcvrWakeTimeUs(UsbdevRcvrWakeTimeUs),
+  .I3c0ClkFreq(I3c0ClkFreq),
+  .I3c0HalfCycleScl(I3c0HalfCycleScl),
+  .I3c1ClkFreq(I3c1ClkFreq),
+  .I3c1HalfCycleScl(I3c1HalfCycleScl),
   .SecPinmuxVolatileRawUnlockEn(SecPinmuxVolatileRawUnlockEn),
   .PinmuxTargetCfg(PinmuxTargetCfg),
   .SecFlashCtrlScrambleEn(SecFlashCtrlScrambleEn),
