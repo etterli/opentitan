@@ -71,10 +71,6 @@ module i3c
   output logic cio_sda_o,
   output logic cio_sda_en_o,
 
-  // Pull-up enables for open drain intervals.
-  output logic                              cio_ctrl_scl_pu_en_o,
-  output logic                              cio_ctrl_sda_pu_en_o,
-
   // High-keeper enables.
   output logic                              cio_scl_hk_o,
   output logic                              cio_scl_hk_en_o,
@@ -491,10 +487,6 @@ module i3c
     // I3C Controller I/O signaling.
     .ctrl_bus_drv_o  (cio_ctrl_bus_drv),
     .ctrl_bus_obs_i  (cio_ctrl_bus_obs),
-
-    // Pull-up enables for open drain intervals.
-    .ctrl_scl_pu_en_o(cio_ctrl_scl_pu_en_o),
-    .ctrl_sda_pu_en_o(cio_ctrl_sda_pu_en_o),
 
     // High-keeper enables.
     .scl_hk_en_o     (cio_scl_hk_en_o),

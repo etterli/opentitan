@@ -92,10 +92,6 @@ module i3c_core
   output i3c_ctrl_bus_drv_t ctrl_bus_drv_o,
   input  i3c_ctrl_bus_obs_t ctrl_bus_obs_i,
 
-  // Pull-up enables.
-  output                    ctrl_scl_pu_en_o,
-  output                    ctrl_sda_pu_en_o,
-
   // High-keeper enables.
   output                    scl_hk_en_o,
   output                    sda_hk_en_o,
@@ -1434,10 +1430,6 @@ module i3c_core
     // I3C I/O signaling.
     .sda_i           (ctrl_sda_buf),
     .bus_drv_o       (ctrl_bus_drv_o),
-
-    // Pull-up enables.
-    .scl_pu_en_o     (ctrl_scl_pu_en_o),
-    .sda_pu_en_o     (ctrl_sda_pu_en_o),
 
     // Debug status information.
     .bcl_tfr_status_o({hw2reg_o.present_state_debug.bcl_tfr_status.d})

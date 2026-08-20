@@ -42,8 +42,6 @@
   available_input_list: [
   ],
   available_output_list: [
-    { name: "ctrl_scl_pu_en", desc: "I3C Controller clock Pullup enable output" }
-    { name: "ctrl_sda_pu_en", desc: "I3C Controller data Pullup enable output" }
     { name: "scl_hk", desc: "I3C Controller clock High-keeper enable output" }
     { name: "sda_hk", desc: "I3C Controller data High-keeper enable output" }
   ],
