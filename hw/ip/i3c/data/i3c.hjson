@@ -154,6 +154,24 @@
   scan: "true",       // Enable `scanmode_i` port
   scan_reset: "true", // Enable `scan_rst_ni` port
   param_list: [
+    { name:    "ClkFreq",
+      type:    "int unsigned",
+      default: "96000000",
+      desc:    '''Frequency of the main clock, in Hz.
+               Used to calculate default timer values for I3C timing.
+               ''',
+      local:   "false",
+      expose:  "true"
+    },
+    { name:    "HalfCycleScl",
+      type:    "bit",
+      default: "1", // Required for 96 MHz
+      desc:    '''If 1 include the half-cycle SCL extension for additional IP clock frequency support.
+               Required for clock frequencies that are not an integer multiple of four times the desired SCL frequency.
+               ''',
+      local:   "false",
+      expose:  "true"
+    },
     // Device Address Table size in bus words; each entry consumes 8 bytes of address space.
     { name:    "NumDATWords",
       type:    "int unsigned",
