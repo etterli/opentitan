@@ -52,11 +52,11 @@ module hmac
   tlul_pkg::tl_h2d_t  tl_win_h2d;
   tlul_pkg::tl_d2h_t  tl_win_d2h;
 
-  logic [1023:0] secret_key, secret_key_d;
+  logic [1023:0] secret_key_reg, secret_key_reg_d, secret_key;
 
   // Logic will support key length <= block size
   // Will default to key length = block size, if key length > block size or unsupported value
-  key_length_e key_length_supplied, key_length;
+  key_length_e key_length_supplied, key_length_reg, key_length;
 
   logic        wipe_secret;
   logic [31:0] wipe_v;
@@ -213,27 +213,40 @@ module hmac
 
   // update secret key
   always_comb begin : update_secret_key
-    secret_key_d = secret_key;
+    secret_key_reg_d = secret_key_reg;
     if (wipe_secret) begin
-      secret_key_d = {32{wipe_v}};
+      secret_key_reg_d = {32{wipe_v}};
     end else if (!cfg_block) begin
       // Allow updating secret key only when the engine is in Idle.
       for (int i = 0; i < 32; i++) begin
         if (reg2hw.key[31-i].qe) begin
           // swap byte endianness per secret key word if key_swap = 1
-          secret_key_d[32*i+:32] = conv_endian32(reg2hw.key[31-i].q, key_swap);
+          secret_key_reg_d[32*i+:32] = conv_endian32(reg2hw.key[31-i].q, key_swap);
         end
       end
     end
   end
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) secret_key <= '0;
-    else         secret_key <= secret_key_d;
+    if (!rst_ni) secret_key_reg <= '0;
+    else         secret_key_reg <= secret_key_reg_d;
   end
 
   for (genvar i = 0; i < 32; i++) begin : gen_key
     assign hw2reg.key[31-i].d      = '0;
+  end
+
+  // Select between register supplied key and sideloaded key
+  always_comb begin
+    // Per default use key supplied by registers as it is less secret.
+    secret_key = secret_key_reg;
+    key_length = key_length_reg;
+    if (use_sideload_key) begin
+      // The keymgr_dpe always provides the key shared. Unmask it here.
+      secret_key = secret_key_sideload_i[0] ^ secret_key_sideload_i[1];
+      // TODO: update also the key length value.
+      key_length = Key_512;
+    end
   end
 
   // Retain the previous digest in CSRs until HMAC is actually started with a valid configuration
@@ -319,18 +332,18 @@ module hmac
 
   assign key_length_supplied  = key_length_e'(cfg_reg.key_length.q);
   always_comb begin : cast_key_length
-    key_length = Key_None;
+    key_length_reg = Key_None;
 
     unique case (key_length_supplied)
-      Key_128:  key_length = Key_128;
-      Key_256:  key_length = Key_256;
-      Key_384:  key_length = Key_384;
-      Key_512:  key_length = Key_512;
-      Key_1024: key_length = Key_1024;
+      Key_128:  key_length_reg = Key_128;
+      Key_256:  key_length_reg = Key_256;
+      Key_384:  key_length_reg = Key_384;
+      Key_512:  key_length_reg = Key_512;
+      Key_1024: key_length_reg = Key_1024;
       // unsupported key length values are mapped to Key_None
       // if HMAC (not SHA-2) is triggered to start with this key length, it is blocked
       // and an error is signalled to SW
-      default:  key_length = Key_None;
+      default:  key_length_reg = Key_None;
     endcase
   end
 
@@ -341,7 +354,7 @@ module hmac
   assign hw2reg.cfg.hmac_en.d     = cfg_reg.hmac_en.q;
   assign hw2reg.cfg.sha_en.d      = cfg_reg.sha_en.q;
   assign hw2reg.cfg.digest_size.d = digest_mode_e'(digest_size);
-  assign hw2reg.cfg.key_length.d  = key_length_e'(key_length);
+  assign hw2reg.cfg.key_length.d  = key_length_e'(key_length_reg);
   assign hw2reg.cfg.endian_swap.d = cfg_reg.endian_swap.q;
   assign hw2reg.cfg.digest_swap.d = cfg_reg.digest_swap.q;
   assign hw2reg.cfg.key_swap.d    = cfg_reg.key_swap.q;
@@ -702,7 +715,7 @@ module hmac
     .secret_key_i  (secret_key),
     .hmac_en_i     (hmac_en),
     .digest_size_i (digest_size),
-    .key_length_i  (key_length),
+    .key_length_i  (key_length_reg), // what if it is Key_None? Update comment on 58. should not use default block length.
 
     .reg_hash_start_i    (hash_start),
     .reg_hash_stop_i     (reg_hash_stop),
@@ -817,9 +830,9 @@ module hmac
   // Invalid/unconfigured HMAC/SHA-2: not configured/invalid digest size or
   // not configured/invalid key length for HMAC mode or
   // key_length = 1024-bit for digest_size = SHA2_256 (max 512-bit is supported for SHA-2 256)
-  assign invalid_config = ((digest_size == SHA2_None)            |
-                           ((key_length == Key_None) && hmac_en) |
-                           ((key_length == Key_1024) && (digest_size == SHA2_256) && hmac_en));
+  assign invalid_config = ((digest_size == SHA2_None)                |
+                           ((key_length_reg == Key_None) && hmac_en) | // TODO: not relevant if sideload key is used? Requires probably an assertion check.
+                           ((key_length_reg == Key_1024) && (digest_size == SHA2_256) && hmac_en)); // TODO: not relevant if sideload key is used?
 
   // invalid_config at reg_hash_start or reg_hash_continue will signal an error to the SW
   assign invalid_config_atstart = (reg_hash_start || reg_hash_continue) & invalid_config;
@@ -951,7 +964,7 @@ module hmac
   // When wipe_secret is high, sensitive internal variables are cleared by extending the wipe
   // value specifed in the register
   `ASSERT(WipeSecretKeyAssert,
-          wipe_secret |=> (secret_key == {($bits(secret_key)/$bits(wipe_v)){$past(wipe_v)}}))
+          wipe_secret |=> (secret_key_reg == {($bits(secret_key_reg)/$bits(wipe_v)){$past(wipe_v)}}))
 
   // All outputs should be known value after reset
   `ASSERT_KNOWN(IntrHmacDoneOKnown, intr_hmac_done_o)
