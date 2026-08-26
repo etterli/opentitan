@@ -21,16 +21,10 @@ otbn_library(
 )
 
 otbn_library(
-    name = "xof",
-    srcs = [
-        "xof.s",
-    ],
-)
-
-otbn_library(
     name = "mldsa87_sample",
     srcs = [
         "mldsa87_sample.s",
+        "//sw/otbn/crypto:xof.s",
     ],
 )
 
