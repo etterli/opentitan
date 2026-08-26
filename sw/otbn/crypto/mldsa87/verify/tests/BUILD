@@ -6,6 +6,7 @@ load("//rules:otbn.bzl", "otbn_sim_test")
 
 package(default_visibility = ["//visibility:public"])
 
+# do not sort
 srcs = [
     "//sw/otbn/crypto/mldsa87:mldsa87_utils.s",
     "//sw/otbn/crypto/mldsa87:mldsa87_arith.s",
@@ -57,12 +58,12 @@ mldsa87_nist_tests = [
 [
     otbn_sim_test(
         name = test,
+        # This is a top-level OTBN application test. Keep the memory file last
+        # so that the stack ends up at the end of the .data section.
         srcs = srcs + [
-            # This is a top-level OTBN application test.
-            # Make sure the memory file is placed after all the sources.
+            "mldsa87_verify_test.s",
             "//sw/otbn/crypto/mldsa87/verify:mldsa87_verify.s",
             "//sw/otbn/crypto/mldsa87/verify:mldsa87_verify_mem.s",
-            "mldsa87_verify_test.s",
         ],
         testcase = test + ".hjson",
     )

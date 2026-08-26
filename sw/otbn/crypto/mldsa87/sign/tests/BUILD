@@ -6,6 +6,7 @@ load("//rules:otbn.bzl", "otbn_sim_test")
 
 package(default_visibility = ["//visibility:public"])
 
+# do not sort
 srcs = [
     "//sw/otbn/crypto/mldsa87:mldsa87_utils.s",
     "//sw/otbn/crypto/mldsa87:mldsa87_arith.s",

@@ -7,6 +7,7 @@ load("@rules_python//python:defs.bzl", "py_binary")
 
 package(default_visibility = ["//visibility:public"])
 
+# do not sort
 srcs = [
     "//sw/otbn/crypto/mldsa87:mldsa87_utils.s",
     "//sw/otbn/crypto/mldsa87:mldsa87_arith.s",
@@ -14,10 +15,10 @@ srcs = [
     "//sw/otbn/crypto/mldsa87:mldsa87_sample.s",
     "//sw/otbn/crypto/mldsa87:mldsa87_encoding.s",
     "//sw/otbn/crypto/mldsa87:mldsa87_decoding.s",
-    "//sw/otbn/crypto/mldsa87:mldsa87_gadgets.s",
-    "//sw/otbn/crypto:mai_gadgets.s",
     "//sw/otbn/crypto:xof.s",
     "//sw/otbn/crypto/mldsa87:mldsa87_expand.s",
+    "//sw/otbn/crypto:mai_gadgets.s",
+    "//sw/otbn/crypto/mldsa87:mldsa87_gadgets.s",
 ]
 
 unit_tests = [
