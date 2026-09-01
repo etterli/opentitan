@@ -15,8 +15,8 @@ from reggen.countermeasure import CounterMeasure
 from reggen.feature import Feature
 from reggen.inter_signal import InterSignal
 from reggen.interrupt import Interrupt
-from reggen.lib import (check_bool, check_int, check_keys, check_list,
-                        check_name)
+from reggen.lib import (BOTH, PARTITIONS, PRIMARY, SECONDARY, check_bool,
+                        check_int, check_keys, check_list, check_name)
 from reggen.memory import Memory
 from reggen.params import LocalParam, ReggenParams
 from reggen.reg_block import RegBlock
@@ -171,6 +171,41 @@ OPTIONAL_REVISIONS_FIELDS = {
     'commit_id': ['s', "commit ID of last stage sign-off"],
     'notes': ['s', "random notes"],
 }
+
+
+def _declared_partitions(clocking: Clocking, alerts: Sequence[Alert],
+                         interrupts: Sequence[Interrupt],
+                         inter_signals: Sequence[InterSignal],
+                         params: ReggenParams,
+                         signals: Sequence[Signal]) -> dict[str, list[str]]:
+    '''Map each partition to what the block assigns to it.
+
+    A partition exists precisely because something is declared in it, so this
+    is what defines the partitions of an IP block. The values name the
+    offending declarations, to make validation errors actionable.
+    '''
+    declared: dict[str, list[str]] = {}
+
+    def note(partition: str, desc: str) -> None:
+        # 'both' (parameters only) emits into either partition module header
+        # without implying that a secondary partition exists.
+        if partition != BOTH:
+            declared.setdefault(partition, []).append(desc)
+
+    for item in clocking.items:
+        note(item.partition, f'clock {item.clock}')
+    for alert in alerts:
+        note(alert.partition, f'alert {alert.name}')
+    for interrupt in interrupts:
+        note(interrupt.partition, f'interrupt {interrupt.name}')
+    for inter_signal in inter_signals:
+        note(inter_signal.partition, f'inter-signal {inter_signal.name}')
+    for param in params.by_name.values():
+        note(param.partition, f'parameter {param.name}')
+    for signal in signals:
+        note(signal.partition, f'signal {signal.name}')
+
+    return declared
 
 
 @dataclass
@@ -365,11 +400,6 @@ class IpBlock:
         is_split_ip = check_bool(rd.get('is_split_ip', False),
                                  'is_split_ip field of ' + what)
 
-        if clocking.has_partition('secondary') and not is_split_ip:
-            raise ValueError('The clocking field of {} declares a secondary '
-                             'partition, but the block is not marked as '
-                             'is_split_ip.'.format(what))
-
         # Build register block if IP really defined registers. IPs with an empty list of registers
         # but auto-generated registers should still be built.
         if "registers" in rd:
@@ -394,6 +424,24 @@ class IpBlock:
                                        rd.get('wakeup_list', []))
         rst_reqs = Signal.from_raw_list('reset_request_list for block ' + name,
                                         rd.get('reset_request_list', []))
+
+        # The partitions of a block are implied by what it assigns to them.
+        # is_split_ip asserts the designer's intent and is checked against that,
+        # rather than being a second source of truth.
+        declared = _declared_partitions(clocking, alerts, interrupts,
+                                        inter_signals, params,
+                                        [s for x in xputs for s in x] +
+                                        list(wakeups) + list(rst_reqs))
+        if is_split_ip and SECONDARY not in declared:
+            raise ValueError(
+                f'{what} is marked is_split_ip, but nothing is assigned to its '
+                'secondary partition. Either give the secondary partition a '
+                'clocking entry, or tag an alert / interrupt / CIO / '
+                'inter-signal / parameter with partition: "secondary".')
+        if not is_split_ip and SECONDARY in declared:
+            raise ValueError(
+                f'{what} assigns {", ".join(declared[SECONDARY])} to a '
+                'secondary partition, but is not marked is_split_ip.')
 
         expose_reg_if = check_bool(rd.get('expose_reg_if', False),
                                    'expose_reg_if field of ' + what)
@@ -647,8 +695,23 @@ class IpBlock:
         # if we are here, then no one has a shadowed register
         return False
 
+    @property
+    def partitions(self) -> list[str]:
+        '''The partitions of this block, in canonical order.
+
+        A block has a partition precisely because something is declared in it.
+        Note that a partition need not be clocked, so this is a superset of
+        self.clocking.partitions.
+        '''
+        declared = _declared_partitions(
+            self.clocking, self.alerts, self.interrupts, self.inter_signals,
+            self.params,
+            [s for x in self.xputs for s in x] + list(self.wakeups) +
+            list(self.reset_requests))
+        return [p for p in PARTITIONS if p in declared]
+
     def get_primary_clock(self,
-                          partition: str = 'primary'
+                          partition: str = PRIMARY
                           ) -> Optional[ClockingItem]:
         '''Return the primary clock of the given partition of a block'''
 

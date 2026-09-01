@@ -43,6 +43,16 @@ _VERILOG_KEYWORDS = {
     'wire', 'with', 'within', 'wor', 'xnor', 'xor'
 }
 
+# The partitions an IP block can be split across. A non-split IP has only a
+# primary partition. PARTITIONS lists them in canonical order.
+PRIMARY = 'primary'
+SECONDARY = 'secondary'
+PARTITIONS = (PRIMARY, SECONDARY)
+
+# Parameters may additionally be assigned to BOTH partitions, which emits them
+# into both partition module headers. This is not a partition of its own.
+BOTH = 'both'
+
 
 def check_str_dict(obj: object, what: str) -> Dict[str, object]:
     if not isinstance(obj, dict):
@@ -160,7 +170,7 @@ def check_partition(obj: object, what: str, allow_both: bool = False) -> str:
     argument names the object.
     '''
     as_str = check_str(obj, what)
-    legal = ['primary', 'secondary'] + (['both'] if allow_both else [])
+    legal = list(PARTITIONS) + ([BOTH] if allow_both else [])
     if as_str not in legal:
         raise ValueError(f'{what} is {as_str!r}, but must be one of '
                          f'{", ".join(legal)}.')

@@ -39,13 +39,13 @@ mod_type = m["type"] + part_suffix
 inst_name = m["name"] + part_suffix
 
 ## Filter comportable objects to those belonging to the emitted partition.
-inputs = [s for s in raw_inputs if getattr(s, "partition", "primary") == partition]
-outputs = [s for s in raw_outputs if getattr(s, "partition", "primary") == partition]
-inouts = [s for s in raw_inouts if getattr(s, "partition", "primary") == partition]
+inputs = [s for s in raw_inputs if getattr(s, "partition", lib.PRIMARY) == partition]
+outputs = [s for s in raw_outputs if getattr(s, "partition", lib.PRIMARY) == partition]
+inouts = [s for s in raw_inouts if getattr(s, "partition", lib.PRIMARY) == partition]
 interrupts = [i for i in block.interrupts
-              if getattr(i, "partition", "primary") == partition]
+              if getattr(i, "partition", lib.PRIMARY) == partition]
 inter_signals = [s for s in m.get("inter_signal_list", [])
-                 if s.get("partition", "primary") == partition]
+                 if s.get("partition", lib.PRIMARY) == partition]
 
 port_list = inputs + outputs + inouts
 max_sigwidth = max(len(x.name) for x in port_list) if port_list else 0
@@ -53,14 +53,14 @@ max_intrwidth = (max(len(x.name) for x in interrupts)
                  if interrupts else 0)
 
 alert_key = "module_" + m["name"]
-if partition != "primary":
+if partition != lib.PRIMARY:
   alert_key += "_" + partition
 alert_info = top["alert_connections"].get(alert_key, {})
 has_params, param_items = lib.get_params(top, m, partition)
 
 ## Scan / DFT ports are emitted only for the primary partition of a split IP.
 has_scan = (block.scan or block.scan_reset or block.scan_en) and \
-    partition == "primary"
+    partition == lib.PRIMARY
 has_interrupts = len(interrupts) > 0
 has_cio_inputs = len(inputs + inouts) > 0
 has_cio_outputs = len(outputs + inouts) > 0

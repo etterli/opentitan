@@ -6,7 +6,7 @@ import re
 from collections.abc import MutableMapping
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
-from reggen.lib import (check_keys, check_str, check_int, check_bool,
+from reggen.lib import (PRIMARY, check_keys, check_str, check_int, check_bool,
                         check_list, check_partition)
 
 REQUIRED_FIELDS = {
@@ -42,7 +42,7 @@ class BaseParam:
     # serializes leftover objects via `default=vars` (their __dict__), so an
     # unconditional instance attribute would leak `partition: primary` into
     # every generated config.
-    partition = 'primary'
+    partition = PRIMARY
 
     def __init__(self, name: str, desc: Optional[str], param_type: str,
                  unpacked_dimensions: Optional[str]):
@@ -67,7 +67,7 @@ class BaseParam:
         if self.unpacked_dimensions is not None:
             rd['unpacked_dimensions'] = self.unpacked_dimensions
         # Only emitted for split IPs, so non-split IPs see no change.
-        if self.partition != 'primary':
+        if self.partition != PRIMARY:
             rd['partition'] = self.partition
         return rd
 
@@ -163,7 +163,7 @@ def _parse_parameter(where: str, raw: object) -> BaseParam:
             check_str(r_unpacked_dimensions,
                       'unpacked_dimensions field of ' + where)
 
-    partition = check_partition(rd.get('partition', 'primary'),
+    partition = check_partition(rd.get('partition', PRIMARY),
                                 'partition field of ' + where,
                                 allow_both=True)
 
@@ -222,7 +222,7 @@ def _parse_parameter(where: str, raw: object) -> BaseParam:
                 'This is incompatible with being a random netlist constant.')
 
         rand_param = RandParameter(name, desc, param_type, randcount, randtype)
-        if partition != 'primary':
+        if partition != PRIMARY:
             rand_param.partition = partition
         return rand_param
 
@@ -263,7 +263,7 @@ def _parse_parameter(where: str, raw: object) -> BaseParam:
                 'This is incompatible with being a memory size parameter.')
 
         memsize_param = MemSizeParameter(name, desc, param_type)
-        if partition != 'primary':
+        if partition != PRIMARY:
             memsize_param.partition = partition
         return memsize_param
 
@@ -294,7 +294,7 @@ def _parse_parameter(where: str, raw: object) -> BaseParam:
     else:
         param = Parameter(name, desc, param_type, unpacked_dimensions, default,
                           local, expose)
-    if partition != 'primary':
+    if partition != PRIMARY:
         param.partition = partition
     return param
 

@@ -6,14 +6,14 @@ from typing import Dict, List
 
 from reggen.bits import Bits
 from reggen.signal import Signal
-from reggen.lib import (check_keys, check_name, check_str, check_list,
+from reggen.lib import (PRIMARY, check_keys, check_name, check_str, check_list,
                         check_partition)
 
 
 class Alert(Signal):
 
     def __init__(self, name: str, desc: str, bit: int, fatal: bool,
-                 partition: str = 'primary'):
+                 partition: str = PRIMARY):
         super().__init__(name, desc, Bits(bit, bit), partition=partition)
         self.bit = bit
         self.fatal = fatal
@@ -24,7 +24,7 @@ class Alert(Signal):
 
         name = check_name(rd['name'], 'name field of ' + what)
         desc = check_str(rd['desc'], 'desc field of ' + what)
-        partition = check_partition(rd.get('partition', 'primary'),
+        partition = check_partition(rd.get('partition', PRIMARY),
                                     'partition field of ' + what)
 
         # Make sense of the alert name, which should be prefixed with recov_ or

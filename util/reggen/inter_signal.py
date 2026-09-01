@@ -4,7 +4,8 @@
 
 from typing import Dict, Optional, Union
 
-from reggen.lib import (check_int, check_keys, check_name, check_optional_str,
+from reggen.lib import (PRIMARY, check_int, check_keys, check_name,
+                        check_optional_str,
                         check_partition, check_str)
 from reggen.params import ReggenParams, Parameter
 
@@ -18,12 +19,12 @@ class InterSignal:
     # topgen serializes leftover objects via `default=vars`, so an
     # unconditional instance attribute would leak `partition: primary` into
     # generated configs.
-    partition = 'primary'
+    partition = PRIMARY
 
     def __init__(self, name: str, desc: Optional[str], struct: str,
                  package: Optional[str], signal_type: str, act: str,
                  width: Union[int, Parameter], default: Optional[str],
-                 partition: str = 'primary'):
+                 partition: str = PRIMARY):
         if isinstance(width, Parameter):
             if isinstance(width.default, int):
                 assert 0 < width.default
@@ -37,7 +38,7 @@ class InterSignal:
         self.act = act
         self.width = width
         self.default = default
-        if partition != 'primary':
+        if partition != PRIMARY:
             self.partition = partition
 
     @staticmethod
@@ -67,7 +68,7 @@ class InterSignal:
 
         default = check_optional_str(rd.get('default'),
                                      'default field of ' + what)
-        partition = check_partition(rd.get('partition', 'primary'),
+        partition = check_partition(rd.get('partition', PRIMARY),
                                     'partition field of ' + what)
         width: Union[int, Parameter] = 1
         width_p = params.get(rd.get('width'), 1)
@@ -101,7 +102,7 @@ class InterSignal:
         if self.default is not None:
             ret['default'] = self.default
         # Only emitted for split IPs, so non-split IPs see no change.
-        if self.partition != 'primary':
+        if self.partition != PRIMARY:
             ret['partition'] = self.partition
 
         return ret

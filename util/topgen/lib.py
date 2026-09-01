@@ -15,7 +15,7 @@ import hjson
 from basegen.lib import Name
 from basegen.typing import ConfigT, ParamsT
 from mako.template import Template
-from reggen.clocking import PARTITIONS
+from reggen.lib import BOTH, PARTITIONS, PRIMARY
 from reggen.ip_block import IpBlock
 from reggen.lib import check_bool
 from version_file import VersionInformation
@@ -609,7 +609,7 @@ def is_partitioned(val: object) -> bool:
     (clk_*_i / rst_*_ni), never 'primary'.
     '''
     return (isinstance(val, dict) and bool(val) and
-            set(val.keys()) <= set(PARTITIONS) and 'primary' in val)
+            set(val.keys()) <= set(PARTITIONS) and PRIMARY in val)
 
 
 def conn_partitions(module: ConfigT, key: str) -> List[str]:
@@ -621,19 +621,23 @@ def conn_partitions(module: ConfigT, key: str) -> List[str]:
     val = module.get(key)
     if is_partitioned(val):
         return [p for p in PARTITIONS if p in val]
-    return ['primary'] if val is not None else []
+    return [PRIMARY] if val is not None else []
 
 
 def instance_partitions(module: ConfigT) -> List[str]:
     '''Return the partitions of a module instance, in canonical order.
 
-    Derived from clock_srcs, which every instance has.
+    This is the one instance-level answer to "what partitions does this have".
+    It is derived from 'domain', because every partition is emitted into a
+    power domain, whereas a partition need not be clocked and so need not
+    appear in clock_srcs / reset_connections. check_partitions() checks that
+    the per-partition keys agree with it and with the IP block.
     '''
-    return conn_partitions(module, 'clock_srcs')
+    return domain_partitions(module) or [PRIMARY]
 
 
 def partition_conns(module: ConfigT, key: str,
-                    partition: str = 'primary') -> ConfigT:
+                    partition: str = PRIMARY) -> ConfigT:
     '''Return the connections of one partition of a module instance.
 
     Handles both shapes: a split instance keys `key` by partition, every other
@@ -646,7 +650,7 @@ def partition_conns(module: ConfigT, key: str,
         return val.get(partition)
     if not isinstance(val, dict):
         return val
-    return val if partition == 'primary' else None
+    return val if partition == PRIMARY else None
 
 
 def domain_partitions(module: ConfigT) -> List[str]:
@@ -658,7 +662,7 @@ def domain_partitions(module: ConfigT) -> List[str]:
     return conn_partitions(module, 'domain')
 
 
-def partition_domain(module: ConfigT, partition: str = 'primary',
+def partition_domain(module: ConfigT, partition: str = PRIMARY,
                      default: str = None) -> str:
     '''Return the power domain of the given partition of a module instance.
 
@@ -673,10 +677,10 @@ def partition_domain(module: ConfigT, partition: str = 'primary',
     if is_partitioned(val):
         domain = val.get(partition)
     else:
-        domain = val if partition == 'primary' else None
+        domain = val if partition == PRIMARY else None
 
     if domain is None:
-        if partition != 'primary':
+        if partition != PRIMARY:
             raise ValueError(
                 f"{module['name']} describes a {partition} partition but its "
                 "domain names no power domain for it")
@@ -690,7 +694,7 @@ def module_domains(module: ConfigT, default: str = None) -> List[str]:
     A split IP whose partitions share a power domain names it once.
     '''
     domains = []
-    for partition in domain_partitions(module) or ['primary']:
+    for partition in domain_partitions(module) or [PRIMARY]:
         domain = partition_domain(module, partition, default)
         if domain is not None and domain not in domains:
             domains.append(domain)
@@ -705,7 +709,7 @@ def get_module_partition(module: ConfigT, domain: str) -> str:
     pass always return 'primary'.
     '''
     partitions = get_module_partitions(module, domain)
-    return partitions[0] if partitions else "primary"
+    return partitions[0] if partitions else PRIMARY
 
 
 def get_module_partitions(module: ConfigT, domain: str) -> list:
@@ -717,10 +721,10 @@ def get_module_partitions(module: ConfigT, domain: str) -> list:
     returned so that they are emitted in the same pass.
     '''
     if not module.get("is_split_ip"):
-        return ["primary"]
+        return [PRIMARY]
 
     return [
-        p for p in domain_partitions(module)
+        p for p in instance_partitions(module)
         if partition_domain(module, p) == domain
     ]
 
@@ -1039,7 +1043,7 @@ def get_io_enum_literal(sig: Dict, prefix: str) -> str:
 
 
 def get_params(top: ConfigT, module: ConfigT,
-               partition: str = "primary") -> List[str]:
+               partition: str = PRIMARY) -> List[str]:
     """Return the parameters for a given module including implicit parameters
        but excluding RACL parameters, which are handled in a separate template.
 
@@ -1050,7 +1054,7 @@ def get_params(top: ConfigT, module: ConfigT,
     """
     param_items = []
     alert_key = "module_" + module["name"]
-    if partition != "primary":
+    if partition != PRIMARY:
         alert_key += "_" + partition
     alert_info = top["alert_connections"].get(alert_key, {})
     has_racl_params = bool(module.get("racl_mappings"))
@@ -1059,10 +1063,10 @@ def get_params(top: ConfigT, module: ConfigT,
     if alert_info or module.get("template_type") == "alert_handler":
         param_items.append((".AlertSkewCycles", "top_pkg::AlertSkewCycles"))
     for param in module["param_list"]:
-        p_part = param.get("partition", "primary")
+        p_part = param.get("partition", PRIMARY)
         # 'both' parameters are emitted into every partition; others only into
         # their own partition.
-        if p_part != "both" and p_part != partition:
+        if p_part != BOTH and p_part != partition:
             continue
         is_exposed = check_bool(param.get("expose", False), f"expose field of {param['name']}")
         has_random_type = param.get("randtype")

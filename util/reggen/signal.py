@@ -5,7 +5,7 @@
 from typing import Dict, Sequence
 
 from reggen.bits import Bits
-from reggen.lib import (check_keys, check_name, check_str, check_int,
+from reggen.lib import (PRIMARY, check_keys, check_name, check_str, check_int,
                         check_list, check_bool, check_partition)
 
 
@@ -16,16 +16,16 @@ class Signal:
     # __dict__ unless explicitly non-default -- topgen dumps leftover objects
     # via `default=vars`, so an unconditional instance attribute would leak
     # `partition: primary` into generated configs.
-    partition = 'primary'
+    partition = PRIMARY
 
     def __init__(self, name: str, desc: str, bits: Bits,
                  enabled_after_reset: bool = False,
-                 partition: str = 'primary'):
+                 partition: str = PRIMARY):
         self.name = name
         self.desc = desc
         self.bits = bits
         self.enabled_after_reset = enabled_after_reset
-        if partition != 'primary':
+        if partition != PRIMARY:
             self.partition = partition
 
     @staticmethod
@@ -38,7 +38,7 @@ class Signal:
         width = check_int(rd.get('width', 1), 'width field of ' + what)
         enabled_after_reset = check_bool(rd.get("enabled_after_reset", False),
                                          "enabled_after_reset field of " + what)
-        partition = check_partition(rd.get("partition", "primary"),
+        partition = check_partition(rd.get("partition", PRIMARY),
                                     "partition field of " + what)
 
         if width <= 0:
@@ -81,6 +81,6 @@ class Signal:
             'type': type_field
         }  # type: Dict[str, object]
         # Only emitted for split IPs, so non-split IPs see no change.
-        if self.partition != 'primary':
+        if self.partition != PRIMARY:
             ret['partition'] = self.partition
         return ret

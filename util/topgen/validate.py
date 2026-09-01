@@ -9,11 +9,13 @@ from typing import Dict, List, Union
 
 from basegen.typing import ConfigT
 from reggen.ip_block import IpBlock
+from reggen.lib import PRIMARY, SECONDARY
 from reggen.validate import check_keys
 from topgen.resets import Resets, UnmanagedResets
 from topgen.typing import IpBlocksT
 from topgen.lib import (find_module, find_modules, conn_partitions,
-                        domain_partitions, partition_conns, partition_domain)
+                        domain_partitions, instance_partitions,
+                        partition_conns, partition_domain)
 
 # For the reference
 # val_types = {
@@ -984,6 +986,8 @@ def check_clocks_resets(top: ConfigT, ip_name_to_block: IpBlocksT,
     for ipcfg in top['module']:
         ipcfg_name = ipcfg['type']
         log.info("Checking clock/resets for %s" % ipcfg_name)
+        error += check_partitions(ipcfg, ip_name_to_block[ipcfg_name],
+                                  ipcfg_name, "module")
         error += validate_reset(top, ipcfg, ip_name_to_block[ipcfg_name],
                                 unmanaged_reset_nets)
         error += validate_clock(ipcfg, ip_name_to_block[ipcfg_name],
@@ -1044,26 +1048,55 @@ def check_wakeups(top: ConfigT, component: str) -> int:
     return error
 
 
-def check_partitions(module: ConfigT, key: str, inst: IpBlock, name: str,
+def check_partitions(module: ConfigT, inst: IpBlock, name: str,
                      prefix: str) -> int:
-    '''Check a module's connections against the IP block's partitions.
+    '''Check that everything agrees on the partitions of a module instance.
 
-    Every partition of the IP block must have connections and vice versa. A
-    mismatch means the top hjson describes a partition that the IP does not
-    have, or forgets one that it does.
+    The instance's partitions come from its 'domain' (every partition is
+    emitted into a power domain); the IP block's come from what it declares in
+    them. These must match: a mismatch means the top hjson describes a
+    partition the IP does not have, or forgets one that it does.
+
+    The connection keys are then checked against those partitions. A partition
+    need not be clocked, but if it is, it must have both clocks and resets, and
+    only partitions the instance actually has may be described.
     '''
     err = 0
-    block_partitions = set(inst.clocking.partitions)
-    inst_partitions = set(conn_partitions(module, key))
+    inst_partitions = instance_partitions(module)
+    block_partitions = inst.partitions
 
-    for partition in sorted(block_partitions - inst_partitions):
+    for partition in sorted(set(block_partitions) - set(inst_partitions)):
         err += 1
-        log.error(f"{prefix} {name} defines no {key} for its {partition} "
-                  "partition")
-    for partition in sorted(inst_partitions - block_partitions):
+        log.error(f"{prefix} {name} has a {partition} partition, but its "
+                  "domain names no power domain for it")
+    for partition in sorted(set(inst_partitions) - set(block_partitions)):
         err += 1
-        log.error(f"{prefix} {name} defines {key} for a {partition} partition, "
-                  "but the IP has no such partition")
+        log.error(f"{prefix} {name} names a power domain for a {partition} "
+                  "partition, but the IP has no such partition")
+
+    # The clocked partitions of the IP are exactly those its clocking covers,
+    # and each one needs both clock sources and reset connections.
+    clocked = set(inst.clocking.partitions)
+    for key in ('clock_srcs', 'reset_connections'):
+        key_partitions = set(conn_partitions(module, key))
+
+        for partition in sorted(clocked - key_partitions):
+            err += 1
+            log.error(f"{prefix} {name} defines no {key} for its {partition} "
+                      "partition, which the IP clocks")
+        for partition in sorted(key_partitions - clocked):
+            err += 1
+            log.error(f"{prefix} {name} defines {key} for its {partition} "
+                      "partition, but the IP declares no clocking for it")
+
+    # clock_group is optional and a single value covers every partition, so it
+    # is only checked against the partitions the instance has.
+    groups = set(conn_partitions(module, 'clock_group'))
+    for partition in sorted(groups - set(inst_partitions)):
+        err += 1
+        log.error(f"{prefix} {name} defines clock_group for a {partition} "
+                  "partition that the instance does not have")
+
     return err
 
 
@@ -1167,7 +1200,6 @@ def validate_reset(top: ConfigT,
 
     # Validate each of the IP block's partitions against the reset signals of
     # that same partition.
-    error += check_partitions(module, 'reset_connections', inst, name, prefix)
     for partition in inst.clocking.partitions:
         reset_connections = partition_conns(module, 'reset_connections',
                                             partition)
@@ -1245,7 +1277,6 @@ def validate_clock(top: ConfigT,
 
     # Validate each of the IP block's partitions against the clock signals of
     # that same partition.
-    error += check_partitions(module, 'clock_srcs', inst, name, prefix)
     for partition in inst.clocking.partitions:
         clock_srcs_map = partition_conns(module, 'clock_srcs', partition)
         if clock_srcs_map is None:
@@ -1314,11 +1345,11 @@ def check_power_domains(top: ConfigT):
         # single domain as a bare string.
         partitions = domain_partitions(end_point)
         is_split = end_point.get('is_split_ip')
-        if is_split and 'secondary' not in partitions:
+        if is_split and SECONDARY not in partitions:
             raise ValueError(
                 f"{end_point['name']} is a split IP, so its domain must name a "
                 "power domain for the secondary partition too")
-        if not is_split and partitions != ['primary']:
+        if not is_split and partitions != [PRIMARY]:
             raise ValueError(
                 f"{end_point['name']} is not a split IP, so its domain must "
                 "name a single power domain")

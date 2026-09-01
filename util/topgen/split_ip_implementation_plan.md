@@ -50,11 +50,19 @@ Both shapes are resolved in exactly one place, in `topgen/lib.py`:
 |---|---|
 | `is_partitioned(val)` | Is this value keyed by partition? Unambiguous: a flat value is either a bare string (`clock_group`, `domain`) or a map keyed by port name (`clk_*_i` / `rst_*_ni`), never `primary`. |
 | `conn_partitions(instance, key)` | Which partitions does `key` describe? `['primary']` for the flat form. |
-| `instance_partitions(instance)` | `conn_partitions(instance, 'clock_srcs')` -- the instance's partitions. |
+| `instance_partitions(instance)` | `domain_partitions(instance)` -- **the** instance-level answer to "what partitions does this have". Derived from `domain` because every partition is emitted into a power domain, whereas a partition need not be clocked. |
 | `partition_conns(instance, key, partition='primary')` | The connections of one partition. The flat form *is* the primary partition; a scalar (`clock_group`) cannot be per-partition and so applies to all of them. `None` if the instance describes nothing for that partition. |
-| `domain_partitions(instance)` | `conn_partitions(instance, 'domain')` -- the partitions `domain` names a power domain for. |
+| `domain_partitions(instance)` | `conn_partitions(instance, 'domain')` -- the raw shape of `domain`; use `instance_partitions()` unless you are validating that shape. |
 | `partition_domain(instance, partition='primary', default)` | The partition's power domain; raises if a secondary partition has no domain of its own. |
 | `module_domains(instance, default)` | Every power domain the instance occupies, one per partition, de-duplicated when both share one. |
+
+**One authoritative partition list per side, cross-checked.** The partitions of an IP block are implied by what it declares in them: `IpBlock.partitions` is the union over `clocking`, the alert / interrupt / CIO / inter-signal / wakeup / reset-request lists and `param_list` (`partition: "both"` does not imply a secondary partition). `is_split_ip` is *not* a second source of truth -- `IpBlock.from_raw` asserts it against that union in both directions, naming the offending declaration. On the instance side `lib.instance_partitions()` is the single answer, and `validate.check_partitions()` (called once per instance from `check_clocks_resets`) checks it against `IpBlock.partitions` and checks every partitioned key against both. This gives a guarantee the rest of the code relies on:
+
+```
+module['is_split_ip']  <=>  len(instance_partitions(m)) > 1  <=>  'secondary' in block.partitions
+```
+
+so the places that only need the boolean (the `_part_<partition>` suffix, the `autoconnect_intra_ip` skip) can keep reading `is_split_ip` without it drifting from the shapes. Note `clocking.partitions` answers a genuinely different question -- which partitions are *clocked* -- and is a subset: an unclocked partition has no `clock_srcs` / `reset_connections`, which `check_partitions` allows for and `extract_clocks` skips.
 
 Because the flat form collapses to a single primary partition, every consumer is written once and needs no `is_split_ip` branch, and crossbars flow through the same code unchanged. That matters for crossbars specifically: `generate_xbars` hands their `clock_connections` / `reset_connections` to `tlgen.validate()`, which reads the port names straight out of those dicts (`tlgen/validate.py:297-300`) and dumps the object verbatim into `xbar_*.gen.hjson`, so their shape is not ours to change.
 

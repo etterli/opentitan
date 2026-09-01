@@ -11,7 +11,7 @@
   default_pd = top["power"]["default"]
 %>\
 % for alert in top["alert"]:
-<% partition = alert.get("partition", "primary") %>\
+<% partition = alert.get("partition", lib.PRIMARY) %>\
   % if alert["module_name"] == module_name and partition == module_partition:
 <% index = index + 1 %>\
   % else:

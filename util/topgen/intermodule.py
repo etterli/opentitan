@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Tuple
 from reggen.ip_block import IpBlock
 from reggen.inter_signal import InterSignal
 from reggen.params import Parameter
+from reggen.lib import PRIMARY
 from reggen.validate import check_int
 from topgen import lib
 
@@ -232,9 +233,9 @@ def autoconnect_intra_ip(topcfg: OrderedDict):
             drivers = [e for e in entries if e.get("act") == "req"]
             receivers = [e for e in entries if e.get("act") == "rcv"]
             for drv in drivers:
-                drv_part = drv.get("partition", "primary")
+                drv_part = drv.get("partition", PRIMARY)
                 for rcv in receivers:
-                    rcv_part = rcv.get("partition", "primary")
+                    rcv_part = rcv.get("partition", PRIMARY)
                     # Only connect across partitions (an intra-IP crossing).
                     if drv_part == rcv_part:
                         continue
@@ -344,7 +345,7 @@ def sig_partition_domain(module: Dict, sig: OrderedDict):
     is exposed from that partition's power domain; otherwise the module's
     primary power domain applies.
     '''
-    return lib.partition_domain(module, sig.get('partition', 'primary'))
+    return lib.partition_domain(module, sig.get('partition', PRIMARY))
 
 
 def get_signame_chip(topcfg: Dict, sig: OrderedDict, port: str, reqrsp: str = "req",
@@ -976,7 +977,7 @@ def find_intermodule_signal(sig_list, m_name, s_name,
 
     filtered = [
         x for x in sig_list if x["name"] == s_name and x["inst_name"] == m_name
-        and (partition is None or x.get("partition", "primary") == partition)
+        and (partition is None or x.get("partition", PRIMARY) == partition)
     ]
 
     if len(filtered) == 1:

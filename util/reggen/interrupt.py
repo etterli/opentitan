@@ -6,7 +6,7 @@ from typing import Sequence
 
 from reggen.access import JsonEnum
 from reggen.bits import Bits
-from reggen.lib import (check_keys, check_name, check_str, check_int,
+from reggen.lib import (PRIMARY, check_keys, check_name, check_str, check_int,
                         check_bool, check_list, check_partition)
 from reggen.signal import Signal
 
@@ -23,7 +23,7 @@ class Interrupt(Signal):
 
     def __init__(self, name: str, desc: str, bits: Bits, auto_split: bool,
                  intr_type: IntrType, default_val: bool,
-                 partition: str = 'primary'):
+                 partition: str = PRIMARY):
         super().__init__(name, desc, bits, partition=partition)
         self.intr_type = intr_type
         self.auto_split = auto_split
@@ -48,7 +48,7 @@ class Interrupt(Signal):
                                   'intr_type field of ' + what)
         auto_split = check_bool(rd.get('auto_split', False),
                                 'auto_split of ' + what)
-        partition = check_partition(rd.get('partition', 'primary'),
+        partition = check_partition(rd.get('partition', PRIMARY),
                                     'partition field of ' + what)
 
         try:

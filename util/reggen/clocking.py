@@ -6,10 +6,8 @@
 from typing import Dict, List, Optional, Tuple
 import re
 
-from reggen.lib import check_keys, check_list, check_bool, check_optional_name
-
-# The partitions of a split IP. A non-split IP only has a 'primary' partition.
-PARTITIONS = ('primary', 'secondary')
+from reggen.lib import (PARTITIONS, PRIMARY, SECONDARY, check_keys,
+                        check_list, check_bool, check_optional_name)
 
 
 class ClockingItem:
@@ -17,7 +15,7 @@ class ClockingItem:
     def __init__(self, clock: Optional[str], reset: Optional[str],
                  idle: Optional[str], primary: bool, internal: bool,
                  clock_base_name: Optional[str],
-                 partition: str = 'primary'):
+                 partition: str = PRIMARY):
         if primary:
             assert clock is not None
             assert reset is not None
@@ -38,15 +36,15 @@ class ClockingItem:
 
     @staticmethod
     def from_raw(raw: object, only_item: bool, where: str,
-                 partition: str = 'primary') -> 'ClockingItem':
+                 partition: str = PRIMARY) -> 'ClockingItem':
         what = f'clocking item at {where}'
         rd = check_keys(raw, what, [],
-                        ['clock', 'reset', 'idle', 'primary', 'internal'])
+                        ['clock', 'reset', 'idle', PRIMARY, 'internal'])
 
         clock = check_optional_name(rd.get('clock'), 'clock field of ' + what)
         reset = check_optional_name(rd.get('reset'), 'reset field of ' + what)
         idle = check_optional_name(rd.get('idle'), 'idle field of ' + what)
-        primary = check_bool(rd.get('primary', only_item),
+        primary = check_bool(rd.get(PRIMARY, only_item),
                              'primary field of ' + what)
         internal = check_bool(rd.get('internal', False),
                               'internal field of ' + what)
@@ -81,7 +79,7 @@ class ClockingItem:
         if self.idle is not None:
             ret['idle'] = self.idle
 
-        ret['primary'] = self.primary
+        ret[PRIMARY] = self.primary
         return ret
 
 
@@ -97,10 +95,10 @@ class Clocking:
     def __init__(self, items: List[ClockingItem],
                  primaries: Dict[str, ClockingItem]):
         assert items
-        assert 'primary' in primaries
+        assert PRIMARY in primaries
         self.items = items
         self._primaries = primaries
-        self.primary = primaries['primary']
+        self.primary = primaries[PRIMARY]
 
     @staticmethod
     def from_raw(raw: object, where: str) -> 'Clocking':
@@ -114,15 +112,15 @@ class Clocking:
 
         raw_partitions: List[Tuple[str, object]] = []
         if isinstance(raw, dict):
-            rd = check_keys(raw, what, ['primary'], ['secondary'])
-            raw_partitions.append(('primary', rd['primary']))
+            rd = check_keys(raw, what, [PRIMARY], [SECONDARY])
+            raw_partitions.append((PRIMARY, rd[PRIMARY]))
             # An unclocked secondary partition may omit the key or leave it
             # empty. The primary partition is always parsed, so that an empty
             # list there is reported as an error.
-            if rd.get('secondary'):
-                raw_partitions.append(('secondary', rd['secondary']))
+            if rd.get(SECONDARY):
+                raw_partitions.append((SECONDARY, rd[SECONDARY]))
         elif isinstance(raw, list):
-            raw_partitions.append(('primary', raw))
+            raw_partitions.append((PRIMARY, raw))
         else:
             raise ValueError(f'{what} is of type {type(raw).__name__}, but '
                              'must be either a list of clocking items or a '
@@ -171,12 +169,12 @@ class Clocking:
         return [item for item in self.items if item.partition == partition]
 
     def get_primary_clock(self,
-                          partition: str = 'primary'
+                          partition: str = PRIMARY
                           ) -> Optional[ClockingItem]:
         '''The primary clocking item of the given partition, if it has one.'''
         return self._primaries.get(partition)
 
-    def other_clocks(self, partition: Optional[str] = 'primary') -> List[str]:
+    def other_clocks(self, partition: Optional[str] = PRIMARY) -> List[str]:
         ret = []
         for item in self.items_for(partition):
             if not item.primary and item.clock is not None:
@@ -185,7 +183,7 @@ class Clocking:
 
     def clock_signals(self,
                       ret_internal: bool = True,
-                      partition: Optional[str] = 'primary') -> List[str]:
+                      partition: Optional[str] = PRIMARY) -> List[str]:
         # By default clock_signals returns all clocks, including internal clocks.
         # If the ret_internal input is set to false, then only externally supplied
         # clocks are returned.
@@ -195,7 +193,7 @@ class Clocking:
         ]
 
     def reset_signals(self,
-                      partition: Optional[str] = 'primary') -> List[str]:
+                      partition: Optional[str] = PRIMARY) -> List[str]:
         return [
             item.reset for item in self.items_for(partition)
             if item.reset is not None
@@ -203,7 +201,7 @@ class Clocking:
 
     def get_by_clock(self,
                      name: Optional[str],
-                     partition: Optional[str] = 'primary') -> ClockingItem:
+                     partition: Optional[str] = PRIMARY) -> ClockingItem:
         ret = None
         for item in self.items_for(partition):
             if name == item.clock:
@@ -217,6 +215,6 @@ class Clocking:
 
     def as_raw(self) -> object:
         '''Serialize back to the hjson shape this was parsed from.'''
-        if self.partitions == ['primary']:
+        if self.partitions == [PRIMARY]:
             return self.items
         return {p: self.items_for(p) for p in self.partitions}

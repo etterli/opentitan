@@ -13,6 +13,7 @@ from typing import Dict, List, Tuple, Union
 from basegen.typing import ConfigT
 from raclgen.lib import parse_racl_config, parse_racl_mapping
 from reggen.ip_block import IpBlock
+from reggen.lib import PRIMARY, SECONDARY
 from reggen.params import (LocalParam, MemSizeParameter, Parameter,
                            RandParameter)
 from reggen.validate import check_bool
@@ -764,6 +765,12 @@ def extract_clocks(top: ConfigT):
         groups = OrderedDict()
 
         for partition in lib.instance_partitions(ep):
+            # A partition need not be clocked; such a partition simply has no
+            # clocks to elaborate.
+            partition_srcs = lib.partition_conns(ep, 'clock_srcs', partition)
+            if partition_srcs is None:
+                continue
+
             # The clock group attribute in an end point sets the default
             # group for every clock in that end point.
             #
@@ -776,9 +783,8 @@ def extract_clocks(top: ConfigT):
             groups[partition] = ep_grp
 
             conns[partition] = elaborate_clock_srcs(
-                ep_name, lib.partition_conns(ep, 'clock_srcs', partition),
-                ep_grp, lib.partition_domain(ep, partition, default_domain),
-                export_if)
+                ep_name, partition_srcs, ep_grp,
+                lib.partition_domain(ep, partition, default_domain), export_if)
 
         # Mirror the shape of the endpoint's own clock_srcs: only a split IP
         # keys these by partition, everything else stays flat.
@@ -787,8 +793,8 @@ def extract_clocks(top: ConfigT):
             ep['clock_connections'] = conns
         else:
             # Write value to dict in case it was unset before
-            ep['clock_group'] = groups['primary']
-            ep['clock_connections'] = conns['primary']
+            ep['clock_group'] = groups[PRIMARY]
+            ep['clock_connections'] = conns[PRIMARY]
 
     # add entry to top level json
     top['exported_clks'] = exported_clks
@@ -1065,15 +1071,15 @@ def create_alert_lpgs(top: ConfigT, name_to_block: IpBlocksT):
         sec_lpg_name = None
         sec_clock_connections = lib.partition_conns(module,
                                                     'clock_connections',
-                                                    'secondary')
+                                                    SECONDARY)
         sec_reset_connections = lib.partition_conns(module,
                                                     'reset_connections',
-                                                    'secondary')
-        if block.clocking.has_partition('secondary') and \
+                                                    SECONDARY)
+        if block.clocking.has_partition(SECONDARY) and \
                 sec_clock_connections is not None and \
                 sec_reset_connections is not None:
             sec_lpg_name, sec_lpg_entry = compute_lpg(
-                module, block.get_primary_clock('secondary'),
+                module, block.get_primary_clock(SECONDARY),
                 sec_clock_connections, sec_reset_connections)
 
         alert_group = module.get('outgoing_alert')
@@ -1094,7 +1100,7 @@ def create_alert_lpgs(top: ConfigT, name_to_block: IpBlocksT):
         for alert in top['alert']:
             if alert['module_name'] == module['name']:
                 if sec_lpg_name is not None and \
-                        alert.get('partition') == 'secondary':
+                        alert.get('partition') == SECONDARY:
                     alert['lpg_name'] = sec_lpg_name
                     alert['lpg_idx'] = lpg_dict[sec_lpg_name]
                 else:
@@ -1488,7 +1494,7 @@ def commit_alert_connections(top: ConfigT,
         # reproducing the original behaviour exactly.
         alert_groups = []
         for a in block.alerts:
-            part = getattr(a, "partition", "primary")
+            part = getattr(a, "partition", PRIMARY)
             if alert_groups and alert_groups[-1][0] == part:
                 alert_groups[-1][1].append(a)
             else:
@@ -1497,7 +1503,7 @@ def commit_alert_connections(top: ConfigT,
         for part, alerts_group in alert_groups:
             pd = lib.partition_domain(module, part, top["power"]["default"])
             conn_key = "module_" + module["name"]
-            if part != "primary":
+            if part != PRIMARY:
                 conn_key += "_" + part
             emit_alert_group(alerts_group, pd, conn_key)
 
@@ -1876,7 +1882,7 @@ def amend_pinmux_io(top: ConfigT,
         for sig in block.get_signals_as_list_of_dicts():
             # Each CIO belongs to the power domain of its owning partition.
             pd_mod = lib.partition_domain(
-                m, sig.get('partition', 'primary'), pd_default)
+                m, sig.get('partition', PRIMARY), pd_default)
             # Skip IO already in the same PD as the pinmux.
             if pd_mod == pd_pinmux:
                 continue
@@ -1951,7 +1957,7 @@ def amend_pinmux_io(top: ConfigT,
             })
             sig_inst['name'] = mod_name + '_' + sig_inst['name']
             sig_inst['domain'] = lib.partition_domain(
-                m, sig_inst.get('partition', 'primary'), pd_default)
+                m, sig_inst.get('partition', PRIMARY), pd_default)
             append_io_signal(temp, sig_inst)
 
         # Otherwise the name is a wildcard for selecting all available IO
@@ -1976,7 +1982,7 @@ def amend_pinmux_io(top: ConfigT,
                         sig_inst_copy['name'] = sig[
                             'instance'] + '_' + sig_inst_copy['name']
                         sig_inst_copy['domain'] = lib.partition_domain(
-                            m, sig_inst_copy.get('partition', 'primary'),
+                            m, sig_inst_copy.get('partition', PRIMARY),
                             pd_default)
                         append_io_signal(temp, sig_inst_copy)
                 else:
@@ -1989,7 +1995,7 @@ def amend_pinmux_io(top: ConfigT,
                     })
                     sig_inst['name'] = sig['instance'] + '_' + sig_inst['name']
                     sig_inst['domain'] = lib.partition_domain(
-                        m, sig_inst.get('partition', 'primary'), pd_default)
+                        m, sig_inst.get('partition', PRIMARY), pd_default)
                     append_io_signal(temp, sig_inst)
 
     # Now that we've collected all input and output signals,
