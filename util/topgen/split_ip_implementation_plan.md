@@ -5,9 +5,9 @@ Companion to [split_ip_concept.md](split_ip_concept.md). That document defines *
 ## Guiding decisions (from the concept discussion)
 
 - **`partition` is intrinsic to the IP** → it is parsed and owned by `reggen` (identical for every instantiation) and forwarded to `topgen` as a read-only per-entry attribute. Precedent to mirror: `enabled_after_reset` on `Signal` (parsed in `reggen`, consumed in `merge.py`).
-- **`domain` / `domain_secondary` are instance-level** → owned by `topgen` (a given IP type can land in different PDs at different tops), read from the module dict in `top_<top>.hjson`.
-- **`domain` and `domain_secondary` may be equal** → a split IP can be instantiated with both partitions in a single PD; the intra-IP connections then stay inside that PD's wrapper (handled by the existing same-domain inter-module path — no special-casing).
-- **Tooling stays PD-agnostic**: reason only about `domain` / `domain_secondary`; never hard-code Aon/Main or a gating direction.
+- **`domain` is instance-level** -> owned by `topgen` (a given IP type can land in different PDs at different tops), read from the module dict in `top_<top>.hjson`. A split IP names one power domain per partition.
+- **A split IP's two partitions may name the same PD** -> it can be instantiated entirely within a single PD; the intra-IP connections then stay inside that PD's wrapper (handled by the existing same-domain inter-module path — no special-casing).
+- **Tooling stays PD-agnostic**: reason only about each partition's `domain`; never hard-code Aon/Main or a gating direction.
 - The `<ip>_part_primary` / `<ip>_part_secondary` RTL modules and the `<ip>_p2s_t` / `<ip>_s2p_t` structs in `<ip>_pkg` are **designer-provided**, not generated.
 
 ## Where each step plugs into the existing flow
@@ -48,26 +48,28 @@ Both shapes are resolved in exactly one place, in `topgen/lib.py`:
 
 | Helper | Purpose |
 |---|---|
-| `is_partitioned_conns(val)` | Is this value keyed by partition? Unambiguous: a flat value is either a bare `clock_group` string or a map keyed by port name (`clk_*_i` / `rst_*_ni`), never `primary`. |
+| `is_partitioned(val)` | Is this value keyed by partition? Unambiguous: a flat value is either a bare string (`clock_group`, `domain`) or a map keyed by port name (`clk_*_i` / `rst_*_ni`), never `primary`. |
 | `conn_partitions(instance, key)` | Which partitions does `key` describe? `['primary']` for the flat form. |
 | `instance_partitions(instance)` | `conn_partitions(instance, 'clock_srcs')` -- the instance's partitions. |
 | `partition_conns(instance, key, partition='primary')` | The connections of one partition. The flat form *is* the primary partition; a scalar (`clock_group`) cannot be per-partition and so applies to all of them. `None` if the instance describes nothing for that partition. |
-| `partition_domain(instance, partition, default)` | The partition's power domain; raises if a secondary partition has no `domain_secondary`, which is resolved long before `check_power_domains` runs. |
+| `domain_partitions(instance)` | `conn_partitions(instance, 'domain')` -- the partitions `domain` names a power domain for. |
+| `partition_domain(instance, partition='primary', default)` | The partition's power domain; raises if a secondary partition has no domain of its own. |
+| `module_domains(instance, default)` | Every power domain the instance occupies, one per partition, de-duplicated when both share one. |
 
 Because the flat form collapses to a single primary partition, every consumer is written once and needs no `is_split_ip` branch, and crossbars flow through the same code unchanged. That matters for crossbars specifically: `generate_xbars` hands their `clock_connections` / `reset_connections` to `tlgen.validate()`, which reads the port names straight out of those dicts (`tlgen/validate.py:297-300`) and dumps the object verbatim into `xbar_*.gen.hjson`, so their shape is not ours to change.
 
 Generated output mirrors its input: `extract_clocks` writes `clock_connections` (and the defaulted `clock_group`) partition-keyed only when the instance's own `clock_srcs` is.
 
 **1b. `util/topgen/validate.py`.**
-- `module_optional` (267-326): add `domain_secondary`. `is_split_ip` is forwarded from the block during elaboration → add it to `module_added` (328-334) so `check_keys` accepts it.
-- `check_power_domains` (1184-1203): require `domain_secondary` iff `is_split_ip`, forbid otherwise; validate membership in `top['power']['domains']`; assert `domain != domain_secondary` (v1).
-- `validate_reset` (1017-1097) / `validate_clock` (1104-1147) / `check_clocks_resets` (931-975): branch on `is_split_ip` to validate each partition's connection sub-dict against **that partition's** PD (primary→`domain`, secondary→`domain_secondary`), including the per-connection `reset['domain']` check (1062-1065).
+- `module_optional`: `domain` is declared `'s|g'`. `is_split_ip` is forwarded from the block during elaboration -> add it to `module_added` so `check_keys` accepts it.
+- `check_power_domains`: require the partition-keyed `domain` iff `is_split_ip` (and the flat form otherwise), then validate each partition's domain for membership in `top['power']['domains']`. The two partitions may name the same PD.
+- `validate_reset` / `validate_clock` / `check_clocks_resets`: validate each partition's connections against **that partition's** PD via `partition_domain()`, including the per-connection `reset['domain']` check.
 
 ---
 
 ## Phase 2 — partition→domain resolution in `merge.py`
 
-Helper `partition_domain(module, partition, default)` → `module['domain_secondary']` for `secondary`, else `module.get('domain', default)`.
+Helper `partition_domain(module, partition, default)` -> the power domain the instance's `domain` names for that partition (see the 1a table).
 
 - `elaborate_instance`: forwards `is_split_ip` onto the instance dict (only when true, to avoid perturbing non-split configs); `partition` already rides along on `param_list` (`as_dict`) and `inter_signal_list` (`_asdict`).
 - `amend_interrupt`: interrupt `domain` now `partition_domain(module, signal.partition, default)` (uses the reggen `Interrupt.partition` attribute directly). The existing per-PD `count_pd` / chip-level `intr_vector_pd_*` logic keys off `irq["domain"]`, so it works unchanged once each interrupt carries its partition's PD.
@@ -98,7 +100,7 @@ No-op for every non-split IP (all objects are `primary` → `partition_domain` r
 
 ## Phase 4 — `lib.py` filtering helpers
 
-Change single-`domain` matches to "does this module have a partition in this PD?" (`m['domain'] == domain or m.get('domain_secondary') == domain`):
+Change single-`domain` matches to "does this module have a partition in this PD?" (`domain in module_domains(m)`):
 - `get_all_modules` — the primary emission driver; returns the one module dict in **both** PD passes.
 - `find_modules`, `idx_of_last_module_with_params`.
 
@@ -109,7 +111,7 @@ Added `get_module_partition(m, domain)` → `'primary'`/`'secondary'` for the te
 ## Phase 5 — partition-aware filtering and instantiation
 
 - `util/topgen/templates/toplevel_snippets/module_instantiations.tpl`: for each module returned by `get_all_modules(top, domain)`, emit `u_<name>_part_<partition>` of module type `<type>_part_<partition>`, indexing the partition's `clock_connections`/`reset_connections` and filtering interrupts / alerts / CIOs / inter-module signals to the emitted partition. Scan/DFT ports emit only for the primary partition.
-- Same-PD support (added here): `lib.get_module_partitions(m, domain)` returns **both** partitions when they share a PD, and the template loops over them so both are emitted in one pass. The removal of the `domain != domain_secondary` check lives in `check_power_domains` (validate.py).
+- Same-PD support (added here): `lib.get_module_partitions(m, domain)` returns **both** partitions when they name the same PD, and the template loops over them so both are emitted in one pass.
 - `port_intermodule_signals.tpl` / `intermodule_signals.tpl`: unchanged — they already filter by signal `domain`, which is partition-correct once Phase 6 tags each signal's domain.
 
 ---
@@ -118,7 +120,7 @@ Added `get_module_partition(m, domain)` → `'primary'`/`'secondary'` for the te
 
 > **Ordering note:** an earlier draft of this plan scoped this work as "Phase 4" (before `lib.py`/templates). In practice it was implemented *after* them — the partitions must be emitted before the intra-IP crossing is meaningful to test — so it now sits as Phase 6, after `lib.py` (4) and templates (5). The corresponding commit was originally labelled "Phase7" and is renumbered to Phase6 in the rebase.
 
-- **Partition-aware `domain` tagging** for the IP's own `inter_signal_list`: `get_signame_chip` (and the req/rsp resolution in `elab_intermodule`) now derive the domain from the signal's `partition` via `sig_partition_domain(module, sig)` (secondary → `domain_secondary`), so an inter-signal owned by the secondary partition is exposed from `domain_secondary`. Per the concept, inter-signals never route through the `p2s`/`s2p` structs.
+- **Partition-aware `domain` tagging** for the IP's own `inter_signal_list`: `get_signame_chip` (and the req/rsp resolution in `elab_intermodule`) now derive the domain from the signal's `partition` via `sig_partition_domain(module, sig)`, so an inter-signal owned by the secondary partition is exposed from that partition's power domain. Per the concept, inter-signals never route through the `p2s`/`s2p` structs.
 - **Auto-connect the intra-IP `p2s`/`s2p` link** — `autoconnect_intra_ip(topcfg)` (called from `autoconnect`, before `elab_intermodule`) pairs, per split IP, a driver (act `req`) with a same-named receiver (act `rcv`) in the other partition and injects `<inst>.<sig>@<drv_part> → <inst>.<sig>@<rcv_part>`. The existing multi-PD machinery (`handle_multi_pd_intersig`) then auto-creates the chip-level signal + PD-level ports (cross-PD), or keeps the connection internal (same-PD).
 - **Per-partition-unique signal names**: `filter_index` parses an optional `@partition` qualifier (returns a 4-tuple) and `find_intermodule_signal(..., partition)` filters by it, so the two same-named driver/receiver ends of an intra-IP signal resolve unambiguously. Non-qualified references are byte-identical to before.
 
@@ -129,7 +131,7 @@ Added `get_module_partition(m, domain)` → `'primary'`/`'secondary'` for the te
 Pilot IP chosen: **rstmgr** — the alert/CPU crash-dump capture logic moves into a secondary partition in the Main PD (primary stays Aon).
 
 1. `hw/ip_templates/rstmgr`: `is_split_ip` + a partition-keyed `clocking` in `rstmgr.hjson.tpl`; real `rstmgr_interpart_p2s_t`/`rstmgr_interpart_s2p_t` structs in `rstmgr_pkg.sv.tpl`; `interpart_p2s`/`interpart_s2p` inter-signals (one per partition, same name); a pseudo secondary alert `fatal_sec_test`; RTL split into `rstmgr_part_primary.sv.tpl` and `rstmgr_part_secondary.sv`; `rstmgr.core.tpl` filelist updated.
-2. All three tops' `rstmgr` instances gain nested `clock_srcs`/`reset_connections`/`clock_group` + `domain_secondary`.
+2. All three tops' `rstmgr` instances gain a partition-keyed `clock_srcs`/`reset_connections`/`clock_group`/`domain`.
 
 ### Verification (performed)
 - **Backwards-compat**: `make -k -C hw top_and_cmdgen` — no-op diff for non-split IPs (caught and fixed a `default=vars` leak in Phase 0 via class-level attribute defaults).

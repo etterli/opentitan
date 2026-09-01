@@ -41,11 +41,20 @@ Until per-partition uniqueness is implemented, a split IP bootstraps this by dec
 
 ## HJSON Implications
 The hjson description of OpenTitan IPs (`<ip_name>.hjson`) must feature an optional Boolean key/property called `is_split_ip` (or similar), which all affected tools/scripts must assume to have `"false"` as default value if an IP does not specify it (backwards compatibility).
-Each IP which specifies `is_split_ip: "true"` will then get the power domain specified in the `domain` key in `top_<top_name>.hjson` (as part of its instantiation in `<top_name>`) assigned as the PD for its **primary** partition. Furthermore, the instantiation of each such IP **must** include a `domain_secondary` key, which naturally specifies where the secondary partition shall get emitted to.
+The `domain` key in `top_<top_name>.hjson` (part of the IP's instantiation in `<top_name>`) then names a PD per partition rather than a single one, so that each partition is emitted into its own PD wrapper:
+
+```
+domain: {
+  primary:   "Aon",
+  secondary: "Main",
+}
+```
+
+Every IP which specifies `is_split_ip: "true"` **must** use this form, and every other instance keeps naming a single PD as a bare string -- the same either/or that applies to `clocking` and to the per-instance connection keys below.
 
 Some notes on this:
-- The `domain` key already exists; note that it can be omitted, in which case the value defaults to the PD specified in `/power/default` (usually `"Main"`)
-- `domain` and `domain_secondary` may specify either different PDs or the *same* PD. When they differ, the intra-IP / inter-partition connections cross a PD boundary (chip-level signals are generated automatically). When they are equal, both partitions are instantiated in that single PD's wrapper and the intra-IP connections stay internal to it - this falls out of the existing inter-module machinery (`elab_intermodule` takes its same-domain path when both endpoints resolve to the same PD), so no special handling is required beyond emitting both partitions in the same power-domain pass.
+- The `domain` key already exists; note that it can be omitted, in which case the value defaults to the PD specified in `/power/default` (usually `"Main"`). Only a non-split IP may omit it.
+- The two partitions may name either different PDs or the *same* PD. When they differ, the intra-IP / inter-partition connections cross a PD boundary (chip-level signals are generated automatically). When they are equal, both partitions are instantiated in that single PD's wrapper and the intra-IP connections stay internal to it - this falls out of the existing inter-module machinery (`elab_intermodule` takes its same-domain path when both endpoints resolve to the same PD), so no special handling is required beyond emitting both partitions in the same power-domain pass.
 
 Furthermore, the per-instance connection keys `reset_connections`, `clock_srcs` and `clock_group` in `top_<top_name>.hjson` must be able to describe both partitions for split IPs. Instead of adding parallel `*_secondary` keys, these keys could also be extended by one nesting level with `primary` and `secondary` sub-keys, e.g.:
 
@@ -91,7 +100,7 @@ The following keys shall not feature the `partition` key:
   - The state of secondary-partition register storage is not retained when the secondary partition's PD is power-gated. Consequently, only registers that are irrelevant while the secondary PD is off (or that are explicitly re-initialized on secondary power-up) may be placed in the secondary partition; any register requiring retention across a secondary power-down must stay in the primary partition.
 
 ## `topgen` and Template Implications
-In essence, all scripts and functions which filter IP instances by power domain need to be made aware that there are split-type IPs with multiple partitions, and for such split-type IPs both the `domain` and `domain_secondary` keys must be checked whether they match the to-be-filtered-for PD.
+In essence, all scripts and functions which filter IP instances by power domain need to be made aware that there are split-type IPs with multiple partitions, and for such split-type IPs every partition's PD must be checked whether it matches the to-be-filtered-for PD.
 
 For templates, this mostly affects the [module_instantiations.tpl](templates/toplevel_snippets/module_instantiations.tpl) snippet. The main instantiation-loop now needs to do the domain match for both partition domains in the case of split IPs, and furthermore filter all relevant objects (CIOs, alerts/interrupts, clock/reset connections, inter-module signals) to only emit those belonging to the partition at hand.
 

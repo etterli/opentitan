@@ -5,7 +5,7 @@
 <%page args="top, feature_info, cio_info, domain"/>\
   // Signals
 % if feature_info["has_pinmux"]:
-% if lib.find_module(top["module"], "pinmux").get("domain") == domain:
+% if lib.partition_domain(lib.find_module(top["module"], "pinmux")) == domain:
   logic [${cio_info["num_mio_inputs"] - 1}:0] mio_p2d;
   logic [${cio_info["num_mio_outputs"] - 1}:0] mio_d2p;
   logic [${cio_info["num_mio_outputs"] - 1}:0] mio_en_d2p;

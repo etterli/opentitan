@@ -5,7 +5,7 @@
 <%page args="top, name_to_block, domain"/>\
 % for name, plic in top["plic_info"].items():
 <% prefix = name + "_" if len(top["plic_info"]) > 1 else "" %>
-% if plic["domain"] == domain:
+% if lib.partition_domain(plic) == domain:
   logic [${plic["count_tot"]-1}:0] ${prefix}intr_vector;
 % endif
 % endfor

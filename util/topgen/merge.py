@@ -782,7 +782,7 @@ def extract_clocks(top: ConfigT):
 
         # Mirror the shape of the endpoint's own clock_srcs: only a split IP
         # keys these by partition, everything else stays flat.
-        if lib.is_partitioned_conns(ep['clock_srcs']):
+        if lib.is_partitioned(ep['clock_srcs']):
             ep['clock_group'] = groups
             ep['clock_connections'] = conns
         else:
@@ -1264,7 +1264,7 @@ def amend_interrupt(top: ConfigT,
     # Determine PLIC info
     plics = lib.find_modules(top["module"], "rv_plic", use_base_template_type=True)
     for plic in plics:
-        domain = plic.get("domain", top["power"]["default"])
+        domain = lib.partition_domain(plic, default=top["power"]["default"])
         # Interrupt source 0 is tied to 0 to conform to the RISC-V PLIC spec.
         # The total number of interrupts is the sum of the widths of each entry
         # in the list over all power domains, plus 1.
@@ -1368,7 +1368,7 @@ def commit_alert_connections(top: ConfigT,
     # Construct info dicts for internal alert handlers
     alert_handlers = lib.find_modules(top["module"], "alert_handler")
     for ah in alert_handlers:
-        domain = ah.get("domain", top["power"]["default"])
+        domain = lib.partition_domain(ah, default=top["power"]["default"])
         ah_info = {"domain": domain, "count_tot": 0, "count_pd": {}, "connect_pd": {}}
         for pd in top["power"]["domains"]:
             ah_info["count_pd"][pd] = 0
@@ -1800,7 +1800,7 @@ def amend_pinmux_io(top: ConfigT,
     # Port and signal prototypes for cross-PD connections
     pd_default = top["power"]["default"]
     m_pinmux = lib.find_module(top["module"], "pinmux")
-    pd_pinmux = m_pinmux.get("domain", pd_default)
+    pd_pinmux = lib.partition_domain(m_pinmux, default=pd_default)
 
     port_proto = OrderedDict([('package', ''),
                               ('struct', 'logic'),
@@ -1870,8 +1870,7 @@ def amend_pinmux_io(top: ConfigT,
         # Fast path: a non-split module entirely in the pinmux's PD needs no
         # inter-PD plumbing. Split modules are handled per-signal below, as
         # their two partitions can live in different PDs.
-        if 'domain_secondary' not in m and \
-                m.get("domain", pd_default) == pd_pinmux:
+        if lib.module_domains(m, pd_default) == [pd_pinmux]:
             continue
 
         for sig in block.get_signals_as_list_of_dicts():

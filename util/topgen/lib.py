@@ -578,8 +578,7 @@ def idx_of_last_module_with_params(top: ConfigT, domain: str = "") -> int:
         default_domain = top["power"]["default"]
         modlist = [
             m for m in top["module"]
-            if m.get("domain", default_domain) == domain
-            or m.get("domain_secondary") == domain
+            if domain in module_domains(m, default_domain)
         ]
     else:
         modlist = top["module"]
@@ -593,24 +592,20 @@ def idx_of_last_module_with_params(top: ConfigT, domain: str = "") -> int:
 
 def get_all_modules(top: ConfigT, domain: str = ""):
     if domain != "":
-        # A split IP has a partition in both its primary ('domain') and
-        # secondary ('domain_secondary') power domains, so it is returned for
-        # both passes; get_module_partition() then selects which partition to
-        # emit for the given domain.
-        return [
-            m for m in top["module"]
-            if m.get("domain") == domain or m.get("domain_secondary") == domain
-        ]
+        # A split IP has a partition in each of the power domains named by its
+        # 'domain', so it is returned for both passes; get_module_partitions()
+        # then selects which partition(s) to emit for the given domain.
+        return [m for m in top["module"] if domain in module_domains(m)]
     else:
         return top["module"]
 
 
-def is_partitioned_conns(val: object) -> bool:
-    '''Return True if val is keyed by partition rather than by port name.
+def is_partitioned(val: object) -> bool:
+    '''Return True if val is keyed by partition.
 
-    Only a split IP keys its connections by partition; every other instance
-    uses the flat form and is left alone. The distinction is unambiguous: a
-    flat value is either a bare clock_group string or a map keyed by port name
+    Only a split IP keys a value by partition; every other instance uses the
+    flat form and is left alone. The distinction is unambiguous: a flat value
+    is either a bare string (clock_group, domain) or a map keyed by port name
     (clk_*_i / rst_*_ni), never 'primary'.
     '''
     return (isinstance(val, dict) and bool(val) and
@@ -624,7 +619,7 @@ def conn_partitions(module: ConfigT, key: str) -> List[str]:
     flat form, which describes the primary partition alone.
     '''
     val = module.get(key)
-    if is_partitioned_conns(val):
+    if is_partitioned(val):
         return [p for p in PARTITIONS if p in val]
     return ['primary'] if val is not None else []
 
@@ -647,44 +642,70 @@ def partition_conns(module: ConfigT, key: str,
     Returns None if the instance describes nothing for that partition.
     '''
     val = module.get(key)
-    if is_partitioned_conns(val):
+    if is_partitioned(val):
         return val.get(partition)
     if not isinstance(val, dict):
         return val
     return val if partition == 'primary' else None
 
 
-def partition_domain(module: ConfigT, partition: str,
+def domain_partitions(module: ConfigT) -> List[str]:
+    '''Return the partitions that 'domain' names a power domain for.
+
+    A split instance keys 'domain' by partition; every other instance names a
+    single domain, which belongs to the primary partition.
+    '''
+    return conn_partitions(module, 'domain')
+
+
+def partition_domain(module: ConfigT, partition: str = 'primary',
                      default: str = None) -> str:
     '''Return the power domain of the given partition of a module instance.
 
-    'primary' maps to the instance's 'domain', 'secondary' to its
-    'domain_secondary'. For non-split IPs every object is in the 'primary'
-    partition, so this simply returns the ordinary 'domain'. The default is
-    used only for the primary domain when the instance omits 'domain'
-    (defensive; check_power_domains normally populates it beforehand).
+    A split instance keys 'domain' by partition; every other instance names a
+    single domain, and all of its objects are in the 'primary' partition. Note
+    that unlike a scalar clock_group, a scalar domain applies to the primary
+    partition alone: a power domain is what distinguishes the partitions. The
+    default is used when the instance omits 'domain' altogether (defensive;
+    check_power_domains normally populates it beforehand).
     '''
-    if partition == 'secondary':
-        domain = module.get('domain_secondary')
-        if domain is None:
+    val = module.get('domain')
+    if is_partitioned(val):
+        domain = val.get(partition)
+    else:
+        domain = val if partition == 'primary' else None
+
+    if domain is None:
+        if partition != 'primary':
             raise ValueError(
-                f"{module['name']} describes a secondary partition but does "
-                "not specify domain_secondary")
-        return domain
-    return module.get('domain', default)
+                f"{module['name']} describes a {partition} partition but its "
+                "domain names no power domain for it")
+        return default
+    return domain
+
+
+def module_domains(module: ConfigT, default: str = None) -> List[str]:
+    '''Return the power domains a module instance occupies, one per partition.
+
+    A split IP whose partitions share a power domain names it once.
+    '''
+    domains = []
+    for partition in domain_partitions(module) or ['primary']:
+        domain = partition_domain(module, partition, default)
+        if domain is not None and domain not in domains:
+            domains.append(domain)
+    return domains
 
 
 def get_module_partition(module: ConfigT, domain: str) -> str:
     '''Return which partition of `module` is emitted for `domain`.
 
-    Returns 'secondary' when `domain` matches the module's 'domain_secondary'
-    (and not its primary 'domain'); otherwise 'primary'. Non-split modules and
-    the primary-domain pass always return 'primary'.
+    Returns 'secondary' when `domain` matches only the secondary partition's
+    power domain; otherwise 'primary'. Non-split modules and the primary-domain
+    pass always return 'primary'.
     '''
-    if module.get("domain") != domain and \
-            module.get("domain_secondary") == domain:
-        return "secondary"
-    return "primary"
+    partitions = get_module_partitions(module, domain)
+    return partitions[0] if partitions else "primary"
 
 
 def get_module_partitions(module: ConfigT, domain: str) -> list:
@@ -692,19 +713,16 @@ def get_module_partitions(module: ConfigT, domain: str) -> list:
 
     For a non-split module this is always ['primary'] (get_all_modules has
     already filtered by domain). For a split IP it is the partitions whose power
-    domain matches `domain`: 'primary' when its 'domain' matches, 'secondary'
-    when its 'domain_secondary' matches. When both partitions share a power
-    domain, both are returned so that they are emitted in the same pass.
+    domain matches `domain`. When both partitions share a power domain, both are
+    returned so that they are emitted in the same pass.
     '''
     if not module.get("is_split_ip"):
         return ["primary"]
 
-    partitions = []
-    if module.get("domain") == domain:
-        partitions.append("primary")
-    if module.get("domain_secondary") == domain:
-        partitions.append("secondary")
-    return partitions
+    return [
+        p for p in domain_partitions(module)
+        if partition_domain(module, p) == domain
+    ]
 
 
 # Template functions
@@ -787,7 +805,7 @@ def shadow_name(name: str) -> str:
 
 def get_clock_prefixes(top, domain_mod: str = None) -> dict:
     clkmgr = find_module(top['module'], 'clkmgr')
-    domain_clkmgr = clkmgr.get('domain')
+    domain_clkmgr = partition_domain(clkmgr)
 
     if domain_clkmgr == domain_mod or domain_mod is None:
         prefixes = {
@@ -836,7 +854,8 @@ def get_clock_lpg_path(top: object,
 
 def get_reset_prefixes(top, domain_mod) -> dict:
     rstmgr = find_module(top['module'], 'rstmgr')
-    domain_rstmgr = rstmgr.get('domain')
+    # The reset tree is driven by the rstmgr's primary partition.
+    domain_rstmgr = partition_domain(rstmgr)
 
     if domain_rstmgr == domain_mod or domain_mod is None:
         prefixes = {
@@ -1124,7 +1143,7 @@ def num_rom_ctrl(modules: List[ConfigT], domain: str = None) -> int:
 
     for m in modules:
         if m['type'] == 'rom_ctrl' and \
-           (domain is None or m.get('domain') == domain):
+           (domain is None or partition_domain(m) == domain):
             num += 1
 
     return num
@@ -1139,16 +1158,20 @@ def find_modules(modules: List[Dict[str, object]],
     If use_base_template_type is set to True, ipgen-based modules are
     searched using the "template_type" attribute. If set to False,
     the search uses the "type" attribute instead.
+
+    A `domain` matches against the primary partition, i.e. "this IP lives in
+    that power domain". Use get_all_modules() for the other question, "does
+    this IP have any partition in that power domain".
     '''
     modules_found = []
     for m in modules:
         if m.get('attr') == 'ipgen' and use_base_template_type:
             if m['template_type'] == type and \
-               (domain is None or m.get('domain') == domain):
+               (domain is None or partition_domain(m) == domain):
                 modules_found.append(m)
         else:
             if m['type'] == type and \
-               (domain is None or m.get('domain') == domain):
+               (domain is None or partition_domain(m) == domain):
                 modules_found.append(m)
 
     return modules_found

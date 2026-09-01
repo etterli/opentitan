@@ -5,7 +5,7 @@
 <%from topgen.merge import alert_handler_signals%>\
 <%page args="top, feature_info, cio_info, domain"/>\
 % if feature_info["has_pinmux"]:
-% if lib.find_module(top["module"], "pinmux").get("domain") == domain:
+% if lib.partition_domain(lib.find_module(top["module"], "pinmux")) == domain:
 % if cio_info["num_mio_pads"] != 0:
   // Multiplexed I/O
   input  logic ${lib.bitarray(cio_info["num_mio_pads"], cio_info["max_sigwidth"])} mio_in_i,
@@ -41,7 +41,7 @@
 
 % for name, plic in top["plic_info"].items():
 <% prefix = "_" + name if len(top["plic_info"]) > 1 else "" %>\
-% if plic["domain"] == domain:
+% if lib.partition_domain(plic) == domain:
   % for pd in top["power"]["domains"]:
 <% if pd == domain: continue %>\
 <% pd_len = plic["count_pd"][pd] - 1 %>\
@@ -53,7 +53,7 @@
 % else:
 <% pd_len = plic["count_pd"][domain] - 1 %>\
   % if pd_len >= 0:
-  // Interrupts to PLIC ${name} in power domain ${plic["domain"]}
+  // Interrupts to PLIC ${name} in power domain ${lib.partition_domain(plic)}
   output logic [${pd_len}:0] intr_vector${prefix}_o,
   % endif
 % endif
@@ -62,7 +62,7 @@
 % if feature_info["has_alert_handler"]:
 % for name, ah in top["alert_handler_info"].items():
 <% signals = alert_handler_signals(name) %>\
-% if ah["domain"] == domain:
+% if lib.partition_domain(ah) == domain:
   % for pd in top["power"]["domains"]:
 <% if pd == domain: continue %>\
 <% pd_len = ah["count_pd"][pd] - 1 %>\
@@ -75,7 +75,7 @@
 % else:
 <% pd_len = ah["count_pd"][domain] - 1 %>\
   % if pd_len >= 0:
-  // Alerts to power domain ${ah["domain"]}
+  // Alerts to power domain ${lib.partition_domain(ah)}
   input  prim_alert_pkg::alert_rx_t [${pd_len}:0] ${signals[1]}_i,
   output prim_alert_pkg::alert_tx_t [${pd_len}:0] ${signals[0]}_o,
   % endif
@@ -110,8 +110,9 @@
 <%
   clkmgr = lib.find_module(top['module'], 'clkmgr')
   rstmgr = lib.find_module(top['module'], 'rstmgr')
-  domain_clkmgr = clkmgr.get('domain')
-  domain_rstmgr = rstmgr.get('domain')
+  domain_clkmgr = lib.partition_domain(clkmgr)
+  ## The reset tree is driven by the rstmgr's primary partition.
+  domain_rstmgr = lib.partition_domain(rstmgr)
 %>\
 % if domain_clkmgr == domain:
   // Externally supplied clocks

@@ -13,7 +13,7 @@ from reggen.validate import check_keys
 from topgen.resets import Resets, UnmanagedResets
 from topgen.typing import IpBlocksT
 from topgen.lib import (find_module, find_modules, conn_partitions,
-                        partition_conns, partition_domain)
+                        domain_partitions, partition_conns, partition_domain)
 
 # For the reference
 # val_types = {
@@ -272,12 +272,9 @@ module_required = {
 
 module_optional = {
     'domain': [
-        's', 'power domain of the module, defaults to the domain specified '
-        'in top["power"]["default"]'
-    ],
-    'domain_secondary': [
-        's', 'for a split IP, the power domain of its secondary partition '
-        '(must differ from "domain")'
+        's|g', 'power domain of the module, defaults to the domain specified '
+        'in top["power"]["default"]; a split IP names one per partition, as a '
+        'dict with primary / secondary keys'
     ],
     'is_split_ip': [
         'pb', 'whether this IP is split into a primary and secondary '
@@ -1310,25 +1307,28 @@ def check_power_domains(top: ConfigT):
         if 'domain' not in end_point:
             end_point['domain'] = top['power']['default']
 
-        if end_point['domain'] not in top['power']['domains']:
+        # A split IP names a power domain per partition, so that each partition
+        # is emitted into its own PD wrapper. The two may name the same PD, in
+        # which case both partitions are emitted into that single wrapper and
+        # the intra-IP connections stay within it. Every other instance names a
+        # single domain as a bare string.
+        partitions = domain_partitions(end_point)
+        is_split = end_point.get('is_split_ip')
+        if is_split and 'secondary' not in partitions:
             raise ValueError(
-                f"{end_point['name']} defines invalid domain {end_point['domain']}")
+                f"{end_point['name']} is a split IP, so its domain must name a "
+                "power domain for the secondary partition too")
+        if not is_split and partitions != ['primary']:
+            raise ValueError(
+                f"{end_point['name']} is not a split IP, so its domain must "
+                "name a single power domain")
 
-        # Split IPs additionally place their secondary partition into a
-        # 'domain_secondary'. A split IP must specify it; a non-split IP must
-        # not. It must be a valid domain, but may equal the primary domain (a
-        # split IP can be instantiated with both partitions in a single PD, in
-        # which case the intra-IP connections stay within that PD's wrapper).
-        domain_secondary = end_point.get('domain_secondary')
-        if end_point.get('is_split_ip') and domain_secondary is None:
-            raise ValueError(
-                f"{end_point['name']} is a split IP but does not specify "
-                "domain_secondary")
-        if domain_secondary is not None:
-            if domain_secondary not in top['power']['domains']:
+        for partition in partitions:
+            domain = partition_domain(end_point, partition)
+            if domain not in top['power']['domains']:
                 raise ValueError(
-                    f"{end_point['name']} defines invalid domain_secondary "
-                    f"{domain_secondary}")
+                    f"{end_point['name']} defines invalid domain {domain} for "
+                    f"its {partition} partition")
 
 
 def check_modules(top: ConfigT, prefix: str) -> int:

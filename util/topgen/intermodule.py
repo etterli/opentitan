@@ -341,12 +341,10 @@ def sig_partition_domain(module: Dict, sig: OrderedDict):
     '''Power domain of a (possibly split-IP) inter-module signal endpoint.
 
     For a split IP, an inter-module signal owned by the 'secondary' partition
-    is exposed from the module's secondary power domain ('domain_secondary');
-    otherwise the module's primary 'domain' applies.
+    is exposed from that partition's power domain; otherwise the module's
+    primary power domain applies.
     '''
-    if sig.get('partition') == 'secondary':
-        return module.get('domain_secondary')
-    return module.get('domain')
+    return lib.partition_domain(module, sig.get('partition', 'primary'))
 
 
 def get_signame_chip(topcfg: Dict, sig: OrderedDict, port: str, reqrsp: str = "req",

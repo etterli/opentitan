@@ -7,8 +7,9 @@
 <%
   clkmgr = lib.find_module(top['module'], 'clkmgr')
   rstmgr = lib.find_module(top['module'], 'rstmgr')
-  domain_clkmgr = clkmgr.get('domain')
-  domain_rstmgr = rstmgr.get('domain')
+  domain_clkmgr = lib.partition_domain(clkmgr)
+  ## The reset tree is driven by the rstmgr's primary partition.
+  domain_rstmgr = lib.partition_domain(rstmgr)
 %>\
 % if domain_clkmgr == domain:
     // All externally supplied clocks
@@ -39,7 +40,7 @@
     .scanmode_i,
 
 % if feature_info["has_pinmux"]:
-% if lib.find_module(top["module"], "pinmux").get("domain") == domain:
+% if lib.partition_domain(lib.find_module(top["module"], "pinmux")) == domain:
 % if cio_info["num_mio_pads"] != 0:
     // Multiplexed I/O
     .mio_in_i,
@@ -64,7 +65,7 @@
     // Special inter-power domain signals (interrupts, alerts)
 % for name, plic in top["plic_info"].items():
 <% prefix = "_" + name if len(top["plic_info"]) > 1 else "" %>\
-% if plic["domain"] == domain:
+% if lib.partition_domain(plic) == domain:
   % for pd in top["power"]["domains"]:
 <% if pd == domain: continue %>\
     % if plic["count_pd"][pd] > 0:
@@ -83,7 +84,7 @@
 % if feature_info["has_alert_handler"]:
 % for name, ah in top["alert_handler_info"].items():
 <% signals = alert_handler_signals(name) %>\
-% if ah["domain"] == domain:
+% if lib.partition_domain(ah) == domain:
   % for pd in top["power"]["domains"]:
 <% if pd == domain: continue %>\
 <% pd_len = ah["count_pd"][pd] - 1 %>\

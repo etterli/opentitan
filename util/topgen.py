@@ -859,7 +859,9 @@ def generate_top_ral(topname: str, top: ConfigT, name_to_block: IpBlocksT,
     for module in top["module"]:
         inst_name = module["name"]
         block_name = module["type"]
-        block_domain = module["domain"]
+        # The device tree describes the primary partition, where an IP's
+        # registers and hence its DIFs live.
+        block_domain = partition_domain(module)
         block = name_to_block[block_name]
         if "attr" in module:
             attrs[inst_name] = module["attr"]

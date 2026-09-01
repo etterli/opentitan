@@ -3,7 +3,7 @@
 ## SPDX-License-Identifier: Apache-2.0
 <%import topgen.lib as lib%>\
 <%page args="top, feature_info, cio_info, domain"/>\
-% if lib.find_module(top["module"], "pinmux").get("domain") == domain:
+% if lib.partition_domain(lib.find_module(top["module"], "pinmux")) == domain:
 % if feature_info["has_pinmux"]:
   // Pinmux connections
   // All muxed inputs
