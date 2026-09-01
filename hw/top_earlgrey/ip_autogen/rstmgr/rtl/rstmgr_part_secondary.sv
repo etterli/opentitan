@@ -23,9 +23,11 @@ module rstmgr_part_secondary
   input clk_sec_i,
   input rst_sec_ni,
 
-  // Alert
-  input  prim_alert_pkg::alert_rx_t alert_rx_i,
-  output prim_alert_pkg::alert_tx_t alert_tx_o,
+  // Alert. Declared as a 1-entry vector to follow the comportable
+  // convention of alert_tx_o[NumAlerts-1:0], which the generated top and DV
+  // collateral index into.
+  input  prim_alert_pkg::alert_rx_t [0:0] alert_rx_i,
+  output prim_alert_pkg::alert_tx_t [0:0] alert_tx_o,
 
   // Interface to alert handler crash dump
   input alert_handler_pkg::alert_crashdump_t alert_dump_i,
@@ -93,8 +95,8 @@ module rstmgr_part_secondary
     .alert_req_i   ( 1'b0        ),
     .alert_ack_o   (             ),
     .alert_state_o (             ),
-    .alert_rx_i    ( alert_rx_i  ),
-    .alert_tx_o    ( alert_tx_o  )
+    .alert_rx_i    ( alert_rx_i[0] ),
+    .alert_tx_o    ( alert_tx_o[0] )
   );
 
   // Assertions

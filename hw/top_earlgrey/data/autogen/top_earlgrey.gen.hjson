@@ -3871,8 +3871,11 @@
           }
         }
       }
-      domain: Aon
-      domain_secondary: Main
+      domain:
+      {
+        primary: Aon
+        secondary: Main
+      }
       attr: ipgen
       clock_connections:
       {
