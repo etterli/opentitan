@@ -14,7 +14,7 @@ from reggen.validate import check_keys
 from topgen.resets import Resets, UnmanagedResets
 from topgen.typing import IpBlocksT
 from topgen.lib import (find_module, find_modules, conn_partitions,
-                        domain_partitions, instance_partitions,
+                        domain_partitions, instance_partitions, is_partitioned,
                         partition_conns, partition_domain)
 
 # For the reference
@@ -1057,45 +1057,55 @@ def check_partitions(module: ConfigT, inst: IpBlock, name: str,
     them. These must match: a mismatch means the top hjson describes a
     partition the IP does not have, or forgets one that it does.
 
-    The connection keys are then checked against those partitions. A partition
-    need not be clocked, but if it is, it must have both clocks and resets, and
-    only partitions the instance actually has may be described.
+    Whatever the instance describes per partition is then checked against
+    those partitions, whichever key it is: no key may describe a partition the
+    instance does not have. What a given key must cover is specific to that
+    key and is checked where the key itself is validated, see validate_clock()
+    and validate_reset().
     '''
     err = 0
     inst_partitions = instance_partitions(module)
-    block_partitions = inst.partitions
 
-    for partition in sorted(set(block_partitions) - set(inst_partitions)):
+    for partition in sorted(set(inst.partitions) - set(inst_partitions)):
         err += 1
         log.error(f"{prefix} {name} has a {partition} partition, but its "
                   "domain names no power domain for it")
-    for partition in sorted(set(inst_partitions) - set(block_partitions)):
+    for partition in sorted(set(inst_partitions) - set(inst.partitions)):
         err += 1
         log.error(f"{prefix} {name} names a power domain for a {partition} "
                   "partition, but the IP has no such partition")
 
-    # The clocked partitions of the IP are exactly those its clocking covers,
-    # and each one needs both clock sources and reset connections.
-    clocked = set(inst.clocking.partitions)
-    for key in ('clock_srcs', 'reset_connections'):
-        key_partitions = set(conn_partitions(module, key))
-
-        for partition in sorted(clocked - key_partitions):
+    for key, val in module.items():
+        if not is_partitioned(val):
+            continue
+        for partition in sorted(set(val) - set(inst_partitions)):
             err += 1
-            log.error(f"{prefix} {name} defines no {key} for its {partition} "
-                      "partition, which the IP clocks")
-        for partition in sorted(key_partitions - clocked):
-            err += 1
-            log.error(f"{prefix} {name} defines {key} for its {partition} "
-                      "partition, but the IP declares no clocking for it")
+            log.error(f"{prefix} {name} defines {key} for a {partition} "
+                      "partition that the instance does not have")
 
-    # clock_group is optional and a single value covers every partition, so it
-    # is only checked against the partitions the instance has.
-    groups = set(conn_partitions(module, 'clock_group'))
-    for partition in sorted(groups - set(inst_partitions)):
+    return err
+
+
+def check_partition_conns(module: ConfigT, key: str, clocked: List[str],
+                          name: str, prefix: str) -> int:
+    '''Check which partitions a clocking-related key describes.
+
+    A partition need not be clocked, but if it is, it needs both clock sources
+    and reset connections, and nothing may be described for a partition the IP
+    does not clock. check_partitions() has already checked `key` against the
+    partitions the instance has.
+    '''
+    err = 0
+    key_partitions = set(conn_partitions(module, key))
+
+    for partition in sorted(set(clocked) - key_partitions):
         err += 1
-        log.error(f"{prefix} {name} defines clock_group for a {partition} "
-                  "partition that the instance does not have")
+        log.error(f"{prefix} {name} defines no {key} for its {partition} "
+                  "partition, which the IP clocks")
+    for partition in sorted(key_partitions - set(clocked)):
+        err += 1
+        log.error(f"{prefix} {name} defines {key} for its {partition} "
+                  "partition, but the IP declares no clocking for it")
 
     return err
 
@@ -1200,6 +1210,8 @@ def validate_reset(top: ConfigT,
 
     # Validate each of the IP block's partitions against the reset signals of
     # that same partition.
+    error += check_partition_conns(module, 'reset_connections',
+                                   inst.clocking.partitions, name, prefix)
     for partition in inst.clocking.partitions:
         reset_connections = partition_conns(module, 'reset_connections',
                                             partition)
@@ -1277,6 +1289,8 @@ def validate_clock(top: ConfigT,
 
     # Validate each of the IP block's partitions against the clock signals of
     # that same partition.
+    error += check_partition_conns(module, 'clock_srcs',
+                                   inst.clocking.partitions, name, prefix)
     for partition in inst.clocking.partitions:
         clock_srcs_map = partition_conns(module, 'clock_srcs', partition)
         if clock_srcs_map is None:
