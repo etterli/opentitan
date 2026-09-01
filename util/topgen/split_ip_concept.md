@@ -72,7 +72,17 @@ The entries of the following lists in IP hjson descriptions must feature the opt
 
 The following keys shall not feature the `partition` key:
 - `bus_interfaces`: For now, lets try to keep them in the primary partition
-- `clocking`: Instead, use a separate, mandatory `clocking_secondary` list, that, however, may be empty in case the secondary partition does not need to be clocked. Just like the primary partition's `clocking` list, each entry also carries its associated `reset`, so `clocking_secondary` fully describes both the clocks *and* resets available to the secondary partition — no separate reset list is required.
+- `clocking`: Instead of a per-entry `partition` key, the list itself is keyed by partition, so that the assignment is structural rather than repeated on every entry:
+  ```
+  clocking: {
+    primary:   [{clock: "clk_i", reset: "rst_ni", primary: true}, ...]
+    secondary: [{clock: "clk_sec_i", reset: "rst_sec_ni", primary: true}]
+  }
+  ```
+  A non-split IP keeps the flat list form, which is equivalent to specifying only `primary`; the key therefore accepts either a list or a per-partition group.
+  The `secondary` sub-list may be omitted or empty in case the secondary partition does not need to be clocked, and it is an error to specify it without `is_split_ip: "true"`.
+  Exactly one entry per partition must be marked `primary: true`, giving each partition its own primary clock and reset.
+  Just like the primary partition's list, each entry also carries its associated `reset`, so the `secondary` sub-list fully describes both the clocks *and* resets available to the secondary partition -- no separate reset list is required.
 - `registers`: For now, lets keep the auto-generated `<ip_name>_reg_top` block in the primary partition, and instantiate the actual storage for all registers that need to go into the secondary partition manually there, then connect them to `<ip_name>_reg_top` via the intra-IP connections (and use the `hwext` property for the registers in question). This may need to be re-visited, but it would cause significant added complexity to `reggen`. Two consequences of this arrangement are intended and must be kept in mind by the IP designer:
   - Every access to a secondary-partition register crosses the PD boundary (write path `reg_top` → `p2s` → secondary storage, read path secondary storage → `s2p` → `reg_top`), so such registers are only reachable while the secondary partition's PD is powered.
   - The state of secondary-partition register storage is not retained when the secondary partition's PD is power-gated. Consequently, only registers that are irrelevant while the secondary PD is off (or that are explicitly re-initialized on secondary power-up) may be placed in the secondary partition; any register requiring retention across a secondary power-down must stay in the primary partition.

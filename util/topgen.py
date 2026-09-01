@@ -1178,16 +1178,14 @@ def generate_rust(topname, completecfg, name_to_block, out_path, version_stamp,
                         helper=rs_helper)
 
 
-def _amend_block_reset_connections(module: ConfigT,
-                                   default_power_domain: str) -> None:
-    for port, reset in module["reset_connections"].items():
+def _amend_block_reset_connections(module: ConfigT, key: str,
+                                   domain: str) -> None:
+    reset_connections = module.get(key)
+    if reset_connections is None:
+        return
+    for port, reset in reset_connections.items():
         if isinstance(reset, str):
-            if "domain" not in module:
-                domain = default_power_domain
-            else:
-                domain = module["domain"]
-
-            module["reset_connections"][port] = {
+            reset_connections[port] = {
                 'name': reset,
                 'domain': domain,
             }
@@ -1201,12 +1199,20 @@ def amend_reset_connections(topcfg: ConfigT) -> None:
     with a value that can be just a string or a dictionary with a name
     and a domain. When the value is just a string determine the domain
     as the module's domain, or the default domain from the topcfg.
+
+    A split IP's secondary partition sits in its own power domain, so its
+    connections take that domain instead.
     """
     default_power_domain = topcfg["power"]["default"]
     for module in topcfg["module"]:
-        _amend_block_reset_connections(module, default_power_domain)
+        domain = module.get("domain", default_power_domain)
+        _amend_block_reset_connections(module, "reset_connections", domain)
+        _amend_block_reset_connections(module, "reset_connections_secondary",
+                                       module.get("domain_secondary", domain))
     for xbar in topcfg["xbar"]:
-        _amend_block_reset_connections(xbar, default_power_domain)
+        _amend_block_reset_connections(
+            xbar, "reset_connections",
+            xbar.get("domain", default_power_domain))
 
 
 def create_generic_ip_blocks(topcfg: ConfigT,
@@ -1418,10 +1424,9 @@ def _process_top(
     them to further populate the top config. It can raise exceptions for
     errors found in the process.
     """
-    # Prepare the topcfg.
-    # Split-IP instances specify their clock/reset/clock_group connections in a
-    # nested per-partition form; fold this into the flat primary form (plus
-    # '<key>_secondary' companions) before any consumer looks at them.
+    # Prepare the topcfg. The normalization already ran in main(), before
+    # amend_reset_connections; repeat it here (it is idempotent) so that
+    # _process_top does not depend on that ordering.
     normalize_partition_connections(topcfg)
     extract_clocks(topcfg)
     ip_attrs = create_generic_ip_blocks(topcfg, alias_cfgs, cfg_path,
@@ -1805,6 +1810,13 @@ def main():
     topcfg["seed"] = {}
     for seed_name, seed_value in seed_cfg.items():
         topcfg["seed"][seed_name] = Seed(seed_mode, seed_value)
+
+    # Split-IP instances specify their clock/reset/clock_group connections in a
+    # nested per-partition form; fold this into the flat primary form (plus
+    # '<key>_secondary' companions) before any consumer looks at them. This has
+    # to happen before amend_reset_connections, which stamps the power domain
+    # onto each reset connection.
+    normalize_partition_connections(topcfg)
 
     # Add domain information to each module's reset_connections
     amend_reset_connections(topcfg)

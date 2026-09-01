@@ -30,12 +30,8 @@ is_split = m.get("is_split_ip", False)
 %>\
 % for partition in lib.get_module_partitions(m, domain):
 <%
-if is_split and partition == "secondary":
-  clock_connections = m["clock_connections_secondary"]
-  reset_connections = m["reset_connections_secondary"]
-else:
-  clock_connections = m["clock_connections"]
-  reset_connections = m["reset_connections"]
+clock_connections = m["clock_connections"][partition]
+reset_connections = m["reset_connections"][partition]
 
 part_suffix = "_part_" + partition if is_split else ""
 mod_type = m["type"] + part_suffix

@@ -1145,12 +1145,13 @@ def validate_reset(top: ConfigT,
                                      reset_signals)
 
     # For split IPs, also validate the secondary partition's reset
-    # connections against the secondary clocking's reset signals.
-    if isinstance(inst, IpBlock) and inst.clocking_secondary is not None and \
+    # connections against that partition's reset signals.
+    if isinstance(inst, IpBlock) and \
+            inst.clocking.has_partition('secondary') and \
             'reset_connections_secondary' in module:
         error += check_reset_connections(
             module['reset_connections_secondary'],
-            inst.clocking_secondary.reset_signals())
+            inst.clocking.reset_signals('secondary'))
 
     return error
 
@@ -1215,11 +1216,13 @@ def validate_clock(top: ConfigT,
     error += check_clock_srcs(module['clock_srcs'], clock_signals)
 
     # For split IPs, also validate the secondary partition's clock sources
-    # against the secondary clocking's clock signals.
-    if isinstance(inst, IpBlock) and inst.clocking_secondary is not None and \
+    # against that partition's clock signals.
+    if isinstance(inst, IpBlock) and \
+            inst.clocking.has_partition('secondary') and \
             'clock_srcs_secondary' in module:
-        error += check_clock_srcs(module['clock_srcs_secondary'],
-                                  inst.clocking_secondary.clock_signals(False))
+        error += check_clock_srcs(
+            module['clock_srcs_secondary'],
+            inst.clocking.clock_signals(False, 'secondary'))
 
     return error
 

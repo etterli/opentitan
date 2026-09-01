@@ -42,19 +42,21 @@
       dif_stage:          "S2",
     }
   ]
-  clocking: [
-    {clock: "clk_i", reset: "rst_ni", primary: true},
+  clocking: {
+    primary: [
+      {clock: "clk_i", reset: "rst_ni", primary: true},
 % for clk in clk_freqs.keys():
-    {clock: "clk_${clk}_i"},
+      {clock: "clk_${clk}_i"},
 % endfor
-    {clock: "clk_por_i", reset: "rst_por_ni"},
-  ]
+      {clock: "clk_por_i", reset: "rst_por_ni"},
+    ]
+    secondary: [
+      {clock: "clk_sec_i", reset: "rst_sec_ni", primary: true},
+    ]
+  }
   // This IP is split across two power domains: the alert and CPU crash-dump
   // capture logic lives in a secondary partition in a separate power domain.
   is_split_ip: "true",
-  clocking_secondary: [
-    {clock: "clk_sec_i", reset: "rst_sec_ni", primary: true},
-  ]
   bus_interfaces: [
     { protocol: "tlul", direction: "device" }
   ],

@@ -724,6 +724,18 @@ def partition_domain(module: ConfigT, partition: str, default: str = None) -> st
     return module.get('domain', default)
 
 
+def partition_conn(module: ConfigT, key: str, partition: str) -> ConfigT:
+    '''Return the connections of the given partition of a module instance.
+
+    The primary partition uses the canonical key, the secondary one the
+    '<key>_secondary' companion split out by normalize_partition_connections.
+    Returns None if the secondary partition has no such connections.
+    '''
+    if partition == 'secondary':
+        return module.get(f'{key}_secondary')
+    return module[key]
+
+
 def extract_clocks(top: ConfigT):
     '''Add clock exports to top and connections to endpoints
 
@@ -896,10 +908,8 @@ def connect_clocks(top: ConfigT, name_to_block: IpBlocksT):
         # defines each of the ports.
         idle_signal = None
         # For split IPs a hint clock may belong to the secondary partition, so
-        # search both partitions' clocking items.
-        clocking_items = list(ip_block.clocking.items)
-        if ip_block.clocking_secondary is not None:
-            clocking_items += list(ip_block.clocking_secondary.items)
+        # search the clocking items of all partitions.
+        clocking_items = ip_block.clocking.items
         for ep_name, ep_port in sig.endpoints:
             ep_idle = None
             for item in clocking_items:
@@ -979,20 +989,16 @@ def amend_resets(top: ConfigT,
                 top_resets.mark_reset_shadowed(primary_reset['name'])
 
         log.info("in module {}".format(module["name"]))
-        for r in block.clocking.items:
-            if r.reset:
-                reset = module['reset_connections'][r.reset]
-                if is_unmanaged_reset(top, reset['name']):
-                    continue
-                top_resets.add_reset_domain(reset['name'], reset['domain'])
-
-        # Split IP: register the reset domains of the secondary partition,
-        # whose resets ride on its clocking_secondary items.
-        if block.clocking_secondary is not None and \
-                'reset_connections_secondary' in module:
-            for r in block.clocking_secondary.items:
+        # Register the reset domains of every partition. A split IP's resets
+        # ride on the clocking items of their own partition.
+        for partition in block.clocking.partitions:
+            reset_connections = partition_conn(module, 'reset_connections',
+                                               partition)
+            if reset_connections is None:
+                continue
+            for r in block.clocking.items_for(partition):
                 if r.reset:
-                    reset = module['reset_connections_secondary'][r.reset]
+                    reset = reset_connections[r.reset]
                     if is_unmanaged_reset(top, reset['name']):
                         continue
                     top_resets.add_reset_domain(reset['name'], reset['domain'])
@@ -1114,12 +1120,16 @@ def create_alert_lpgs(top: ConfigT, name_to_block: IpBlocksT):
                                           module['reset_connections'])
 
         sec_lpg_name = None
-        if block.clocking_secondary is not None and \
-                'reset_connections_secondary' in module:
+        sec_clock_connections = partition_conn(module, 'clock_connections',
+                                               'secondary')
+        sec_reset_connections = partition_conn(module, 'reset_connections',
+                                               'secondary')
+        if block.clocking.has_partition('secondary') and \
+                sec_clock_connections is not None and \
+                sec_reset_connections is not None:
             sec_lpg_name, sec_lpg_entry = compute_lpg(
-                module, block.get_secondary_clock(),
-                module['clock_connections_secondary'],
-                module['reset_connections_secondary'])
+                module, block.get_primary_clock('secondary'),
+                sec_clock_connections, sec_reset_connections)
 
         alert_group = module.get('outgoing_alert')
         if alert_group is not None:
