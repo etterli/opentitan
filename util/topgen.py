@@ -42,14 +42,16 @@ from topgen.c_test import TopGenCTest
 from topgen.clocks import Clocks
 from topgen.gen_dv import gen_dv
 from topgen.gen_top_docs import gen_top_docs
-from topgen.lib import find_module, find_modules, load_cfg, write_file_secure, get_ipgen_params
+from topgen.lib import (find_module, find_modules, load_cfg,
+                        write_file_secure, get_ipgen_params, conn_partitions,
+                        partition_conns, partition_domain)
 from topgen.merge import (
     amend_alert, amend_interrupt, amend_pinmux_io, amend_racl,
     amend_reset_request, amend_resets, amend_wkup, commit_alert_modules,
     commit_interrupt_modules, commit_outgoing_alert_modules,
     commit_outgoing_interrupt_modules, connect_clocks,
     create_alert_lpgs, elaborate_instance, extract_clocks,
-    commit_alert_connections, normalize_partition_connections)
+    commit_alert_connections)
 from topgen.resets import Resets
 from topgen.rust import TopGenRust
 from topgen.top import Top
@@ -609,7 +611,7 @@ def _get_rstmgr_params(top: ConfigT) -> ParamsT:
     # rst_ni (from the primary partition; a connection may be a bare net-name
     # string or a {name, domain} dict).
     rstmgr = find_module(top["module"], "rstmgr")
-    rst_ni_conn = rstmgr["reset_connections"]["rst_ni"]
+    rst_ni_conn = partition_conns(rstmgr, "reset_connections")["rst_ni"]
     rst_ni_name = (rst_ni_conn["name"]
                    if isinstance(rst_ni_conn, dict) else rst_ni_conn)
 
@@ -1178,11 +1180,8 @@ def generate_rust(topname, completecfg, name_to_block, out_path, version_stamp,
                         helper=rs_helper)
 
 
-def _amend_block_reset_connections(module: ConfigT, key: str,
+def _amend_block_reset_connections(reset_connections: ConfigT,
                                    domain: str) -> None:
-    reset_connections = module.get(key)
-    if reset_connections is None:
-        return
     for port, reset in reset_connections.items():
         if isinstance(reset, str):
             reset_connections[port] = {
@@ -1198,21 +1197,15 @@ def amend_reset_connections(topcfg: ConfigT) -> None:
     The reset_connections are dictionaries keyed by a port name and
     with a value that can be just a string or a dictionary with a name
     and a domain. When the value is just a string determine the domain
-    as the module's domain, or the default domain from the topcfg.
-
-    A split IP's secondary partition sits in its own power domain, so its
-    connections take that domain instead.
+    as the domain of the partition it belongs to, or the default domain
+    from the topcfg.
     """
     default_power_domain = topcfg["power"]["default"]
-    for module in topcfg["module"]:
-        domain = module.get("domain", default_power_domain)
-        _amend_block_reset_connections(module, "reset_connections", domain)
-        _amend_block_reset_connections(module, "reset_connections_secondary",
-                                       module.get("domain_secondary", domain))
-    for xbar in topcfg["xbar"]:
-        _amend_block_reset_connections(
-            xbar, "reset_connections",
-            xbar.get("domain", default_power_domain))
+    for end_point in topcfg["module"] + topcfg["xbar"]:
+        for partition in conn_partitions(end_point, "reset_connections"):
+            _amend_block_reset_connections(
+                partition_conns(end_point, "reset_connections", partition),
+                partition_domain(end_point, partition, default_power_domain))
 
 
 def create_generic_ip_blocks(topcfg: ConfigT,
@@ -1424,10 +1417,7 @@ def _process_top(
     them to further populate the top config. It can raise exceptions for
     errors found in the process.
     """
-    # Prepare the topcfg. The normalization already ran in main(), before
-    # amend_reset_connections; repeat it here (it is idempotent) so that
-    # _process_top does not depend on that ordering.
-    normalize_partition_connections(topcfg)
+    # Prepare the topcfg.
     extract_clocks(topcfg)
     ip_attrs = create_generic_ip_blocks(topcfg, alias_cfgs, cfg_path,
                                         args.hjson_path)
@@ -1810,13 +1800,6 @@ def main():
     topcfg["seed"] = {}
     for seed_name, seed_value in seed_cfg.items():
         topcfg["seed"][seed_name] = Seed(seed_mode, seed_value)
-
-    # Split-IP instances specify their clock/reset/clock_group connections in a
-    # nested per-partition form; fold this into the flat primary form (plus
-    # '<key>_secondary' companions) before any consumer looks at them. This has
-    # to happen before amend_reset_connections, which stamps the power domain
-    # onto each reset connection.
-    normalize_partition_connections(topcfg)
 
     # Add domain information to each module's reset_connections
     amend_reset_connections(topcfg)

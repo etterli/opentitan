@@ -4,7 +4,6 @@
 <%import topgen.lib as lib%>\
 <%from topgen.clocks import Clocks%>\
 <%from topgen.resets import Resets%>\
-<%from topgen.merge import partition_conn%>\
 <%page args="top, feature_info, domain"/>\
 <%
 domain_has_clkmgr = lib.find_module(top["module"], "clkmgr", domain=domain) is not None
@@ -49,10 +48,8 @@ for m in lib.get_all_modules(top, domain=domain):
   # A split IP contributes the clocks / resets of every partition emitted in
   # this power domain, not just those of its primary partition.
   for partition in lib.get_module_partitions(m, domain):
-    clock_connections = partition_conn(m, "clock_connections", partition)
-    reset_connections = partition_conn(m, "reset_connections", partition)
-    if clock_connections is None or reset_connections is None:
-      continue
+    clock_connections = lib.partition_conns(m, "clock_connections", partition) or {}
+    reset_connections = lib.partition_conns(m, "reset_connections", partition) or {}
     for clock_sig in clock_connections.values():
       unused_clocks.discard(clock_sig)
     for port, reset in reset_connections.items():

@@ -662,80 +662,6 @@ def is_unmanaged_reset(top: ConfigT, reset: str):
     return reset in top['unmanaged_resets']
 
 
-# Per-instance connection keys that a split IP may specify per partition, using
-# a nested {'primary': ..., 'secondary': ...} form in the top hjson.
-_PARTITIONED_CONN_KEYS = ['clock_srcs', 'reset_connections', 'clock_group']
-
-
-def _is_nested_partition_value(val: object) -> bool:
-    '''Return True if val uses the nested {primary[, secondary]} partition form.
-
-    The nested form is a non-empty dict whose keys are a subset of
-    {'primary', 'secondary'} and that contains at least 'primary'. This
-    distinguishes it from the flat form (a clock/reset connection map keyed by
-    port name, or a bare clock_group string).
-    '''
-    return (isinstance(val, dict) and bool(val) and
-            set(val.keys()) <= {'primary', 'secondary'} and 'primary' in val)
-
-
-def normalize_partition_connections(topcfg: ConfigT) -> None:
-    '''Split the per-partition connection keys of split-IP instances.
-
-    For split IPs the top hjson specifies clock_srcs / reset_connections /
-    clock_group in a nested {'primary': ..., 'secondary': ...} form. This
-    rewrites each such instance so that the canonical key holds the *primary*
-    partition's (flat) value -- exactly what every existing, partition-unaware
-    consumer already expects -- and stores the secondary partition's value in a
-    '<key>_secondary' companion key for the split-IP-aware code paths.
-
-    Only split-IP instances (identified by the presence of a 'domain_secondary'
-    key) are touched, so this is a guaranteed no-op for every non-split IP. It
-    is idempotent: once the nested form has been split out, the canonical key
-    is flat and re-running (e.g. across the convergence loop) does nothing.
-    '''
-    for module in topcfg['module']:
-        # Only split-IP instances carry a secondary domain; leave every other
-        # instance (i.e. all of today's IPs) completely untouched.
-        if 'domain_secondary' not in module:
-            continue
-
-        for key in _PARTITIONED_CONN_KEYS:
-            val = module.get(key)
-            if not _is_nested_partition_value(val):
-                # Either absent, or already normalized to the flat primary form.
-                continue
-            module[key] = val['primary']
-            if 'secondary' in val:
-                module[f'{key}_secondary'] = val['secondary']
-
-
-def partition_domain(module: ConfigT, partition: str, default: str = None) -> str:
-    '''Return the power domain of the given partition of a module instance.
-
-    'primary' maps to the instance's 'domain', 'secondary' to its
-    'domain_secondary'. For non-split IPs every object is in the 'primary'
-    partition, so this simply returns the ordinary 'domain'. The default is
-    used only for the primary domain when the instance omits 'domain'
-    (defensive; check_power_domains normally populates it beforehand).
-    '''
-    if partition == 'secondary':
-        return module['domain_secondary']
-    return module.get('domain', default)
-
-
-def partition_conn(module: ConfigT, key: str, partition: str) -> ConfigT:
-    '''Return the connections of the given partition of a module instance.
-
-    The primary partition uses the canonical key, the secondary one the
-    '<key>_secondary' companion split out by normalize_partition_connections.
-    Returns None if the secondary partition has no such connections.
-    '''
-    if partition == 'secondary':
-        return module.get(f'{key}_secondary')
-    return module[key]
-
-
 def extract_clocks(top: ConfigT):
     '''Add clock exports to top and connections to endpoints
 
@@ -760,9 +686,9 @@ def extract_clocks(top: ConfigT):
         '''Build the clock connections for one partition of an endpoint.
 
         Adds the endpoint's clocks to their groups, records exported clocks,
-        and returns the {port: net} clock_connections dict. Used once per
-        (non-split) endpoint and, for split IPs, once per partition with that
-        partition's clock_srcs / clock_group / power domain.
+        and returns the {port: net} clock_connections dict. Called once per
+        partition of a module instance -- with that partition's clock_srcs,
+        clock group and power domain -- and once for each crossbar.
         '''
         clock_connections = OrderedDict()
 
@@ -821,40 +747,48 @@ def extract_clocks(top: ConfigT):
 
         return clock_connections
 
+    default_domain = top['power']['default']
+
     for ep in top['module'] + top['xbar']:
         # Ensure each module has a default case
         export_if = ep.get('clock_reset_export', [])
 
-        # The clock group attribute in an end point sets the default
-        # group for every clock in that end point.
-        #
-        # However, the end point can also override specific clocks to
-        # different groups inside clock_srcs.  This is generally not
-        # recommended as it is better to stay consistent.  However
-        # if needed, the method is available.
-        ep_grp = ep.get('clock_group', 'secure')
-        # Write value to dict in case it was unset before
-        ep['clock_group'] = ep_grp
-
         # end point names and clocks
         ep_name = ep['name']
 
-        # end point power domain
-        ep_domain = ep.get('domain', top['power']['default'])
+        # A split IP describes its clocks per partition; every other endpoint
+        # (including every crossbar) has a single primary partition and keeps
+        # the flat form. Each partition is elaborated on its own, in its own
+        # clock group and power domain.
+        conns = OrderedDict()
+        groups = OrderedDict()
 
-        # Add to endpoint structure
-        ep['clock_connections'] = elaborate_clock_srcs(
-            ep_name, ep['clock_srcs'], ep_grp, ep_domain, export_if)
+        for partition in lib.instance_partitions(ep):
+            # The clock group attribute in an end point sets the default
+            # group for every clock in that end point.
+            #
+            # However, the end point can also override specific clocks to
+            # different groups inside clock_srcs.  This is generally not
+            # recommended as it is better to stay consistent.  However
+            # if needed, the method is available.
+            ep_grp = lib.partition_conns(ep, 'clock_group', partition)
+            ep_grp = ep_grp if ep_grp else 'secure'
+            groups[partition] = ep_grp
 
-        # Split IP: elaborate the secondary partition's clocks into its own
-        # power domain. normalize_partition_connections only sets
-        # clock_srcs_secondary when the secondary partition is clocked.
-        if 'clock_srcs_secondary' in ep:
-            ep_grp_sec = ep.get('clock_group_secondary', 'secure')
-            ep['clock_group_secondary'] = ep_grp_sec
-            ep['clock_connections_secondary'] = elaborate_clock_srcs(
-                ep_name, ep['clock_srcs_secondary'], ep_grp_sec,
-                ep['domain_secondary'], export_if)
+            conns[partition] = elaborate_clock_srcs(
+                ep_name, lib.partition_conns(ep, 'clock_srcs', partition),
+                ep_grp, lib.partition_domain(ep, partition, default_domain),
+                export_if)
+
+        # Mirror the shape of the endpoint's own clock_srcs: only a split IP
+        # keys these by partition, everything else stays flat.
+        if lib.is_partitioned_conns(ep['clock_srcs']):
+            ep['clock_group'] = groups
+            ep['clock_connections'] = conns
+        else:
+            # Write value to dict in case it was unset before
+            ep['clock_group'] = groups['primary']
+            ep['clock_connections'] = conns['primary']
 
     # add entry to top level json
     top['exported_clks'] = exported_clks
@@ -976,7 +910,8 @@ def amend_resets(top: ConfigT,
         if block is None and allow_missing_blocks:
             continue
         block_clock = block.get_primary_clock()
-        primary_reset = module['reset_connections'][block_clock.reset]
+        primary_reset = lib.partition_conns(
+            module, 'reset_connections')[block_clock.reset]
 
         # shadowed determination
         if block.has_shadowed_reg():
@@ -992,8 +927,9 @@ def amend_resets(top: ConfigT,
         # Register the reset domains of every partition. A split IP's resets
         # ride on the clocking items of their own partition.
         for partition in block.clocking.partitions:
-            reset_connections = partition_conn(module, 'reset_connections',
-                                               partition)
+            reset_connections = lib.partition_conns(module,
+                                                    'reset_connections',
+                                                    partition)
             if reset_connections is None:
                 continue
             for r in block.clocking.items_for(partition):
@@ -1014,7 +950,13 @@ def amend_resets(top: ConfigT,
                 exported_rsts[intf] = OrderedDict()
 
             # grab directly from reset_connections definition
-            rsts = [rst for rst in module['reset_connections'].values()]
+            rsts = [
+                rst
+                for partition in lib.conn_partitions(module,
+                                                     'reset_connections')
+                for rst in lib.partition_conns(module, 'reset_connections',
+                                               partition).values()
+            ]
             exported_rsts[intf][module['name']] = rsts
 
     # ensure xbar resets are also covered.
@@ -1115,15 +1057,18 @@ def create_alert_lpgs(top: ConfigT, name_to_block: IpBlocksT):
         # additional LPG for the secondary partition (which lives in a
         # potentially different clock group and reset domain). Each alert then
         # joins the LPG of its owning partition.
-        lpg_name, lpg_entry = compute_lpg(module, block.get_primary_clock(),
-                                          module['clock_connections'],
-                                          module['reset_connections'])
+        lpg_name, lpg_entry = compute_lpg(
+            module, block.get_primary_clock(),
+            lib.partition_conns(module, 'clock_connections'),
+            lib.partition_conns(module, 'reset_connections'))
 
         sec_lpg_name = None
-        sec_clock_connections = partition_conn(module, 'clock_connections',
-                                               'secondary')
-        sec_reset_connections = partition_conn(module, 'reset_connections',
-                                               'secondary')
+        sec_clock_connections = lib.partition_conns(module,
+                                                    'clock_connections',
+                                                    'secondary')
+        sec_reset_connections = lib.partition_conns(module,
+                                                    'reset_connections',
+                                                    'secondary')
         if block.clocking.has_partition('secondary') and \
                 sec_clock_connections is not None and \
                 sec_reset_connections is not None:
@@ -1290,8 +1235,8 @@ def amend_interrupt(top: ConfigT,
             # Add power domain info. For split IPs the interrupt is emitted
             # from the power domain of its owning partition.
             module_dict = lib.get_module_by_name(top, m)
-            qual["domain"] = partition_domain(module_dict, signal.partition,
-                                              top["power"]["default"])
+            qual["domain"] = lib.partition_domain(
+                module_dict, signal.partition, top["power"]["default"])
             plic = ip.get("plic", default_plic)
             if plic is not None:
                 qual["plic"] = plic
@@ -1550,7 +1495,7 @@ def commit_alert_connections(top: ConfigT,
                 alert_groups.append((part, [a]))
 
         for part, alerts_group in alert_groups:
-            pd = partition_domain(module, part, top["power"]["default"])
+            pd = lib.partition_domain(module, part, top["power"]["default"])
             conn_key = "module_" + module["name"]
             if part != "primary":
                 conn_key += "_" + part
@@ -1931,8 +1876,8 @@ def amend_pinmux_io(top: ConfigT,
 
         for sig in block.get_signals_as_list_of_dicts():
             # Each CIO belongs to the power domain of its owning partition.
-            pd_mod = partition_domain(m, sig.get('partition', 'primary'),
-                                      pd_default)
+            pd_mod = lib.partition_domain(
+                m, sig.get('partition', 'primary'), pd_default)
             # Skip IO already in the same PD as the pinmux.
             if pd_mod == pd_pinmux:
                 continue
@@ -2006,7 +1951,7 @@ def amend_pinmux_io(top: ConfigT,
                 'desc': sig['desc']
             })
             sig_inst['name'] = mod_name + '_' + sig_inst['name']
-            sig_inst['domain'] = partition_domain(
+            sig_inst['domain'] = lib.partition_domain(
                 m, sig_inst.get('partition', 'primary'), pd_default)
             append_io_signal(temp, sig_inst)
 
@@ -2031,7 +1976,7 @@ def amend_pinmux_io(top: ConfigT,
                         })
                         sig_inst_copy['name'] = sig[
                             'instance'] + '_' + sig_inst_copy['name']
-                        sig_inst_copy['domain'] = partition_domain(
+                        sig_inst_copy['domain'] = lib.partition_domain(
                             m, sig_inst_copy.get('partition', 'primary'),
                             pd_default)
                         append_io_signal(temp, sig_inst_copy)
@@ -2044,8 +1989,8 @@ def amend_pinmux_io(top: ConfigT,
                         'desc': sig['desc']
                     })
                     sig_inst['name'] = sig['instance'] + '_' + sig_inst['name']
-                    sig_inst['domain'] = partition_domain(
-                m, sig_inst.get('partition', 'primary'), pd_default)
+                    sig_inst['domain'] = lib.partition_domain(
+                        m, sig_inst.get('partition', 'primary'), pd_default)
                     append_io_signal(temp, sig_inst)
 
     # Now that we've collected all input and output signals,

@@ -30,8 +30,9 @@ is_split = m.get("is_split_ip", False)
 %>\
 % for partition in lib.get_module_partitions(m, domain):
 <%
-clock_connections = m["clock_connections"][partition]
-reset_connections = m["reset_connections"][partition]
+## An unclocked partition of a split IP has no clock / reset connections.
+clock_connections = lib.partition_conns(m, "clock_connections", partition) or {}
+reset_connections = lib.partition_conns(m, "reset_connections", partition) or {}
 
 part_suffix = "_part_" + partition if is_split else ""
 mod_type = m["type"] + part_suffix

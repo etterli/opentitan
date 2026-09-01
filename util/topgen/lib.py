@@ -15,6 +15,7 @@ import hjson
 from basegen.lib import Name
 from basegen.typing import ConfigT, ParamsT
 from mako.template import Template
+from reggen.clocking import PARTITIONS
 from reggen.ip_block import IpBlock
 from reggen.lib import check_bool
 from version_file import VersionInformation
@@ -602,6 +603,75 @@ def get_all_modules(top: ConfigT, domain: str = ""):
         ]
     else:
         return top["module"]
+
+
+def is_partitioned_conns(val: object) -> bool:
+    '''Return True if val is keyed by partition rather than by port name.
+
+    Only a split IP keys its connections by partition; every other instance
+    uses the flat form and is left alone. The distinction is unambiguous: a
+    flat value is either a bare clock_group string or a map keyed by port name
+    (clk_*_i / rst_*_ni), never 'primary'.
+    '''
+    return (isinstance(val, dict) and bool(val) and
+            set(val.keys()) <= set(PARTITIONS) and 'primary' in val)
+
+
+def conn_partitions(module: ConfigT, key: str) -> List[str]:
+    '''Return the partitions that `key` describes connections for.
+
+    A split instance keys `key` by partition; every other instance uses the
+    flat form, which describes the primary partition alone.
+    '''
+    val = module.get(key)
+    if is_partitioned_conns(val):
+        return [p for p in PARTITIONS if p in val]
+    return ['primary'] if val is not None else []
+
+
+def instance_partitions(module: ConfigT) -> List[str]:
+    '''Return the partitions of a module instance, in canonical order.
+
+    Derived from clock_srcs, which every instance has.
+    '''
+    return conn_partitions(module, 'clock_srcs')
+
+
+def partition_conns(module: ConfigT, key: str,
+                    partition: str = 'primary') -> ConfigT:
+    '''Return the connections of one partition of a module instance.
+
+    Handles both shapes: a split instance keys `key` by partition, every other
+    instance uses the flat form, which is the primary partition. A scalar value
+    (clock_group) cannot be per-partition and therefore applies to all of them.
+    Returns None if the instance describes nothing for that partition.
+    '''
+    val = module.get(key)
+    if is_partitioned_conns(val):
+        return val.get(partition)
+    if not isinstance(val, dict):
+        return val
+    return val if partition == 'primary' else None
+
+
+def partition_domain(module: ConfigT, partition: str,
+                     default: str = None) -> str:
+    '''Return the power domain of the given partition of a module instance.
+
+    'primary' maps to the instance's 'domain', 'secondary' to its
+    'domain_secondary'. For non-split IPs every object is in the 'primary'
+    partition, so this simply returns the ordinary 'domain'. The default is
+    used only for the primary domain when the instance omits 'domain'
+    (defensive; check_power_domains normally populates it beforehand).
+    '''
+    if partition == 'secondary':
+        domain = module.get('domain_secondary')
+        if domain is None:
+            raise ValueError(
+                f"{module['name']} describes a secondary partition but does "
+                "not specify domain_secondary")
+        return domain
+    return module.get('domain', default)
 
 
 def get_module_partition(module: ConfigT, domain: str) -> str:

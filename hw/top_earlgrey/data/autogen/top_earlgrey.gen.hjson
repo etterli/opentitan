@@ -3822,63 +3822,75 @@
       template_type: rstmgr
       clock_srcs:
       {
-        clk_i:
+        primary:
         {
-          clock: io_div4
-          group: powerup
+          clk_i:
+          {
+            clock: io_div4
+            group: powerup
+          }
+          clk_por_i: io_div4
+          clk_aon_i: aon
+          clk_main_i: main
+          clk_io_i: io
+          clk_usb_i: usb
+          clk_io_div2_i: io_div2
+          clk_io_div4_i: io_div4
         }
-        clk_por_i: io_div4
-        clk_aon_i: aon
-        clk_main_i: main
-        clk_io_i: io
-        clk_usb_i: usb
-        clk_io_div2_i: io_div2
-        clk_io_div4_i: io_div4
+        secondary:
+        {
+          clk_sec_i: io_div4
+        }
       }
-      clock_group: powerup
+      clock_group:
+      {
+        primary: powerup
+        secondary: secure
+      }
       reset_connections:
       {
-        rst_ni:
+        primary:
         {
-          name: lc_io_div4
-          domain: Aon
+          rst_ni:
+          {
+            name: lc_io_div4
+            domain: Aon
+          }
+          rst_por_ni:
+          {
+            name: por_io_div4
+            domain: Aon
+          }
         }
-        rst_por_ni:
+        secondary:
         {
-          name: por_io_div4
-          domain: Aon
+          rst_sec_ni:
+          {
+            name: lc_io_div4
+            domain: Main
+          }
         }
       }
       domain: Aon
       domain_secondary: Main
       attr: ipgen
-      clock_srcs_secondary:
-      {
-        clk_sec_i: io_div4
-      }
-      reset_connections_secondary:
-      {
-        rst_sec_ni:
-        {
-          name: lc_io_div4
-          domain: Main
-        }
-      }
-      clock_group_secondary: secure
       clock_connections:
       {
-        clk_i: clkmgr_clocks.clk_io_div4_powerup
-        clk_por_i: clkmgr_clocks.clk_io_div4_powerup
-        clk_aon_i: clkmgr_clocks.clk_aon_powerup
-        clk_main_i: clkmgr_clocks.clk_main_powerup
-        clk_io_i: clkmgr_clocks.clk_io_powerup
-        clk_usb_i: clkmgr_clocks.clk_usb_powerup
-        clk_io_div2_i: clkmgr_clocks.clk_io_div2_powerup
-        clk_io_div4_i: clkmgr_clocks.clk_io_div4_powerup
-      }
-      clock_connections_secondary:
-      {
-        clk_sec_i: clkmgr_clocks_i.clk_io_div4_secure
+        primary:
+        {
+          clk_i: clkmgr_clocks.clk_io_div4_powerup
+          clk_por_i: clkmgr_clocks.clk_io_div4_powerup
+          clk_aon_i: clkmgr_clocks.clk_aon_powerup
+          clk_main_i: clkmgr_clocks.clk_main_powerup
+          clk_io_i: clkmgr_clocks.clk_io_powerup
+          clk_usb_i: clkmgr_clocks.clk_usb_powerup
+          clk_io_div2_i: clkmgr_clocks.clk_io_div2_powerup
+          clk_io_div4_i: clkmgr_clocks.clk_io_div4_powerup
+        }
+        secondary:
+        {
+          clk_sec_i: clkmgr_clocks_i.clk_io_div4_secure
+        }
       }
       param_decl: {}
       is_split_ip: true

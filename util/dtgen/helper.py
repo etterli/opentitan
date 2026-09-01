@@ -11,7 +11,7 @@ from collections.abc import Mapping
 from enum import Enum
 
 from basegen.lib import Name
-from topgen.lib import find_modules
+from topgen.lib import find_modules, partition_conns
 from reggen.ip_block import IpBlock
 
 import logging
@@ -1117,10 +1117,12 @@ This value is undefined if the block is not connected to the Alert Handler."""
 
             inst_desc[self.MEM_ADDR_FIELD_NAME] = mem_addr_map
             inst_desc[self.MEM_SIZE_FIELD_NAME] = mem_size_map
-        # Clock map.
+        # Clock map. The clock / reset maps are built from the IP block's
+        # primary partition, so only that partition's connections are described
+        # here: a split IP's registers and DIFs live in the primary partition.
         if self.has_clocks():
             inst_clock_map = OrderedDict()
-            for (port, clock) in m["clock_srcs"].items():
+            for (port, clock) in partition_conns(m, "clock_srcs").items():
                 if port not in self.clock_map:
                     continue
                 # The clock source can either be just a string with the clock name, e.g.
@@ -1137,7 +1139,8 @@ This value is undefined if the block is not connected to the Alert Handler."""
         # Reset map.
         if self.has_resets():
             inst_reset_map = OrderedDict()
-            for (port, rst) in m["reset_connections"].items():
+            for (port, rst) in partition_conns(m,
+                                               "reset_connections").items():
                 inst_reset_map[Name.from_snake_case(self.reset_map[port])] = \
                     Name.from_snake_case(rst["name"])
             inst_desc[self.RESET_FIELD_NAME] = inst_reset_map

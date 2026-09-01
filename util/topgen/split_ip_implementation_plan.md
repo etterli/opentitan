@@ -42,13 +42,21 @@ Each `ClockingItem` already carries its own `reset`, so the `secondary` sub-list
 
 ## Phase 1 — `topgen` validation + flat→nested normalization
 
-**1a. Normalization (earliest step).** Add `normalize_partition_connections(topcfg)` in `merge.py`, run **before** `extract_clocks` (topgen.py:1279) so every downstream consumer sees the shape it expects. It only touches **split** instances (identified by the presence of `domain_secondary`); non-split instances are left byte-for-byte unchanged, so it is a guaranteed no-op for every current top.
+**1a. Two shapes, one accessor.** There is deliberately **no** normalization pass. A split instance spells `clock_srcs` / `reset_connections` / `clock_group` out per partition; every other instance -- and every crossbar, which can never be split -- keeps the flat form, in the author-facing hjson *and* in the generated `top_<top>.gen.hjson`. Wrapping the flat form in a redundant `{primary: <flat value>}` would churn the generated output of every IP in every top for no benefit, and there is no `<key>_secondary` companion key either.
 
-For a split instance, the author-facing nested `{primary: …, secondary: …}` form of `reset_connections` / `clock_srcs` / `clock_group` is rewritten so that:
-- the canonical key holds the **primary** (flat) value — exactly what the many existing partition-unaware consumers (`extract_clocks`, `validate_clock`/`validate_reset`, `amend_resets`, LPGs, `module_instantiations.tpl`) already read, so none of them need to change in this phase;
-- a companion `<key>_secondary` key holds the secondary value, consumed only by the new split-IP-aware code added in Phase 3.
+Both shapes are resolved in exactly one place, in `topgen/lib.py`:
 
-This deliberately avoids the original "normalize everything to `{primary: <flat>}`" idea, which would have forced simultaneous edits to every flat consumer (large regression surface across all tops). Idempotent (safe under the convergence loop): once split out, the canonical key is flat and re-running is a no-op. Runs before `validate_reset` (validate.py:1050-1054), which mutates `reset_connections` in place.
+| Helper | Purpose |
+|---|---|
+| `is_partitioned_conns(val)` | Is this value keyed by partition? Unambiguous: a flat value is either a bare `clock_group` string or a map keyed by port name (`clk_*_i` / `rst_*_ni`), never `primary`. |
+| `conn_partitions(instance, key)` | Which partitions does `key` describe? `['primary']` for the flat form. |
+| `instance_partitions(instance)` | `conn_partitions(instance, 'clock_srcs')` -- the instance's partitions. |
+| `partition_conns(instance, key, partition='primary')` | The connections of one partition. The flat form *is* the primary partition; a scalar (`clock_group`) cannot be per-partition and so applies to all of them. `None` if the instance describes nothing for that partition. |
+| `partition_domain(instance, partition, default)` | The partition's power domain; raises if a secondary partition has no `domain_secondary`, which is resolved long before `check_power_domains` runs. |
+
+Because the flat form collapses to a single primary partition, every consumer is written once and needs no `is_split_ip` branch, and crossbars flow through the same code unchanged. That matters for crossbars specifically: `generate_xbars` hands their `clock_connections` / `reset_connections` to `tlgen.validate()`, which reads the port names straight out of those dicts (`tlgen/validate.py:297-300`) and dumps the object verbatim into `xbar_*.gen.hjson`, so their shape is not ours to change.
+
+Generated output mirrors its input: `extract_clocks` writes `clock_connections` (and the defaulted `clock_group`) partition-keyed only when the instance's own `clock_srcs` is.
 
 **1b. `util/topgen/validate.py`.**
 - `module_optional` (267-326): add `domain_secondary`. `is_split_ip` is forwarded from the block during elaboration → add it to `module_added` (328-334) so `check_keys` accepts it.
@@ -73,12 +81,18 @@ No-op for every non-split IP (all objects are `primary` → `partition_domain` r
 
 ## Phase 3 — clocking / reset / LPG + alert domains per partition
 
-**Phase 3a (clocking + reset) -- DONE.** `extract_clocks` refactored with an `elaborate_clock_srcs` inner helper, invoked for the primary partition and (when `clock_srcs_secondary` is present) the secondary partition -> `clock_connections_secondary`. `amend_resets` registers each partition's reset domains by walking `block.clocking.items_for(partition)` against that partition's `reset_connections`. `validate_reset`/`validate_clock` refactored to validate each partition's connections against that partition's clocking signals (reset-net domains are author-specified per entry, as for existing multi-PD modules). `connect_clocks` idle-clock search spans all partitions' clocking items (`block.clocking.items`). Reset/clock-net domains are authored explicitly (dicts `{name, domain}`), not derived. Verified: split-aware validator unit tests + `make top_and_cmdgen` no-op. **Phase 3b (alerts/LPG) remains** (bullets below).
+**Phase 3a (clocking + reset) -- DONE.** Every consumer of an instance's clock/reset connections resolves them per partition through the `lib` accessors of 1a, so each one is written once for split and non-split IPs alike:
 
-The instance-side connections are reached through `merge.partition_conn(module, key, partition)`, the companion to `partition_domain()`: it returns the canonical key for the primary partition and the `<key>_secondary` companion for the secondary one. Keeping the flattened storage (rather than indexing `module[key][partition]` end-to-end) was a deliberate choice -- the nested form would have to be threaded through ~14 sites that run for *every* IP on *every* top (`extract_clocks`, `_amend_block_reset_connections`, `topgen.py`'s rstmgr lookup, `dtgen`, `module_instantiations.tpl`, `clk_reset_lpg_assigns.tpl`, both `chiplevel.sv.tpl`s, ...) for a large regression surface. Its one real advantage is that an unconverted consumer would fail loudly instead of silently reading the primary partition; revisit if more split IPs appear.
+- `extract_clocks`: the single endpoint loop over `module + xbar` now calls the `elaborate_clock_srcs` inner helper once per `instance_partitions(ep)`, with that partition's `clock_srcs`, clock group and `partition_domain()`. Clock-group registration order is unchanged (all modules, primary before secondary, then all crossbars), which matters because it fixes the clkmgr net naming and hint-clock indices.
+- `amend_resets`: one loop over `block.clocking.partitions`, walking `block.clocking.items_for(partition)` against that partition's reset connections. Shadow-reset marking stays primary-only.
+- `create_alert_lpgs`: an LPG per partition from `block.get_primary_clock(partition)` plus that partition's clock/reset connections; each alert's `partition` selects the LPG it joins.
+- `connect_clocks`: the idle-clock search spans all partitions via `block.clocking.items`.
+- `validate_reset` / `validate_clock`: validate each partition's connections against `inst.clocking.reset_signals(partition)` / `clock_signals(False, partition)`. `check_partitions()` additionally reports a partition the IP does not have, or a missing one that it does. Reset-net domains stay author-specified per entry, as for existing multi-PD modules.
+- `topgen.py::amend_reset_connections`: stamps `partition_domain(end_point, partition, default)` onto each partition's bare-string reset connections. This fixed a latent bug: for a split instance it used to iterate the author's nested dict directly, find no strings, and stamp nothing -- leaving `validate_reset` to fall back to `top['power']['default']`, which is the wrong domain for an Aon primary partition (`top_englishbreakfast` writes its rstmgr primary resets as bare strings and would have hit this).
+- `clk_reset_lpg_assigns.tpl` iterates `lib.get_module_partitions(m, domain)`, so a split IP's secondary clocks/resets are discarded from the unused-tie-off sets (previously it only ever saw the primary partition's nets).
+- Remaining primary-partition-only reads, by design (`partition_conns(m, key)` with the default partition): `dtgen` -- the DT clock/reset maps come from the block's primary clocking, since registers and DIFs live in the primary partition -- and `topgen.py`'s rstmgr `rst_ni` lookup. `ast` in the `chiplevel.sv.tpl`s needs no change at all, since it is not a split IP and keeps the flat form.
 
-- `commit_alert_connections`: **alert domains per partition (deferred from Phase 2).** It used to slice all `w = len(block.alerts)` alerts as one contiguous group in `m_domain = module['domain']`; a split IP's alerts are now grouped by their `partition`'s PD and each group is sliced/counted into the handler separately (the `count_pd` / `connect_pd` / slice logic). A secondary partition's group is keyed `module_<name>_secondary` so the template can find it.
-- `create_alert_lpgs`: **generalize the single-primary-clock assumption.** It used to take one `block.get_primary_clock()` plus the module's single reset/clock. It now computes an LPG per partition via `block.get_primary_clock(partition)` with that partition's clock group, reset and PD, and each alert's `partition` selects which LPG it joins.
+**Phase 3b (alerts) -- `commit_alert_connections`:** alert domains per partition (deferred from Phase 2). It used to slice all `w = len(block.alerts)` alerts as one contiguous group in `m_domain = module['domain']`; a split IP's alerts are now grouped by their `partition`'s PD and each group is sliced/counted into the handler separately (the `count_pd` / `connect_pd` / slice logic). A secondary partition's group is keyed `module_<name>_secondary` so the template can find it.
 
 ---
 

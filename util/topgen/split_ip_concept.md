@@ -61,7 +61,10 @@ clock_srcs: {
 clock_group: {primary: "secure", secondary: "peri"},
 ```
 
-For backwards compatibility, the flat (non-nested) form used by all non-split instances would then get normalized to `{primary: <flat_value>}` during the toplevel merge, so that downstream code can always index these keys by partition and existing hjson descriptions require no changes.
+Only split instances use the nested form.
+Every other instance (and every crossbar, which can never be split) keeps the flat form, both in the author-facing hjson and in the generated `top_<top_name>.gen.hjson` -- wrapping them in a redundant `{primary: <flat_value>}` would churn the generated output of every IP for no benefit.
+Both shapes are resolved by a single accessor, `lib.partition_conns(instance, key, partition)`, which treats the flat form as the primary partition; `lib.conn_partitions(instance, key)` reports which partitions a key describes.
+The generated `clock_connections` mirrors the shape of the instance's own `clock_srcs`.
 
 The entries of the following lists in IP hjson descriptions must feature the optional `partition` key for IPs that specify `is_split_ip: "true"`. It shall have `primary` and `secondary` as legal values and default to `primary`:
 - `available_input_list` and `available_output_list` (CIO)
