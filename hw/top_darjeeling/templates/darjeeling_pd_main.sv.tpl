@@ -98,7 +98,7 @@ module ${top["name"]}_pd_${domain.lower()} #(
 
 <%include file="/toplevel_snippets/cio_assigns.tpl" args="top=top, feature_info=feature_info, cio_info=cio_info, domain=domain" />\
 
-% if lib.find_module(top["module"], "clkmgr").get("domain") == domain:
+% if lib.partition_domain(lib.find_module(top["module"], "clkmgr")) == domain:
   // Make sure scanmode_i is never X (including during reset)
   `ASSERT_KNOWN(scanmodeKnown, scanmode_i, clk_main_i, 0)
 % endif\

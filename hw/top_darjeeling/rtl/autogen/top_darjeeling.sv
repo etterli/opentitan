@@ -292,7 +292,6 @@ module top_darjeeling #(
   logic [2:0] intr_vector_pd_aon;
   prim_alert_pkg::alert_tx_t [7:0] alert_tx_pd_aon;
   prim_alert_pkg::alert_rx_t [7:0] alert_rx_pd_aon;
-  alert_handler_pkg::alert_crashdump_t       alert_handler_crashdump;
   prim_esc_pkg::esc_rx_t       alert_handler_esc_rx;
   prim_esc_pkg::esc_tx_t       alert_handler_esc_tx;
   logic       aon_timer_nmi_wdog_timer_bark;
@@ -315,7 +314,6 @@ module top_darjeeling #(
   lc_ctrl_pkg::lc_tx_t       lc_ctrl_lc_dft_en;
   lc_ctrl_pkg::lc_tx_t       lc_ctrl_lc_hw_debug_en;
   lc_ctrl_pkg::lc_tx_t       lc_ctrl_lc_escalate_en;
-  rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump;
   rv_core_ibex_pkg::cpu_pwrmgr_t       rv_core_ibex_pwrmgr;
   logic       rv_dm_ndmreset_req;
   tlul_pkg::tl_h2d_t       soc_proxy_dma_tl_h2d;
@@ -323,6 +321,8 @@ module top_darjeeling #(
   tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_h2d;
   tlul_pkg::tl_d2h_t       soc_proxy_ctn_tl_d2h;
   logic       pwrmgr_wakeups;
+  rstmgr_pkg::rstmgr_interpart_p2s_t       rstmgr_interpart_p2s;
+  rstmgr_pkg::rstmgr_interpart_s2p_t       rstmgr_interpart_s2p;
   tlul_pkg::tl_h2d_t       soc_proxy_core_tl_req;
   tlul_pkg::tl_d2h_t       soc_proxy_core_tl_rsp;
   tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_req;
@@ -362,6 +362,8 @@ module top_darjeeling #(
   .LcCtrlIdcodeValue(LcCtrlIdcodeValue),
   .AlertHandlerEscNumSeverities(AlertHandlerEscNumSeverities),
   .AlertHandlerEscPingCountWidth(AlertHandlerEscPingCountWidth),
+  .SecRstmgrCheck(SecRstmgrCheck),
+  .SecRstmgrMaxSyncDelay(SecRstmgrMaxSyncDelay),
   .PinmuxTargetCfg(PinmuxTargetCfg),
   .RvDmIdcodeValue(RvDmIdcodeValue),
   .RvDmUseDmiInterface(RvDmUseDmiInterface),
@@ -480,7 +482,6 @@ module top_darjeeling #(
     .alert_rx_pd_aon_o(alert_rx_pd_aon),
 
     // Ports to and from other power domains (auto-generated)
-    .alert_handler_crashdump_o      (alert_handler_crashdump  ),
     .alert_handler_esc_rx_i         (alert_handler_esc_rx     ),
     .alert_handler_esc_tx_o         (alert_handler_esc_tx     ),
     .aon_timer_nmi_wdog_timer_bark_i(aon_timer_nmi_wdog_timer_bark),
@@ -503,7 +504,6 @@ module top_darjeeling #(
     .lc_ctrl_lc_dft_en_o            (lc_ctrl_lc_dft_en        ),
     .lc_ctrl_lc_hw_debug_en_o       (lc_ctrl_lc_hw_debug_en   ),
     .lc_ctrl_lc_escalate_en_o       (lc_ctrl_lc_escalate_en   ),
-    .rv_core_ibex_crash_dump_o      (rv_core_ibex_crash_dump  ),
     .rv_core_ibex_pwrmgr_o          (rv_core_ibex_pwrmgr      ),
     .rv_dm_ndmreset_req_o           (rv_dm_ndmreset_req       ),
     .soc_proxy_dma_tl_h2d_o         (soc_proxy_dma_tl_h2d     ),
@@ -511,6 +511,8 @@ module top_darjeeling #(
     .soc_proxy_ctn_tl_h2d_i         (soc_proxy_ctn_tl_h2d     ),
     .soc_proxy_ctn_tl_d2h_o         (soc_proxy_ctn_tl_d2h     ),
     .pwrmgr_wakeups_o               (pwrmgr_wakeups           ),
+    .rstmgr_interpart_p2s_i         (rstmgr_interpart_p2s     ),
+    .rstmgr_interpart_s2p_o         (rstmgr_interpart_s2p     ),
     .soc_proxy_core_tl_req_o        (soc_proxy_core_tl_req    ),
     .soc_proxy_core_tl_rsp_i        (soc_proxy_core_tl_rsp    ),
     .soc_proxy_ctn_tl_req_o         (soc_proxy_ctn_tl_req     ),
@@ -656,7 +658,6 @@ module top_darjeeling #(
     .alert_rx_i(alert_rx_pd_aon),
 
     // Ports to and from other power domains (auto-generated)
-    .alert_handler_crashdump_i      (alert_handler_crashdump  ),
     .alert_handler_esc_rx_o         (alert_handler_esc_rx     ),
     .alert_handler_esc_tx_i         (alert_handler_esc_tx     ),
     .aon_timer_nmi_wdog_timer_bark_o(aon_timer_nmi_wdog_timer_bark),
@@ -679,7 +680,6 @@ module top_darjeeling #(
     .lc_ctrl_lc_dft_en_i            (lc_ctrl_lc_dft_en        ),
     .lc_ctrl_lc_hw_debug_en_i       (lc_ctrl_lc_hw_debug_en   ),
     .lc_ctrl_lc_escalate_en_i       (lc_ctrl_lc_escalate_en   ),
-    .rv_core_ibex_crash_dump_i      (rv_core_ibex_crash_dump  ),
     .rv_core_ibex_pwrmgr_i          (rv_core_ibex_pwrmgr      ),
     .rv_dm_ndmreset_req_i           (rv_dm_ndmreset_req       ),
     .soc_proxy_dma_tl_h2d_i         (soc_proxy_dma_tl_h2d     ),
@@ -687,6 +687,8 @@ module top_darjeeling #(
     .soc_proxy_ctn_tl_h2d_o         (soc_proxy_ctn_tl_h2d     ),
     .soc_proxy_ctn_tl_d2h_i         (soc_proxy_ctn_tl_d2h     ),
     .pwrmgr_wakeups_i               (pwrmgr_wakeups           ),
+    .rstmgr_interpart_p2s_o         (rstmgr_interpart_p2s     ),
+    .rstmgr_interpart_s2p_i         (rstmgr_interpart_s2p     ),
     .soc_proxy_core_tl_req_i        (soc_proxy_core_tl_req    ),
     .soc_proxy_core_tl_rsp_o        (soc_proxy_core_tl_rsp    ),
     .soc_proxy_ctn_tl_req_i         (soc_proxy_ctn_tl_req     ),

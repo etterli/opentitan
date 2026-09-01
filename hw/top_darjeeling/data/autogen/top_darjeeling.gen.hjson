@@ -2386,8 +2386,6 @@
           top_type: broadcast
           top_signame: alert_handler_crashdump
           index: -1
-          external: true
-          conn_type: false
         }
         {
           name: edn
@@ -3005,41 +3003,75 @@
       template_type: rstmgr
       clock_srcs:
       {
-        clk_i:
+        primary:
         {
-          clock: io
-          group: powerup
+          clk_i:
+          {
+            clock: io
+            group: powerup
+          }
+          clk_por_i: io
+          clk_aon_i: aon
+          clk_main_i: main
+          clk_io_i: io
         }
-        clk_por_i: io
-        clk_aon_i: aon
-        clk_main_i: main
-        clk_io_i: io
+        secondary:
+        {
+          clk_sec_i: io
+        }
       }
-      clock_group: powerup
+      clock_group:
+      {
+        primary: powerup
+        secondary: secure
+      }
       reset_connections:
       {
-        rst_ni:
+        primary:
         {
-          name: lc_io
-          domain: Aon
+          rst_ni:
+          {
+            name: lc_io
+            domain: Aon
+          }
+          rst_por_ni:
+          {
+            name: por_io
+            domain: Aon
+          }
         }
-        rst_por_ni:
+        secondary:
         {
-          name: por_io
-          domain: Aon
+          rst_sec_ni:
+          {
+            name: lc_io
+            domain: Main
+          }
         }
       }
-      domain: Aon
+      domain:
+      {
+        primary: Aon
+        secondary: Main
+      }
       attr: ipgen
       clock_connections:
       {
-        clk_i: clkmgr_clocks.clk_io_powerup
-        clk_por_i: clkmgr_clocks.clk_io_powerup
-        clk_aon_i: clkmgr_clocks.clk_aon_powerup
-        clk_main_i: clkmgr_clocks.clk_main_powerup
-        clk_io_i: clkmgr_clocks.clk_io_powerup
+        primary:
+        {
+          clk_i: clkmgr_clocks.clk_io_powerup
+          clk_por_i: clkmgr_clocks.clk_io_powerup
+          clk_aon_i: clkmgr_clocks.clk_aon_powerup
+          clk_main_i: clkmgr_clocks.clk_main_powerup
+          clk_io_i: clkmgr_clocks.clk_io_powerup
+        }
+        secondary:
+        {
+          clk_sec_i: clkmgr_clocks_i.clk_io_secure
+        }
       }
       param_decl: {}
+      is_split_ip: true
       memory: {}
       param_list:
       [
@@ -3143,13 +3175,12 @@
           type: uni
           act: rcv
           width: 1
+          partition: secondary
           inst_name: rstmgr
           default: ""
-          domain: Aon
+          domain: Main
           top_signame: alert_handler_crashdump
           index: -1
-          external: true
-          conn_type: false
         }
         {
           name: cpu_dump
@@ -3159,13 +3190,12 @@
           type: uni
           act: rcv
           width: 1
+          partition: secondary
           inst_name: rstmgr
           default: ""
-          domain: Aon
+          domain: Main
           top_signame: rv_core_ibex_crash_dump
           index: -1
-          external: true
-          conn_type: false
         }
         {
           name: sw_rst_req
@@ -3181,6 +3211,74 @@
           top_type: broadcast
           top_signame: rstmgr_sw_rst_req
           index: -1
+        }
+        {
+          name: interpart_p2s
+          desc: Primary-to-secondary partition signalling.
+          struct: rstmgr_interpart_p2s
+          package: rstmgr_pkg
+          type: uni
+          act: req
+          width: 1
+          inst_name: rstmgr
+          default: ""
+          end_idx: -1
+          top_type: broadcast
+          top_signame: rstmgr_interpart_p2s
+          index: -1
+          external: true
+          conn_type: false
+        }
+        {
+          name: interpart_p2s
+          desc: Primary-to-secondary partition signalling.
+          struct: rstmgr_interpart_p2s
+          package: rstmgr_pkg
+          type: uni
+          act: rcv
+          width: 1
+          partition: secondary
+          inst_name: rstmgr
+          default: ""
+          domain: Main
+          top_signame: rstmgr_interpart_p2s
+          index: -1
+          external: true
+          conn_type: false
+        }
+        {
+          name: interpart_s2p
+          desc: Secondary-to-primary partition signalling.
+          struct: rstmgr_interpart_s2p
+          package: rstmgr_pkg
+          type: uni
+          act: req
+          width: 1
+          partition: secondary
+          inst_name: rstmgr
+          default: ""
+          end_idx: -1
+          top_type: broadcast
+          top_signame: rstmgr_interpart_s2p
+          index: -1
+          external: true
+          conn_type: false
+        }
+        {
+          name: interpart_s2p
+          desc: Secondary-to-primary partition signalling.
+          struct: rstmgr_interpart_s2p
+          package: rstmgr_pkg
+          type: uni
+          act: rcv
+          width: 1
+          inst_name: rstmgr
+          default: ""
+          domain: Aon
+          top_signame: rstmgr_interpart_s2p
+          index: -1
+          external: true
+          conn_type: false
         }
         {
           name: tl
@@ -11028,8 +11126,6 @@
           top_type: broadcast
           top_signame: rv_core_ibex_crash_dump
           index: -1
-          external: true
-          conn_type: false
         }
         {
           name: lc_cpu_en
@@ -11574,6 +11670,14 @@
       [
         aon_timer.aon_timer_rst_req
         soc_proxy.rst_req_external
+      ]
+      rstmgr.interpart_p2s.primary:
+      [
+        rstmgr.interpart_p2s.secondary
+      ]
+      rstmgr.interpart_s2p.secondary:
+      [
+        rstmgr.interpart_s2p.primary
       ]
       main.tl_rv_core_ibex__corei:
       [
@@ -18631,6 +18735,18 @@
       lpg_idx: 7
     }
     {
+      name: rstmgr_fatal_sec_test
+      width: 1
+      type: alert
+      partition: secondary
+      async: "1"
+      handler: alert_handler
+      module_name: rstmgr
+      desc: rstmgr fatal_sec_test alert
+      lpg_name: secure_lc_io_Main
+      lpg_idx: 4
+    }
+    {
       name: clkmgr_recov_fault
       width: 1
       type: alert
@@ -20653,18 +20769,6 @@
         default: "'0"
       }
       {
-        package: alert_handler_pkg
-        struct: alert_crashdump
-        domain: chip
-        signame: alert_handler_crashdump
-        width: 1
-        type: uni
-        end_idx: -1
-        act: req
-        suffix: ""
-        default: alert_handler_pkg::ALERT_CRASHDUMP_DEFAULT
-      }
-      {
         package: prim_esc_pkg
         struct: esc_rx
         domain: chip
@@ -20930,18 +21034,6 @@
       }
       {
         package: rv_core_ibex_pkg
-        struct: cpu_crash_dump
-        domain: chip
-        signame: rv_core_ibex_crash_dump
-        width: 1
-        type: uni
-        end_idx: -1
-        act: req
-        suffix: ""
-        default: rv_core_ibex_pkg::CPU_CRASH_DUMP_DEFAULT
-      }
-      {
-        package: rv_core_ibex_pkg
         struct: cpu_pwrmgr
         domain: chip
         signame: rv_core_ibex_pwrmgr
@@ -21023,6 +21115,30 @@
         act: rcv
         suffix: ""
         default: "'0"
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_p2s
+        domain: chip
+        signame: rstmgr_interpart_p2s
+        width: 1
+        type: uni
+        end_idx: -1
+        act: req
+        suffix: ""
+        default: rstmgr_pkg::RSTMGR_INTERPART_P2S_DEFAULT
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_s2p
+        domain: chip
+        signame: rstmgr_interpart_s2p
+        width: 1
+        type: uni
+        end_idx: -1
+        act: req
+        suffix: ""
+        default: rstmgr_pkg::RSTMGR_INTERPART_S2P_DEFAULT
       }
       {
         package: tlul_pkg
@@ -21411,68 +21527,68 @@
         alert_handler[16]: fatal_cnsty_fault
       ]
     }
+    module_rstmgr_secondary:
+    {
+      tx_expr: alert_tx[17]
+      rx_expr: alert_rx[17]
+      async_expr: alert_handler_reg_pkg::AsyncOn[17]
+      comments:
+      [
+        alert_handler[17]: fatal_sec_test
+      ]
+    }
     module_clkmgr:
     {
       tx_expr: alert_tx_o[4:3]
       rx_expr: alert_rx_i[4:3]
-      async_expr: alert_handler_reg_pkg::AsyncOn[18:17]
+      async_expr: alert_handler_reg_pkg::AsyncOn[19:18]
       comments:
       [
-        alert_handler[17]: recov_fault
-        alert_handler[18]: fatal_fault
+        alert_handler[18]: recov_fault
+        alert_handler[19]: fatal_fault
       ]
     }
     module_pinmux:
     {
-      tx_expr: alert_tx[19]
-      rx_expr: alert_rx[19]
-      async_expr: alert_handler_reg_pkg::AsyncOn[19]
-      comments:
-      [
-        alert_handler[19]: fatal_fault
-      ]
-    }
-    module_aon_timer:
-    {
-      tx_expr: alert_tx_o[5]
-      rx_expr: alert_rx_i[5]
+      tx_expr: alert_tx[20]
+      rx_expr: alert_rx[20]
       async_expr: alert_handler_reg_pkg::AsyncOn[20]
       comments:
       [
         alert_handler[20]: fatal_fault
       ]
     }
+    module_aon_timer:
+    {
+      tx_expr: alert_tx_o[5]
+      rx_expr: alert_rx_i[5]
+      async_expr: alert_handler_reg_pkg::AsyncOn[21]
+      comments:
+      [
+        alert_handler[21]: fatal_fault
+      ]
+    }
     module_soc_proxy:
     {
       tx_expr: alert_tx_o[6]
       rx_expr: alert_rx_i[6]
-      async_expr: alert_handler_reg_pkg::AsyncOn[21]
+      async_expr: alert_handler_reg_pkg::AsyncOn[22]
       comments:
       [
-        alert_handler[21]: fatal_alert_intg
+        alert_handler[22]: fatal_alert_intg
       ]
     }
     module_sram_ctrl_ret:
     {
       tx_expr: alert_tx_o[7]
       rx_expr: alert_rx_i[7]
-      async_expr: alert_handler_reg_pkg::AsyncOn[22]
-      comments:
-      [
-        alert_handler[22]: fatal_error
-      ]
-    }
-    module_rv_dm:
-    {
-      tx_expr: alert_tx[23]
-      rx_expr: alert_rx[23]
       async_expr: alert_handler_reg_pkg::AsyncOn[23]
       comments:
       [
-        alert_handler[23]: fatal_fault
+        alert_handler[23]: fatal_error
       ]
     }
-    module_rv_plic:
+    module_rv_dm:
     {
       tx_expr: alert_tx[24]
       rx_expr: alert_rx[24]
@@ -21482,115 +21598,115 @@
         alert_handler[24]: fatal_fault
       ]
     }
-    module_aes:
+    module_rv_plic:
     {
-      tx_expr: alert_tx[26:25]
-      rx_expr: alert_rx[26:25]
-      async_expr: alert_handler_reg_pkg::AsyncOn[26:25]
+      tx_expr: alert_tx[25]
+      rx_expr: alert_rx[25]
+      async_expr: alert_handler_reg_pkg::AsyncOn[25]
       comments:
       [
-        alert_handler[25]: recov_ctrl_update_err
-        alert_handler[26]: fatal_fault
+        alert_handler[25]: fatal_fault
+      ]
+    }
+    module_aes:
+    {
+      tx_expr: alert_tx[27:26]
+      rx_expr: alert_rx[27:26]
+      async_expr: alert_handler_reg_pkg::AsyncOn[27:26]
+      comments:
+      [
+        alert_handler[26]: recov_ctrl_update_err
+        alert_handler[27]: fatal_fault
       ]
     }
     module_hmac:
     {
-      tx_expr: alert_tx[27]
-      rx_expr: alert_rx[27]
-      async_expr: alert_handler_reg_pkg::AsyncOn[27]
+      tx_expr: alert_tx[28]
+      rx_expr: alert_rx[28]
+      async_expr: alert_handler_reg_pkg::AsyncOn[28]
       comments:
       [
-        alert_handler[27]: fatal_fault
+        alert_handler[28]: fatal_fault
       ]
     }
     module_kmac:
     {
-      tx_expr: alert_tx[29:28]
-      rx_expr: alert_rx[29:28]
-      async_expr: alert_handler_reg_pkg::AsyncOn[29:28]
+      tx_expr: alert_tx[30:29]
+      rx_expr: alert_rx[30:29]
+      async_expr: alert_handler_reg_pkg::AsyncOn[30:29]
       comments:
       [
-        alert_handler[28]: recov_operation_err
-        alert_handler[29]: fatal_fault_err
+        alert_handler[29]: recov_operation_err
+        alert_handler[30]: fatal_fault_err
       ]
     }
     module_otbn:
     {
-      tx_expr: alert_tx[31:30]
-      rx_expr: alert_rx[31:30]
-      async_expr: alert_handler_reg_pkg::AsyncOn[31:30]
+      tx_expr: alert_tx[32:31]
+      rx_expr: alert_rx[32:31]
+      async_expr: alert_handler_reg_pkg::AsyncOn[32:31]
       comments:
       [
-        alert_handler[30]: fatal
-        alert_handler[31]: recov
+        alert_handler[31]: fatal
+        alert_handler[32]: recov
       ]
     }
     module_keymgr_dpe:
     {
-      tx_expr: alert_tx[33:32]
-      rx_expr: alert_rx[33:32]
-      async_expr: alert_handler_reg_pkg::AsyncOn[33:32]
+      tx_expr: alert_tx[34:33]
+      rx_expr: alert_rx[34:33]
+      async_expr: alert_handler_reg_pkg::AsyncOn[34:33]
       comments:
       [
-        alert_handler[32]: recov_operation_err
-        alert_handler[33]: fatal_fault_err
+        alert_handler[33]: recov_operation_err
+        alert_handler[34]: fatal_fault_err
       ]
     }
     module_csrng:
     {
-      tx_expr: alert_tx[35:34]
-      rx_expr: alert_rx[35:34]
-      async_expr: alert_handler_reg_pkg::AsyncOn[35:34]
+      tx_expr: alert_tx[36:35]
+      rx_expr: alert_rx[36:35]
+      async_expr: alert_handler_reg_pkg::AsyncOn[36:35]
       comments:
       [
-        alert_handler[34]: recov_alert
-        alert_handler[35]: fatal_alert
+        alert_handler[35]: recov_alert
+        alert_handler[36]: fatal_alert
       ]
     }
     module_entropy_src:
     {
-      tx_expr: alert_tx[37:36]
-      rx_expr: alert_rx[37:36]
-      async_expr: alert_handler_reg_pkg::AsyncOn[37:36]
+      tx_expr: alert_tx[38:37]
+      rx_expr: alert_rx[38:37]
+      async_expr: alert_handler_reg_pkg::AsyncOn[38:37]
       comments:
       [
-        alert_handler[36]: recov_alert
-        alert_handler[37]: fatal_alert
+        alert_handler[37]: recov_alert
+        alert_handler[38]: fatal_alert
       ]
     }
     module_edn0:
     {
-      tx_expr: alert_tx[39:38]
-      rx_expr: alert_rx[39:38]
-      async_expr: alert_handler_reg_pkg::AsyncOn[39:38]
+      tx_expr: alert_tx[40:39]
+      rx_expr: alert_rx[40:39]
+      async_expr: alert_handler_reg_pkg::AsyncOn[40:39]
       comments:
       [
-        alert_handler[38]: recov_alert
-        alert_handler[39]: fatal_alert
+        alert_handler[39]: recov_alert
+        alert_handler[40]: fatal_alert
       ]
     }
     module_edn1:
     {
-      tx_expr: alert_tx[41:40]
-      rx_expr: alert_rx[41:40]
-      async_expr: alert_handler_reg_pkg::AsyncOn[41:40]
+      tx_expr: alert_tx[42:41]
+      rx_expr: alert_rx[42:41]
+      async_expr: alert_handler_reg_pkg::AsyncOn[42:41]
       comments:
       [
-        alert_handler[40]: recov_alert
-        alert_handler[41]: fatal_alert
+        alert_handler[41]: recov_alert
+        alert_handler[42]: fatal_alert
       ]
     }
     module_sram_ctrl_main:
-    {
-      tx_expr: alert_tx[42]
-      rx_expr: alert_rx[42]
-      async_expr: alert_handler_reg_pkg::AsyncOn[42]
-      comments:
-      [
-        alert_handler[42]: fatal_error
-      ]
-    }
-    module_sram_ctrl_mbox:
     {
       tx_expr: alert_tx[43]
       rx_expr: alert_rx[43]
@@ -21600,17 +21716,17 @@
         alert_handler[43]: fatal_error
       ]
     }
-    module_rom_ctrl0:
+    module_sram_ctrl_mbox:
     {
       tx_expr: alert_tx[44]
       rx_expr: alert_rx[44]
       async_expr: alert_handler_reg_pkg::AsyncOn[44]
       comments:
       [
-        alert_handler[44]: fatal
+        alert_handler[44]: fatal_error
       ]
     }
-    module_rom_ctrl1:
+    module_rom_ctrl0:
     {
       tx_expr: alert_tx[45]
       rx_expr: alert_rx[45]
@@ -21620,170 +21736,180 @@
         alert_handler[45]: fatal
       ]
     }
-    module_dma:
+    module_rom_ctrl1:
     {
       tx_expr: alert_tx[46]
       rx_expr: alert_rx[46]
       async_expr: alert_handler_reg_pkg::AsyncOn[46]
       comments:
       [
-        alert_handler[46]: fatal_fault
+        alert_handler[46]: fatal
+      ]
+    }
+    module_dma:
+    {
+      tx_expr: alert_tx[47]
+      rx_expr: alert_rx[47]
+      async_expr: alert_handler_reg_pkg::AsyncOn[47]
+      comments:
+      [
+        alert_handler[47]: fatal_fault
       ]
     }
     module_mbx0:
     {
-      tx_expr: alert_tx[48:47]
-      rx_expr: alert_rx[48:47]
-      async_expr: alert_handler_reg_pkg::AsyncOn[48:47]
+      tx_expr: alert_tx[49:48]
+      rx_expr: alert_rx[49:48]
+      async_expr: alert_handler_reg_pkg::AsyncOn[49:48]
       comments:
       [
-        alert_handler[47]: fatal_fault
-        alert_handler[48]: recov_fault
+        alert_handler[48]: fatal_fault
+        alert_handler[49]: recov_fault
       ]
     }
     module_mbx1:
     {
-      tx_expr: alert_tx[50:49]
-      rx_expr: alert_rx[50:49]
-      async_expr: alert_handler_reg_pkg::AsyncOn[50:49]
+      tx_expr: alert_tx[51:50]
+      rx_expr: alert_rx[51:50]
+      async_expr: alert_handler_reg_pkg::AsyncOn[51:50]
       comments:
       [
-        alert_handler[49]: fatal_fault
-        alert_handler[50]: recov_fault
+        alert_handler[50]: fatal_fault
+        alert_handler[51]: recov_fault
       ]
     }
     module_mbx2:
     {
-      tx_expr: alert_tx[52:51]
-      rx_expr: alert_rx[52:51]
-      async_expr: alert_handler_reg_pkg::AsyncOn[52:51]
+      tx_expr: alert_tx[53:52]
+      rx_expr: alert_rx[53:52]
+      async_expr: alert_handler_reg_pkg::AsyncOn[53:52]
       comments:
       [
-        alert_handler[51]: fatal_fault
-        alert_handler[52]: recov_fault
+        alert_handler[52]: fatal_fault
+        alert_handler[53]: recov_fault
       ]
     }
     module_mbx3:
     {
-      tx_expr: alert_tx[54:53]
-      rx_expr: alert_rx[54:53]
-      async_expr: alert_handler_reg_pkg::AsyncOn[54:53]
+      tx_expr: alert_tx[55:54]
+      rx_expr: alert_rx[55:54]
+      async_expr: alert_handler_reg_pkg::AsyncOn[55:54]
       comments:
       [
-        alert_handler[53]: fatal_fault
-        alert_handler[54]: recov_fault
+        alert_handler[54]: fatal_fault
+        alert_handler[55]: recov_fault
       ]
     }
     module_mbx4:
     {
-      tx_expr: alert_tx[56:55]
-      rx_expr: alert_rx[56:55]
-      async_expr: alert_handler_reg_pkg::AsyncOn[56:55]
+      tx_expr: alert_tx[57:56]
+      rx_expr: alert_rx[57:56]
+      async_expr: alert_handler_reg_pkg::AsyncOn[57:56]
       comments:
       [
-        alert_handler[55]: fatal_fault
-        alert_handler[56]: recov_fault
+        alert_handler[56]: fatal_fault
+        alert_handler[57]: recov_fault
       ]
     }
     module_mbx5:
     {
-      tx_expr: alert_tx[58:57]
-      rx_expr: alert_rx[58:57]
-      async_expr: alert_handler_reg_pkg::AsyncOn[58:57]
+      tx_expr: alert_tx[59:58]
+      rx_expr: alert_rx[59:58]
+      async_expr: alert_handler_reg_pkg::AsyncOn[59:58]
       comments:
       [
-        alert_handler[57]: fatal_fault
-        alert_handler[58]: recov_fault
+        alert_handler[58]: fatal_fault
+        alert_handler[59]: recov_fault
       ]
     }
     module_mbx6:
     {
-      tx_expr: alert_tx[60:59]
-      rx_expr: alert_rx[60:59]
-      async_expr: alert_handler_reg_pkg::AsyncOn[60:59]
+      tx_expr: alert_tx[61:60]
+      rx_expr: alert_rx[61:60]
+      async_expr: alert_handler_reg_pkg::AsyncOn[61:60]
       comments:
       [
-        alert_handler[59]: fatal_fault
-        alert_handler[60]: recov_fault
+        alert_handler[60]: fatal_fault
+        alert_handler[61]: recov_fault
       ]
     }
     module_mbx_jtag:
     {
-      tx_expr: alert_tx[62:61]
-      rx_expr: alert_rx[62:61]
-      async_expr: alert_handler_reg_pkg::AsyncOn[62:61]
+      tx_expr: alert_tx[63:62]
+      rx_expr: alert_rx[63:62]
+      async_expr: alert_handler_reg_pkg::AsyncOn[63:62]
       comments:
       [
-        alert_handler[61]: fatal_fault
-        alert_handler[62]: recov_fault
+        alert_handler[62]: fatal_fault
+        alert_handler[63]: recov_fault
       ]
     }
     module_mbx_pcie0:
     {
-      tx_expr: alert_tx[64:63]
-      rx_expr: alert_rx[64:63]
-      async_expr: alert_handler_reg_pkg::AsyncOn[64:63]
+      tx_expr: alert_tx[65:64]
+      rx_expr: alert_rx[65:64]
+      async_expr: alert_handler_reg_pkg::AsyncOn[65:64]
       comments:
       [
-        alert_handler[63]: fatal_fault
-        alert_handler[64]: recov_fault
+        alert_handler[64]: fatal_fault
+        alert_handler[65]: recov_fault
       ]
     }
     module_mbx_pcie1:
     {
-      tx_expr: alert_tx[66:65]
-      rx_expr: alert_rx[66:65]
-      async_expr: alert_handler_reg_pkg::AsyncOn[66:65]
+      tx_expr: alert_tx[67:66]
+      rx_expr: alert_rx[67:66]
+      async_expr: alert_handler_reg_pkg::AsyncOn[67:66]
       comments:
       [
-        alert_handler[65]: fatal_fault
-        alert_handler[66]: recov_fault
+        alert_handler[66]: fatal_fault
+        alert_handler[67]: recov_fault
       ]
     }
     module_soc_dbg_ctrl:
     {
-      tx_expr: alert_tx[68:67]
-      rx_expr: alert_rx[68:67]
-      async_expr: alert_handler_reg_pkg::AsyncOn[68:67]
+      tx_expr: alert_tx[69:68]
+      rx_expr: alert_rx[69:68]
+      async_expr: alert_handler_reg_pkg::AsyncOn[69:68]
       comments:
       [
-        alert_handler[67]: fatal_fault
-        alert_handler[68]: recov_ctrl_update_err
+        alert_handler[68]: fatal_fault
+        alert_handler[69]: recov_ctrl_update_err
       ]
     }
     module_racl_ctrl:
     {
-      tx_expr: alert_tx[70:69]
-      rx_expr: alert_rx[70:69]
-      async_expr: alert_handler_reg_pkg::AsyncOn[70:69]
+      tx_expr: alert_tx[71:70]
+      rx_expr: alert_rx[71:70]
+      async_expr: alert_handler_reg_pkg::AsyncOn[71:70]
       comments:
       [
-        alert_handler[69]: fatal_fault
-        alert_handler[70]: recov_ctrl_update_err
+        alert_handler[70]: fatal_fault
+        alert_handler[71]: recov_ctrl_update_err
       ]
     }
     module_ac_range_check:
     {
-      tx_expr: alert_tx[72:71]
-      rx_expr: alert_rx[72:71]
-      async_expr: alert_handler_reg_pkg::AsyncOn[72:71]
+      tx_expr: alert_tx[73:72]
+      rx_expr: alert_rx[73:72]
+      async_expr: alert_handler_reg_pkg::AsyncOn[73:72]
       comments:
       [
-        alert_handler[71]: recov_ctrl_update_err
-        alert_handler[72]: fatal_fault
+        alert_handler[72]: recov_ctrl_update_err
+        alert_handler[73]: fatal_fault
       ]
     }
     module_rv_core_ibex:
     {
-      tx_expr: alert_tx[76:73]
-      rx_expr: alert_rx[76:73]
-      async_expr: alert_handler_reg_pkg::AsyncOn[76:73]
+      tx_expr: alert_tx[77:74]
+      rx_expr: alert_rx[77:74]
+      async_expr: alert_handler_reg_pkg::AsyncOn[77:74]
       comments:
       [
-        alert_handler[73]: fatal_sw_err
-        alert_handler[74]: recov_sw_err
-        alert_handler[75]: fatal_hw_err
-        alert_handler[76]: recov_hw_err
+        alert_handler[74]: fatal_sw_err
+        alert_handler[75]: recov_sw_err
+        alert_handler[76]: fatal_hw_err
+        alert_handler[77]: recov_hw_err
       ]
     }
   }
@@ -21792,11 +21918,11 @@
     alert_handler:
     {
       domain: Main
-      count_tot: 77
+      count_tot: 78
       count_pd:
       {
         Aon: 8
-        Main: 69
+        Main: 70
       }
       connect_pd:
       {
@@ -21815,27 +21941,27 @@
           src_pd: Aon
           idx: 2
         }
-        17:
+        18:
         {
           src_pd: Aon
           idx: 3
         }
-        18:
+        19:
         {
           src_pd: Aon
           idx: 4
         }
-        20:
+        21:
         {
           src_pd: Aon
           idx: 5
         }
-        21:
+        22:
         {
           src_pd: Aon
           idx: 6
         }
-        22:
+        23:
         {
           src_pd: Aon
           idx: 7
@@ -23685,8 +23811,6 @@
         top_type: broadcast
         top_signame: alert_handler_crashdump
         index: -1
-        external: true
-        conn_type: false
       }
       {
         name: edn
@@ -24223,13 +24347,12 @@
         type: uni
         act: rcv
         width: 1
+        partition: secondary
         inst_name: rstmgr
         default: ""
-        domain: Aon
+        domain: Main
         top_signame: alert_handler_crashdump
         index: -1
-        external: true
-        conn_type: false
       }
       {
         name: cpu_dump
@@ -24239,13 +24362,12 @@
         type: uni
         act: rcv
         width: 1
+        partition: secondary
         inst_name: rstmgr
         default: ""
-        domain: Aon
+        domain: Main
         top_signame: rv_core_ibex_crash_dump
         index: -1
-        external: true
-        conn_type: false
       }
       {
         name: sw_rst_req
@@ -24261,6 +24383,74 @@
         top_type: broadcast
         top_signame: rstmgr_sw_rst_req
         index: -1
+      }
+      {
+        name: interpart_p2s
+        desc: Primary-to-secondary partition signalling.
+        struct: rstmgr_interpart_p2s
+        package: rstmgr_pkg
+        type: uni
+        act: req
+        width: 1
+        inst_name: rstmgr
+        default: ""
+        end_idx: -1
+        top_type: broadcast
+        top_signame: rstmgr_interpart_p2s
+        index: -1
+        external: true
+        conn_type: false
+      }
+      {
+        name: interpart_p2s
+        desc: Primary-to-secondary partition signalling.
+        struct: rstmgr_interpart_p2s
+        package: rstmgr_pkg
+        type: uni
+        act: rcv
+        width: 1
+        partition: secondary
+        inst_name: rstmgr
+        default: ""
+        domain: Main
+        top_signame: rstmgr_interpart_p2s
+        index: -1
+        external: true
+        conn_type: false
+      }
+      {
+        name: interpart_s2p
+        desc: Secondary-to-primary partition signalling.
+        struct: rstmgr_interpart_s2p
+        package: rstmgr_pkg
+        type: uni
+        act: req
+        width: 1
+        partition: secondary
+        inst_name: rstmgr
+        default: ""
+        end_idx: -1
+        top_type: broadcast
+        top_signame: rstmgr_interpart_s2p
+        index: -1
+        external: true
+        conn_type: false
+      }
+      {
+        name: interpart_s2p
+        desc: Secondary-to-primary partition signalling.
+        struct: rstmgr_interpart_s2p
+        package: rstmgr_pkg
+        type: uni
+        act: rcv
+        width: 1
+        inst_name: rstmgr
+        default: ""
+        domain: Aon
+        top_signame: rstmgr_interpart_s2p
+        index: -1
+        external: true
+        conn_type: false
       }
       {
         name: tl
@@ -28814,8 +29004,6 @@
         top_type: broadcast
         top_signame: rv_core_ibex_crash_dump
         index: -1
-        external: true
-        conn_type: false
       }
       {
         name: lc_cpu_en
@@ -30158,44 +30346,6 @@
     external:
     [
       {
-        package: alert_handler_pkg
-        struct: alert_crashdump
-        domain: Main
-        inter_pd: true
-        signame: alert_handler_crashdump_o
-        signame_chip:
-        {
-          asic: alert_handler_crashdump
-          verilator: alert_handler_crashdump
-        }
-        width: 1
-        type: uni
-        default: ""
-        direction: out
-        conn_type: false
-        index: -1
-        netname: alert_handler_crashdump
-      }
-      {
-        package: alert_handler_pkg
-        struct: alert_crashdump
-        domain: Aon
-        inter_pd: true
-        signame: alert_handler_crashdump_i
-        signame_chip:
-        {
-          asic: alert_handler_crashdump
-          verilator: alert_handler_crashdump
-        }
-        width: 1
-        type: uni
-        default: ""
-        direction: in
-        conn_type: false
-        index: -1
-        netname: alert_handler_crashdump
-      }
-      {
         package: prim_esc_pkg
         struct: esc_rx
         domain: Main
@@ -31033,44 +31183,6 @@
       }
       {
         package: rv_core_ibex_pkg
-        struct: cpu_crash_dump
-        domain: Main
-        inter_pd: true
-        signame: rv_core_ibex_crash_dump_o
-        signame_chip:
-        {
-          asic: rv_core_ibex_crash_dump
-          verilator: rv_core_ibex_crash_dump
-        }
-        width: 1
-        type: uni
-        default: ""
-        direction: out
-        conn_type: false
-        index: -1
-        netname: rv_core_ibex_crash_dump
-      }
-      {
-        package: rv_core_ibex_pkg
-        struct: cpu_crash_dump
-        domain: Aon
-        inter_pd: true
-        signame: rv_core_ibex_crash_dump_i
-        signame_chip:
-        {
-          asic: rv_core_ibex_crash_dump
-          verilator: rv_core_ibex_crash_dump
-        }
-        width: 1
-        type: uni
-        default: ""
-        direction: in
-        conn_type: false
-        index: -1
-        netname: rv_core_ibex_crash_dump
-      }
-      {
-        package: rv_core_ibex_pkg
         struct: cpu_pwrmgr
         domain: Main
         inter_pd: true
@@ -31334,6 +31446,82 @@
         conn_type: false
         index: 0
         netname: pwrmgr_wakeups
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_p2s
+        domain: Aon
+        inter_pd: true
+        signame: rstmgr_interpart_p2s_o
+        signame_chip:
+        {
+          asic: rstmgr_interpart_p2s
+          verilator: rstmgr_interpart_p2s
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: rstmgr_interpart_p2s
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_p2s
+        domain: Main
+        inter_pd: true
+        signame: rstmgr_interpart_p2s_i
+        signame_chip:
+        {
+          asic: rstmgr_interpart_p2s
+          verilator: rstmgr_interpart_p2s
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: rstmgr_interpart_p2s
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_s2p
+        domain: Main
+        inter_pd: true
+        signame: rstmgr_interpart_s2p_o
+        signame_chip:
+        {
+          asic: rstmgr_interpart_s2p
+          verilator: rstmgr_interpart_s2p
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: rstmgr_interpart_s2p
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_s2p
+        domain: Aon
+        inter_pd: true
+        signame: rstmgr_interpart_s2p_i
+        signame_chip:
+        {
+          asic: rstmgr_interpart_s2p
+          verilator: rstmgr_interpart_s2p
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: rstmgr_interpart_s2p
       }
       {
         package: tlul_pkg
@@ -34326,6 +34514,18 @@
         default: ast_pkg::AST_OBS_CTRL_DEFAULT
       }
       {
+        package: alert_handler_pkg
+        struct: alert_crashdump
+        domain: Main
+        signame: alert_handler_crashdump
+        width: 1
+        type: uni
+        end_idx: -1
+        act: req
+        suffix: ""
+        default: alert_handler_pkg::ALERT_CRASHDUMP_DEFAULT
+      }
+      {
         package: prim_esc_pkg
         struct: esc_rx
         domain: Main
@@ -35102,6 +35302,18 @@
         act: req
         suffix: ""
         default: "'0"
+      }
+      {
+        package: rv_core_ibex_pkg
+        struct: cpu_crash_dump
+        domain: Main
+        signame: rv_core_ibex_crash_dump
+        width: 1
+        type: uni
+        end_idx: -1
+        act: req
+        suffix: ""
+        default: rv_core_ibex_pkg::CPU_CRASH_DUMP_DEFAULT
       }
       {
         package: spi_device_pkg

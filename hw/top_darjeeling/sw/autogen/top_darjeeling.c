@@ -16,7 +16,7 @@
  * `top_darjeeling_alert_peripheral_t`.
  */
 const top_darjeeling_alert_peripheral_t
-    top_darjeeling_alert_for_peripheral[77] = {
+    top_darjeeling_alert_for_peripheral[78] = {
   [kTopDarjeelingAlertIdUart0FatalFault] = kTopDarjeelingAlertPeripheralUart0,
   [kTopDarjeelingAlertIdGpioFatalFault] = kTopDarjeelingAlertPeripheralGpio,
   [kTopDarjeelingAlertIdSpiDeviceFatalFault] = kTopDarjeelingAlertPeripheralSpiDevice,
@@ -34,6 +34,7 @@ const top_darjeeling_alert_peripheral_t
   [kTopDarjeelingAlertIdPwrmgrFatalFault] = kTopDarjeelingAlertPeripheralPwrmgr,
   [kTopDarjeelingAlertIdRstmgrFatalFault] = kTopDarjeelingAlertPeripheralRstmgr,
   [kTopDarjeelingAlertIdRstmgrFatalCnstyFault] = kTopDarjeelingAlertPeripheralRstmgr,
+  [kTopDarjeelingAlertIdRstmgrFatalSecTest] = kTopDarjeelingAlertPeripheralRstmgr,
   [kTopDarjeelingAlertIdClkmgrRecovFault] = kTopDarjeelingAlertPeripheralClkmgr,
   [kTopDarjeelingAlertIdClkmgrFatalFault] = kTopDarjeelingAlertPeripheralClkmgr,
   [kTopDarjeelingAlertIdPinmuxFatalFault] = kTopDarjeelingAlertPeripheralPinmux,

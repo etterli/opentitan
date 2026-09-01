@@ -1786,30 +1786,56 @@
       template_type: rstmgr
       clock_srcs:
       {
-        clk_i: io_div4
-        clk_por_i: io_div4
-        clk_aon_i: aon
-        clk_main_i: main
-        clk_io_i: io
-        clk_usb_i: usb
-        clk_io_div2_i: io_div2
-        clk_io_div4_i: io_div4
+        primary:
+        {
+          clk_i: io_div4
+          clk_por_i: io_div4
+          clk_aon_i: aon
+          clk_main_i: main
+          clk_io_i: io
+          clk_usb_i: usb
+          clk_io_div2_i: io_div2
+          clk_io_div4_i: io_div4
+        }
+        secondary:
+        {
+          clk_sec_i: io_div4
+        }
       }
-      clock_group: powerup
+      clock_group:
+      {
+        primary: powerup
+        secondary: secure
+      }
       reset_connections:
       {
-        rst_ni:
+        primary:
         {
-          name: lc_io_div4
-          domain: Aon
+          rst_ni:
+          {
+            name: lc_io_div4
+            domain: Aon
+          }
+          rst_por_ni:
+          {
+            name: por_io_div4
+            domain: Aon
+          }
         }
-        rst_por_ni:
+        secondary:
         {
-          name: por_io_div4
-          domain: Aon
+          rst_sec_ni:
+          {
+            name: lc_io_div4
+            domain: Main
+          }
         }
       }
-      domain: Aon
+      domain:
+      {
+        primary: Aon
+        secondary: Main
+      }
       param_decl:
       {
         SecCheck: "0"
@@ -1818,15 +1844,23 @@
       outgoing_alert: englishbreakfast
       clock_connections:
       {
-        clk_i: clkmgr_clocks.clk_io_div4_powerup
-        clk_por_i: clkmgr_clocks.clk_io_div4_powerup
-        clk_aon_i: clkmgr_clocks.clk_aon_powerup
-        clk_main_i: clkmgr_clocks.clk_main_powerup
-        clk_io_i: clkmgr_clocks.clk_io_powerup
-        clk_usb_i: clkmgr_clocks.clk_usb_powerup
-        clk_io_div2_i: clkmgr_clocks.clk_io_div2_powerup
-        clk_io_div4_i: clkmgr_clocks.clk_io_div4_powerup
+        primary:
+        {
+          clk_i: clkmgr_clocks.clk_io_div4_powerup
+          clk_por_i: clkmgr_clocks.clk_io_div4_powerup
+          clk_aon_i: clkmgr_clocks.clk_aon_powerup
+          clk_main_i: clkmgr_clocks.clk_main_powerup
+          clk_io_i: clkmgr_clocks.clk_io_powerup
+          clk_usb_i: clkmgr_clocks.clk_usb_powerup
+          clk_io_div2_i: clkmgr_clocks.clk_io_div2_powerup
+          clk_io_div4_i: clkmgr_clocks.clk_io_div4_powerup
+        }
+        secondary:
+        {
+          clk_sec_i: clkmgr_clocks_i.clk_io_div4_secure
+        }
       }
+      is_split_ip: true
       memory: {}
       param_list:
       [
@@ -1930,6 +1964,7 @@
           type: uni
           act: rcv
           width: 1
+          partition: secondary
           inst_name: rstmgr
           index: -1
         }
@@ -1941,13 +1976,12 @@
           type: uni
           act: rcv
           width: 1
+          partition: secondary
           inst_name: rstmgr
           default: ""
-          domain: Aon
+          domain: Main
           top_signame: rv_core_ibex_crash_dump
           index: -1
-          external: true
-          conn_type: false
         }
         {
           name: sw_rst_req
@@ -1963,6 +1997,74 @@
           top_type: broadcast
           top_signame: rstmgr_sw_rst_req
           index: -1
+        }
+        {
+          name: interpart_p2s
+          desc: Primary-to-secondary partition signalling.
+          struct: rstmgr_interpart_p2s
+          package: rstmgr_pkg
+          type: uni
+          act: req
+          width: 1
+          inst_name: rstmgr
+          default: ""
+          end_idx: -1
+          top_type: broadcast
+          top_signame: rstmgr_interpart_p2s
+          index: -1
+          external: true
+          conn_type: false
+        }
+        {
+          name: interpart_p2s
+          desc: Primary-to-secondary partition signalling.
+          struct: rstmgr_interpart_p2s
+          package: rstmgr_pkg
+          type: uni
+          act: rcv
+          width: 1
+          partition: secondary
+          inst_name: rstmgr
+          default: ""
+          domain: Main
+          top_signame: rstmgr_interpart_p2s
+          index: -1
+          external: true
+          conn_type: false
+        }
+        {
+          name: interpart_s2p
+          desc: Secondary-to-primary partition signalling.
+          struct: rstmgr_interpart_s2p
+          package: rstmgr_pkg
+          type: uni
+          act: req
+          width: 1
+          partition: secondary
+          inst_name: rstmgr
+          default: ""
+          end_idx: -1
+          top_type: broadcast
+          top_signame: rstmgr_interpart_s2p
+          index: -1
+          external: true
+          conn_type: false
+        }
+        {
+          name: interpart_s2p
+          desc: Secondary-to-primary partition signalling.
+          struct: rstmgr_interpart_s2p
+          package: rstmgr_pkg
+          type: uni
+          act: rcv
+          width: 1
+          inst_name: rstmgr
+          default: ""
+          domain: Aon
+          top_signame: rstmgr_interpart_s2p
+          index: -1
+          external: true
+          conn_type: false
         }
         {
           name: tl
@@ -4696,8 +4798,6 @@
           top_type: broadcast
           top_signame: rv_core_ibex_crash_dump
           index: -1
-          external: true
-          conn_type: false
         }
         {
           name: lc_cpu_en
@@ -4984,6 +5084,14 @@
       pwrmgr.rstreqs:
       [
         aon_timer.aon_timer_rst_req
+      ]
+      rstmgr.interpart_p2s.primary:
+      [
+        rstmgr.interpart_p2s.secondary
+      ]
+      rstmgr.interpart_s2p.secondary:
+      [
+        rstmgr.interpart_s2p.primary
       ]
       main.tl_rv_core_ibex__corei:
       [
@@ -8106,6 +8214,18 @@
         lpg_idx: 7
       }
       {
+        name: rstmgr_fatal_sec_test
+        width: 1
+        type: alert
+        partition: secondary
+        async: "1"
+        handler: null
+        module_name: rstmgr
+        desc: rstmgr fatal_sec_test alert
+        lpg_name: powerup_lc_io_div4_Aon
+        lpg_idx: 7
+      }
+      {
         name: clkmgr_recov_fault
         width: 1
         type: alert
@@ -9098,7 +9218,7 @@
         struct: alert_tx
         domain: chip
         signame: alertenglishbreakfast_tx_pd_main
-        width: 22
+        width: 23
         type: uni
         special: alert
         end_idx: -1
@@ -9111,7 +9231,7 @@
         struct: alert_rx
         domain: chip
         signame: alertenglishbreakfast_rx_pd_main
-        width: 22
+        width: 23
         type: uni
         special: alert
         end_idx: -1
@@ -9207,18 +9327,6 @@
       }
       {
         package: rv_core_ibex_pkg
-        struct: cpu_crash_dump
-        domain: chip
-        signame: rv_core_ibex_crash_dump
-        width: 1
-        type: uni
-        end_idx: -1
-        act: req
-        suffix: ""
-        default: rv_core_ibex_pkg::CPU_CRASH_DUMP_DEFAULT
-      }
-      {
-        package: rv_core_ibex_pkg
         struct: cpu_pwrmgr
         domain: chip
         signame: rv_core_ibex_pwrmgr
@@ -9240,6 +9348,30 @@
         act: rcv
         suffix: ""
         default: "'0"
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_p2s
+        domain: chip
+        signame: rstmgr_interpart_p2s
+        width: 1
+        type: uni
+        end_idx: -1
+        act: req
+        suffix: ""
+        default: rstmgr_pkg::RSTMGR_INTERPART_P2S_DEFAULT
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_s2p
+        domain: chip
+        signame: rstmgr_interpart_s2p
+        width: 1
+        type: uni
+        end_idx: -1
+        act: req
+        suffix: ""
+        default: rstmgr_pkg::RSTMGR_INTERPART_S2P_DEFAULT
       }
       {
         package: tlul_pkg
@@ -9409,103 +9541,113 @@
         External alert group "englishbreakfast" [9]: fatal_cnsty_fault
       ]
     }
+    module_rstmgr_secondary:
+    {
+      tx_expr: outgoing_alert_englishbreakfast_tx_o[7]
+      rx_expr: outgoing_alert_englishbreakfast_rx_i[7]
+      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[10]
+      comments:
+      [
+        External alert group "englishbreakfast" [10]: fatal_sec_test
+      ]
+    }
     module_clkmgr:
     {
       tx_expr: outgoing_alert_englishbreakfast_tx_o[4:3]
       rx_expr: outgoing_alert_englishbreakfast_rx_i[4:3]
-      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[11:10]
+      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[12:11]
       comments:
       [
-        External alert group "englishbreakfast" [10]: recov_fault
-        External alert group "englishbreakfast" [11]: fatal_fault
+        External alert group "englishbreakfast" [11]: recov_fault
+        External alert group "englishbreakfast" [12]: fatal_fault
       ]
     }
     module_pinmux:
     {
-      tx_expr: outgoing_alert_englishbreakfast_tx_o[7]
-      rx_expr: outgoing_alert_englishbreakfast_rx_i[7]
-      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[12]
-      comments:
-      [
-        External alert group "englishbreakfast" [12]: fatal_fault
-      ]
-    }
-    module_aon_timer:
-    {
-      tx_expr: outgoing_alert_englishbreakfast_tx_o[5]
-      rx_expr: outgoing_alert_englishbreakfast_rx_i[5]
+      tx_expr: outgoing_alert_englishbreakfast_tx_o[8]
+      rx_expr: outgoing_alert_englishbreakfast_rx_i[8]
       async_expr: AsyncOnOutgoingAlertEnglishbreakfast[13]
       comments:
       [
         External alert group "englishbreakfast" [13]: fatal_fault
       ]
     }
-    module_flash_ctrl:
+    module_aon_timer:
     {
-      tx_expr: outgoing_alert_englishbreakfast_tx_o[12:8]
-      rx_expr: outgoing_alert_englishbreakfast_rx_i[12:8]
-      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[18:14]
+      tx_expr: outgoing_alert_englishbreakfast_tx_o[5]
+      rx_expr: outgoing_alert_englishbreakfast_rx_i[5]
+      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[14]
       comments:
       [
-        External alert group "englishbreakfast" [14]: recov_err
-        External alert group "englishbreakfast" [15]: fatal_std_err
-        External alert group "englishbreakfast" [16]: fatal_err
-        External alert group "englishbreakfast" [17]: fatal_prim_flash_alert
-        External alert group "englishbreakfast" [18]: recov_prim_flash_alert
+        External alert group "englishbreakfast" [14]: fatal_fault
+      ]
+    }
+    module_flash_ctrl:
+    {
+      tx_expr: outgoing_alert_englishbreakfast_tx_o[13:9]
+      rx_expr: outgoing_alert_englishbreakfast_rx_i[13:9]
+      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[19:15]
+      comments:
+      [
+        External alert group "englishbreakfast" [15]: recov_err
+        External alert group "englishbreakfast" [16]: fatal_std_err
+        External alert group "englishbreakfast" [17]: fatal_err
+        External alert group "englishbreakfast" [18]: fatal_prim_flash_alert
+        External alert group "englishbreakfast" [19]: recov_prim_flash_alert
       ]
     }
     module_rv_plic:
     {
-      tx_expr: outgoing_alert_englishbreakfast_tx_o[13]
-      rx_expr: outgoing_alert_englishbreakfast_rx_i[13]
-      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[19]
+      tx_expr: outgoing_alert_englishbreakfast_tx_o[14]
+      rx_expr: outgoing_alert_englishbreakfast_rx_i[14]
+      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[20]
       comments:
       [
-        External alert group "englishbreakfast" [19]: fatal_fault
+        External alert group "englishbreakfast" [20]: fatal_fault
       ]
     }
     module_aes:
     {
-      tx_expr: outgoing_alert_englishbreakfast_tx_o[15:14]
-      rx_expr: outgoing_alert_englishbreakfast_rx_i[15:14]
-      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[21:20]
+      tx_expr: outgoing_alert_englishbreakfast_tx_o[16:15]
+      rx_expr: outgoing_alert_englishbreakfast_rx_i[16:15]
+      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[22:21]
       comments:
       [
-        External alert group "englishbreakfast" [20]: recov_ctrl_update_err
-        External alert group "englishbreakfast" [21]: fatal_fault
+        External alert group "englishbreakfast" [21]: recov_ctrl_update_err
+        External alert group "englishbreakfast" [22]: fatal_fault
       ]
     }
     module_sram_ctrl_main:
-    {
-      tx_expr: outgoing_alert_englishbreakfast_tx_o[16]
-      rx_expr: outgoing_alert_englishbreakfast_rx_i[16]
-      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[22]
-      comments:
-      [
-        External alert group "englishbreakfast" [22]: fatal_error
-      ]
-    }
-    module_rom_ctrl:
     {
       tx_expr: outgoing_alert_englishbreakfast_tx_o[17]
       rx_expr: outgoing_alert_englishbreakfast_rx_i[17]
       async_expr: AsyncOnOutgoingAlertEnglishbreakfast[23]
       comments:
       [
-        External alert group "englishbreakfast" [23]: fatal
+        External alert group "englishbreakfast" [23]: fatal_error
+      ]
+    }
+    module_rom_ctrl:
+    {
+      tx_expr: outgoing_alert_englishbreakfast_tx_o[18]
+      rx_expr: outgoing_alert_englishbreakfast_rx_i[18]
+      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[24]
+      comments:
+      [
+        External alert group "englishbreakfast" [24]: fatal
       ]
     }
     module_rv_core_ibex:
     {
-      tx_expr: outgoing_alert_englishbreakfast_tx_o[21:18]
-      rx_expr: outgoing_alert_englishbreakfast_rx_i[21:18]
-      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[27:24]
+      tx_expr: outgoing_alert_englishbreakfast_tx_o[22:19]
+      rx_expr: outgoing_alert_englishbreakfast_rx_i[22:19]
+      async_expr: AsyncOnOutgoingAlertEnglishbreakfast[28:25]
       comments:
       [
-        External alert group "englishbreakfast" [24]: fatal_sw_err
-        External alert group "englishbreakfast" [25]: recov_sw_err
-        External alert group "englishbreakfast" [26]: fatal_hw_err
-        External alert group "englishbreakfast" [27]: recov_hw_err
+        External alert group "englishbreakfast" [25]: fatal_sw_err
+        External alert group "englishbreakfast" [26]: recov_sw_err
+        External alert group "englishbreakfast" [27]: fatal_hw_err
+        External alert group "englishbreakfast" [28]: recov_hw_err
       ]
     }
   }
@@ -9514,11 +9656,11 @@
     englishbreakfast:
     {
       domain: external
-      count_tot: 28
+      count_tot: 29
       count_pd:
       {
         Aon: 6
-        Main: 22
+        Main: 23
       }
     }
   }
@@ -10871,6 +11013,7 @@
         type: uni
         act: rcv
         width: 1
+        partition: secondary
         inst_name: rstmgr
         index: -1
       }
@@ -10882,13 +11025,12 @@
         type: uni
         act: rcv
         width: 1
+        partition: secondary
         inst_name: rstmgr
         default: ""
-        domain: Aon
+        domain: Main
         top_signame: rv_core_ibex_crash_dump
         index: -1
-        external: true
-        conn_type: false
       }
       {
         name: sw_rst_req
@@ -10904,6 +11046,74 @@
         top_type: broadcast
         top_signame: rstmgr_sw_rst_req
         index: -1
+      }
+      {
+        name: interpart_p2s
+        desc: Primary-to-secondary partition signalling.
+        struct: rstmgr_interpart_p2s
+        package: rstmgr_pkg
+        type: uni
+        act: req
+        width: 1
+        inst_name: rstmgr
+        default: ""
+        end_idx: -1
+        top_type: broadcast
+        top_signame: rstmgr_interpart_p2s
+        index: -1
+        external: true
+        conn_type: false
+      }
+      {
+        name: interpart_p2s
+        desc: Primary-to-secondary partition signalling.
+        struct: rstmgr_interpart_p2s
+        package: rstmgr_pkg
+        type: uni
+        act: rcv
+        width: 1
+        partition: secondary
+        inst_name: rstmgr
+        default: ""
+        domain: Main
+        top_signame: rstmgr_interpart_p2s
+        index: -1
+        external: true
+        conn_type: false
+      }
+      {
+        name: interpart_s2p
+        desc: Secondary-to-primary partition signalling.
+        struct: rstmgr_interpart_s2p
+        package: rstmgr_pkg
+        type: uni
+        act: req
+        width: 1
+        partition: secondary
+        inst_name: rstmgr
+        default: ""
+        end_idx: -1
+        top_type: broadcast
+        top_signame: rstmgr_interpart_s2p
+        index: -1
+        external: true
+        conn_type: false
+      }
+      {
+        name: interpart_s2p
+        desc: Secondary-to-primary partition signalling.
+        struct: rstmgr_interpart_s2p
+        package: rstmgr_pkg
+        type: uni
+        act: rcv
+        width: 1
+        inst_name: rstmgr
+        default: ""
+        domain: Aon
+        top_signame: rstmgr_interpart_s2p
+        index: -1
+        external: true
+        conn_type: false
       }
       {
         name: tl
@@ -12370,8 +12580,6 @@
         top_type: broadcast
         top_signame: rv_core_ibex_crash_dump
         index: -1
-        external: true
-        conn_type: false
       }
       {
         name: lc_cpu_en
@@ -13086,44 +13294,6 @@
       }
       {
         package: rv_core_ibex_pkg
-        struct: cpu_crash_dump
-        domain: Main
-        inter_pd: true
-        signame: rv_core_ibex_crash_dump_o
-        signame_chip:
-        {
-          cw305: rv_core_ibex_crash_dump
-          verilator: rv_core_ibex_crash_dump
-        }
-        width: 1
-        type: uni
-        default: ""
-        direction: out
-        conn_type: false
-        index: -1
-        netname: rv_core_ibex_crash_dump
-      }
-      {
-        package: rv_core_ibex_pkg
-        struct: cpu_crash_dump
-        domain: Aon
-        inter_pd: true
-        signame: rv_core_ibex_crash_dump_i
-        signame_chip:
-        {
-          cw305: rv_core_ibex_crash_dump
-          verilator: rv_core_ibex_crash_dump
-        }
-        width: 1
-        type: uni
-        default: ""
-        direction: in
-        conn_type: false
-        index: -1
-        netname: rv_core_ibex_crash_dump
-      }
-      {
-        package: rv_core_ibex_pkg
         struct: cpu_pwrmgr
         domain: Main
         inter_pd: true
@@ -13205,6 +13375,82 @@
           1
         ]
         netname: pwrmgr_wakeups
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_p2s
+        domain: Aon
+        inter_pd: true
+        signame: rstmgr_interpart_p2s_o
+        signame_chip:
+        {
+          cw305: rstmgr_interpart_p2s
+          verilator: rstmgr_interpart_p2s
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: rstmgr_interpart_p2s
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_p2s
+        domain: Main
+        inter_pd: true
+        signame: rstmgr_interpart_p2s_i
+        signame_chip:
+        {
+          cw305: rstmgr_interpart_p2s
+          verilator: rstmgr_interpart_p2s
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: rstmgr_interpart_p2s
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_s2p
+        domain: Main
+        inter_pd: true
+        signame: rstmgr_interpart_s2p_o
+        signame_chip:
+        {
+          cw305: rstmgr_interpart_s2p
+          verilator: rstmgr_interpart_s2p
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: rstmgr_interpart_s2p
+      }
+      {
+        package: rstmgr_pkg
+        struct: rstmgr_interpart_s2p
+        domain: Aon
+        inter_pd: true
+        signame: rstmgr_interpart_s2p_i
+        signame_chip:
+        {
+          cw305: rstmgr_interpart_s2p
+          verilator: rstmgr_interpart_s2p
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: rstmgr_interpart_s2p
       }
       {
         package: tlul_pkg
@@ -14250,6 +14496,18 @@
         act: req
         suffix: ""
         default: 1'b0
+      }
+      {
+        package: rv_core_ibex_pkg
+        struct: cpu_crash_dump
+        domain: Main
+        signame: rv_core_ibex_crash_dump
+        width: 1
+        type: uni
+        end_idx: -1
+        act: req
+        suffix: ""
+        default: rv_core_ibex_pkg::CPU_CRASH_DUMP_DEFAULT
       }
       {
         package: spi_device_pkg

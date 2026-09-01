@@ -27,7 +27,6 @@ module darjeeling_pd_aon #(
   parameter bit SramCtrlRetEccCorrection = 0
 ) (
   // Inter-module Signal External type
-  input  alert_handler_pkg::alert_crashdump_t       alert_handler_crashdump_i,
   output prim_esc_pkg::esc_rx_t       alert_handler_esc_rx_o,
   input  prim_esc_pkg::esc_tx_t       alert_handler_esc_tx_i,
   output logic       aon_timer_nmi_wdog_timer_bark_o,
@@ -50,7 +49,6 @@ module darjeeling_pd_aon #(
   input  lc_ctrl_pkg::lc_tx_t       lc_ctrl_lc_dft_en_i,
   input  lc_ctrl_pkg::lc_tx_t       lc_ctrl_lc_hw_debug_en_i,
   input  lc_ctrl_pkg::lc_tx_t       lc_ctrl_lc_escalate_en_i,
-  input  rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump_i,
   input  rv_core_ibex_pkg::cpu_pwrmgr_t       rv_core_ibex_pwrmgr_i,
   input  logic       rv_dm_ndmreset_req_i,
   input  tlul_pkg::tl_h2d_t       soc_proxy_dma_tl_h2d_i,
@@ -58,6 +56,8 @@ module darjeeling_pd_aon #(
   output tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_h2d_o,
   input  tlul_pkg::tl_d2h_t       soc_proxy_ctn_tl_d2h_i,
   input  logic       pwrmgr_wakeups_i,
+  output rstmgr_pkg::rstmgr_interpart_p2s_t       rstmgr_interpart_p2s_o,
+  input  rstmgr_pkg::rstmgr_interpart_s2p_t       rstmgr_interpart_s2p_i,
   input  tlul_pkg::tl_h2d_t       soc_proxy_core_tl_req_i,
   output tlul_pkg::tl_d2h_t       soc_proxy_core_tl_rsp_o,
   input  tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_req_i,
@@ -219,12 +219,12 @@ module darjeeling_pd_aon #(
     .tl_o(pwrmgr_tl_rsp_o)
   );
 
-  rstmgr #(
+  rstmgr_part_primary #(
     .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[16:15]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .SecCheck(SecRstmgrCheck),
     .SecMaxSyncDelay(SecRstmgrMaxSyncDelay)
-  ) u_rstmgr (
+  ) u_rstmgr_part_primary (
     // Clock and reset connections
     .clk_i(clkmgr_clocks.clk_io_powerup),
     .clk_por_i(clkmgr_clocks.clk_io_powerup),
@@ -249,15 +249,15 @@ module darjeeling_pd_aon #(
     .pwr_o(pwrmgr_pwr_rst_rsp),
     .resets_o(rstmgr_resets),
     .rst_en_o(rstmgr_rst_en),
-    .alert_dump_i(alert_handler_crashdump_i),
-    .cpu_dump_i(rv_core_ibex_crash_dump_i),
     .sw_rst_req_o(rstmgr_sw_rst_req),
+    .interpart_p2s_o(rstmgr_interpart_p2s_o),
+    .interpart_s2p_i(rstmgr_interpart_s2p_i),
     .tl_i(rstmgr_tl_req_i),
     .tl_o(rstmgr_tl_rsp_o)
   );
 
   clkmgr #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[18:17]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[19:18]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles)
   ) u_clkmgr (
     // Clock and reset connections
@@ -277,8 +277,8 @@ module darjeeling_pd_aon #(
     // DFT/scan connections
     .scanmode_i,
 
-    // alert_handler[17]: recov_fault
-    // alert_handler[18]: fatal_fault
+    // alert_handler[18]: recov_fault
+    // alert_handler[19]: fatal_fault
     .alert_tx_o(alert_tx_o[4:3]),
     .alert_rx_i(alert_rx_i[4:3]),
 
@@ -294,7 +294,7 @@ module darjeeling_pd_aon #(
   );
 
   aon_timer #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[20]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[21]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles)
   ) u_aon_timer (
     // Clock and reset connections
@@ -307,7 +307,7 @@ module darjeeling_pd_aon #(
     .intr_wkup_timer_expired_o(intr_aon_timer_wkup_timer_expired),
     .intr_wdog_timer_bark_o   (intr_aon_timer_wdog_timer_bark),
 
-    // alert_handler[20]: fatal_fault
+    // alert_handler[21]: fatal_fault
     .alert_tx_o(alert_tx_o[5]),
     .alert_rx_i(alert_rx_i[5]),
 
@@ -324,7 +324,7 @@ module darjeeling_pd_aon #(
   );
 
   soc_proxy #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[21]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[22]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles)
   ) u_soc_proxy (
     // Clock and reset connections
@@ -333,7 +333,7 @@ module darjeeling_pd_aon #(
     .rst_ni(rstmgr_resets.rst_lc_n[rstmgr_pkg::DomainMainSel]),
     .rst_por_ni(rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
 
-    // alert_handler[21]: fatal_alert_intg
+    // alert_handler[22]: fatal_alert_intg
     .alert_tx_o(alert_tx_o[6]),
     .alert_rx_i(alert_rx_i[6]),
 
@@ -370,7 +370,7 @@ module darjeeling_pd_aon #(
   );
 
   sram_ctrl #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[22]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[23]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .RndCnstSramKey(RndCnstSramCtrlRetSramKey),
     .RndCnstSramNonce(RndCnstSramCtrlRetSramNonce),
@@ -391,7 +391,7 @@ module darjeeling_pd_aon #(
     .rst_ni(rstmgr_resets.rst_lc_io_n[rstmgr_pkg::DomainAonSel]),
     .rst_otp_ni(rstmgr_resets.rst_lc_io_n[rstmgr_pkg::DomainAonSel]),
 
-    // alert_handler[22]: fatal_error
+    // alert_handler[23]: fatal_error
     .alert_tx_o(alert_tx_o[7]),
     .alert_rx_i(alert_rx_i[7]),
 

@@ -147,8 +147,8 @@ module top_englishbreakfast #(
   logic [2:0] intr_vector_pd_aon;
   prim_alert_pkg::alert_tx_t [5:0] alertenglishbreakfast_tx_pd_aon;
   prim_alert_pkg::alert_rx_t [5:0] alertenglishbreakfast_rx_pd_aon;
-  prim_alert_pkg::alert_tx_t [21:0] alertenglishbreakfast_tx_pd_main;
-  prim_alert_pkg::alert_rx_t [21:0] alertenglishbreakfast_rx_pd_main;
+  prim_alert_pkg::alert_tx_t [22:0] alertenglishbreakfast_tx_pd_main;
+  prim_alert_pkg::alert_rx_t [22:0] alertenglishbreakfast_rx_pd_main;
   prim_mubi_pkg::mubi4_t [12:0] outgoing_lpg_cg_en_englishbreakfast;
   prim_mubi_pkg::mubi4_t [12:0] outgoing_lpg_rst_en_englishbreakfast;
   pwrmgr_pkg::pwr_nvm_t       pwrmgr_pwr_nvm;
@@ -156,9 +156,10 @@ module top_englishbreakfast #(
   logic       pwrmgr_low_power;
   lc_ctrl_pkg::lc_tx_t       pwrmgr_fetch_en;
   prim_mubi_pkg::mubi4_t       clkmgr_idle;
-  rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump;
   rv_core_ibex_pkg::cpu_pwrmgr_t       rv_core_ibex_pwrmgr;
   logic [1:0] pwrmgr_wakeups;
+  rstmgr_pkg::rstmgr_interpart_p2s_t       rstmgr_interpart_p2s;
+  rstmgr_pkg::rstmgr_interpart_s2p_t       rstmgr_interpart_s2p;
   tlul_pkg::tl_h2d_t       pwrmgr_tl_req;
   tlul_pkg::tl_d2h_t       pwrmgr_tl_rsp;
   tlul_pkg::tl_h2d_t       rstmgr_tl_req;
@@ -192,6 +193,8 @@ module top_englishbreakfast #(
   .SpiDeviceSramType(SpiDeviceSramType),
   .UsbdevStub(UsbdevStub),
   .UsbdevRcvrWakeTimeUs(UsbdevRcvrWakeTimeUs),
+  .SecRstmgrCheck(SecRstmgrCheck),
+  .SecRstmgrMaxSyncDelay(SecRstmgrMaxSyncDelay),
   .SecPinmuxVolatileRawUnlockEn(SecPinmuxVolatileRawUnlockEn),
   .PinmuxTargetCfg(PinmuxTargetCfg),
   .SecFlashCtrlScrambleEn(SecFlashCtrlScrambleEn),
@@ -278,20 +281,21 @@ module top_englishbreakfast #(
     .outgoing_alert_englishbreakfast_rx_i(alertenglishbreakfast_rx_pd_main),
 
     // Ports to and from other power domains (auto-generated)
-    .pwrmgr_pwr_nvm_o         (pwrmgr_pwr_nvm         ),
-    .pwrmgr_strap_i           (pwrmgr_strap           ),
-    .pwrmgr_low_power_i       (pwrmgr_low_power       ),
-    .pwrmgr_fetch_en_i        (pwrmgr_fetch_en        ),
-    .clkmgr_idle_o            (clkmgr_idle            ),
-    .rv_core_ibex_crash_dump_o(rv_core_ibex_crash_dump),
-    .rv_core_ibex_pwrmgr_o    (rv_core_ibex_pwrmgr    ),
-    .pwrmgr_wakeups_o         (pwrmgr_wakeups         ),
-    .pwrmgr_tl_req_o          (pwrmgr_tl_req          ),
-    .pwrmgr_tl_rsp_i          (pwrmgr_tl_rsp          ),
-    .rstmgr_tl_req_o          (rstmgr_tl_req          ),
-    .rstmgr_tl_rsp_i          (rstmgr_tl_rsp          ),
-    .clkmgr_tl_req_o          (clkmgr_tl_req          ),
-    .clkmgr_tl_rsp_i          (clkmgr_tl_rsp          ),
+    .pwrmgr_pwr_nvm_o      (pwrmgr_pwr_nvm      ),
+    .pwrmgr_strap_i        (pwrmgr_strap        ),
+    .pwrmgr_low_power_i    (pwrmgr_low_power    ),
+    .pwrmgr_fetch_en_i     (pwrmgr_fetch_en     ),
+    .clkmgr_idle_o         (clkmgr_idle         ),
+    .rv_core_ibex_pwrmgr_o (rv_core_ibex_pwrmgr ),
+    .pwrmgr_wakeups_o      (pwrmgr_wakeups      ),
+    .rstmgr_interpart_p2s_i(rstmgr_interpart_p2s),
+    .rstmgr_interpart_s2p_o(rstmgr_interpart_s2p),
+    .pwrmgr_tl_req_o       (pwrmgr_tl_req       ),
+    .pwrmgr_tl_rsp_i       (pwrmgr_tl_rsp       ),
+    .rstmgr_tl_req_o       (rstmgr_tl_req       ),
+    .rstmgr_tl_rsp_i       (rstmgr_tl_rsp       ),
+    .clkmgr_tl_req_o       (clkmgr_tl_req       ),
+    .clkmgr_tl_rsp_i       (clkmgr_tl_rsp       ),
 
     // Regular ports (auto-generated)
     .flash_bist_enable_i,
@@ -344,20 +348,21 @@ module top_englishbreakfast #(
     .outgoing_lpg_rst_en_englishbreakfast_o(outgoing_lpg_rst_en_englishbreakfast),
 
     // Ports to and from other power domains (auto-generated)
-    .pwrmgr_pwr_nvm_i         (pwrmgr_pwr_nvm         ),
-    .pwrmgr_strap_o           (pwrmgr_strap           ),
-    .pwrmgr_low_power_o       (pwrmgr_low_power       ),
-    .pwrmgr_fetch_en_o        (pwrmgr_fetch_en        ),
-    .clkmgr_idle_i            (clkmgr_idle            ),
-    .rv_core_ibex_crash_dump_i(rv_core_ibex_crash_dump),
-    .rv_core_ibex_pwrmgr_i    (rv_core_ibex_pwrmgr    ),
-    .pwrmgr_wakeups_i         (pwrmgr_wakeups         ),
-    .pwrmgr_tl_req_i          (pwrmgr_tl_req          ),
-    .pwrmgr_tl_rsp_o          (pwrmgr_tl_rsp          ),
-    .rstmgr_tl_req_i          (rstmgr_tl_req          ),
-    .rstmgr_tl_rsp_o          (rstmgr_tl_rsp          ),
-    .clkmgr_tl_req_i          (clkmgr_tl_req          ),
-    .clkmgr_tl_rsp_o          (clkmgr_tl_rsp          ),
+    .pwrmgr_pwr_nvm_i      (pwrmgr_pwr_nvm      ),
+    .pwrmgr_strap_o        (pwrmgr_strap        ),
+    .pwrmgr_low_power_o    (pwrmgr_low_power    ),
+    .pwrmgr_fetch_en_o     (pwrmgr_fetch_en     ),
+    .clkmgr_idle_i         (clkmgr_idle         ),
+    .rv_core_ibex_pwrmgr_i (rv_core_ibex_pwrmgr ),
+    .pwrmgr_wakeups_i      (pwrmgr_wakeups      ),
+    .rstmgr_interpart_p2s_o(rstmgr_interpart_p2s),
+    .rstmgr_interpart_s2p_i(rstmgr_interpart_s2p),
+    .pwrmgr_tl_req_i       (pwrmgr_tl_req       ),
+    .pwrmgr_tl_rsp_o       (pwrmgr_tl_rsp       ),
+    .rstmgr_tl_req_i       (rstmgr_tl_req       ),
+    .rstmgr_tl_rsp_o       (rstmgr_tl_rsp       ),
+    .clkmgr_tl_req_i       (clkmgr_tl_req       ),
+    .clkmgr_tl_rsp_o       (clkmgr_tl_rsp       ),
 
     // Regular ports (auto-generated)
     .clkmgr_clocks_o,

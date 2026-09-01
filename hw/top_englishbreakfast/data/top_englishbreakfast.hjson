@@ -363,8 +363,10 @@
         primary: {rst_ni: "lc_io_div4", rst_por_ni: "por_io_div4"},
         secondary: {rst_sec_ni: {name: "lc_io_div4", domain: "Main"}}
       },
-      domain: "Aon",
-      domain_secondary: "Main",
+      domain: {
+        primary: "Aon",
+        secondary: "Main",
+      },
       base_addr: {
         hart: "0x40410000",
       },

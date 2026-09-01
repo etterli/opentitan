@@ -241,9 +241,9 @@ package top_englishbreakfast_pkg;
 
 
   // Number of englishbreakfast outgoing alerts
-  parameter int unsigned NOutgoingAlertsEnglishbreakfast = 28;
+  parameter int unsigned NOutgoingAlertsEnglishbreakfast = 29;
   parameter int unsigned NOutgoingAlertsEnglishbreakfastPdAon = 6;
-  parameter int unsigned NOutgoingAlertsEnglishbreakfastPdMain = 22;
+  parameter int unsigned NOutgoingAlertsEnglishbreakfastPdMain = 23;
 
   // Number of LPGs for outgoing alert group englishbreakfast
   parameter int unsigned NOutgoingLpgsEnglishbreakfast = 13;
@@ -283,29 +283,31 @@ package top_englishbreakfast_pkg;
     TopEnglishbreakfastAlertIdPwrmgrFatalFault = 7,
     TopEnglishbreakfastAlertIdRstmgrFatalFault = 8,
     TopEnglishbreakfastAlertIdRstmgrFatalCnstyFault = 9,
-    TopEnglishbreakfastAlertIdClkmgrRecovFault = 10,
-    TopEnglishbreakfastAlertIdClkmgrFatalFault = 11,
-    TopEnglishbreakfastAlertIdPinmuxFatalFault = 12,
-    TopEnglishbreakfastAlertIdAonTimerFatalFault = 13,
-    TopEnglishbreakfastAlertIdFlashCtrlRecovErr = 14,
-    TopEnglishbreakfastAlertIdFlashCtrlFatalStdErr = 15,
-    TopEnglishbreakfastAlertIdFlashCtrlFatalErr = 16,
-    TopEnglishbreakfastAlertIdFlashCtrlFatalPrimFlashAlert = 17,
-    TopEnglishbreakfastAlertIdFlashCtrlRecovPrimFlashAlert = 18,
-    TopEnglishbreakfastAlertIdRvPlicFatalFault = 19,
-    TopEnglishbreakfastAlertIdAesRecovCtrlUpdateErr = 20,
-    TopEnglishbreakfastAlertIdAesFatalFault = 21,
-    TopEnglishbreakfastAlertIdSramCtrlMainFatalError = 22,
-    TopEnglishbreakfastAlertIdRomCtrlFatal = 23,
-    TopEnglishbreakfastAlertIdRvCoreIbexFatalSwErr = 24,
-    TopEnglishbreakfastAlertIdRvCoreIbexRecovSwErr = 25,
-    TopEnglishbreakfastAlertIdRvCoreIbexFatalHwErr = 26,
-    TopEnglishbreakfastAlertIdRvCoreIbexRecovHwErr = 27,
+    TopEnglishbreakfastAlertIdRstmgrFatalSecTest = 10,
+    TopEnglishbreakfastAlertIdClkmgrRecovFault = 11,
+    TopEnglishbreakfastAlertIdClkmgrFatalFault = 12,
+    TopEnglishbreakfastAlertIdPinmuxFatalFault = 13,
+    TopEnglishbreakfastAlertIdAonTimerFatalFault = 14,
+    TopEnglishbreakfastAlertIdFlashCtrlRecovErr = 15,
+    TopEnglishbreakfastAlertIdFlashCtrlFatalStdErr = 16,
+    TopEnglishbreakfastAlertIdFlashCtrlFatalErr = 17,
+    TopEnglishbreakfastAlertIdFlashCtrlFatalPrimFlashAlert = 18,
+    TopEnglishbreakfastAlertIdFlashCtrlRecovPrimFlashAlert = 19,
+    TopEnglishbreakfastAlertIdRvPlicFatalFault = 20,
+    TopEnglishbreakfastAlertIdAesRecovCtrlUpdateErr = 21,
+    TopEnglishbreakfastAlertIdAesFatalFault = 22,
+    TopEnglishbreakfastAlertIdSramCtrlMainFatalError = 23,
+    TopEnglishbreakfastAlertIdRomCtrlFatal = 24,
+    TopEnglishbreakfastAlertIdRvCoreIbexFatalSwErr = 25,
+    TopEnglishbreakfastAlertIdRvCoreIbexRecovSwErr = 26,
+    TopEnglishbreakfastAlertIdRvCoreIbexFatalHwErr = 27,
+    TopEnglishbreakfastAlertIdRvCoreIbexRecovHwErr = 28,
     TopEnglishbreakfastOutgoingAlertEnglishbreakfastIdCount
   } outgoing_alert_englishbreakfast_id_e;
 
   // Enumeration of englishbreakfast outgoing alerts AsyncOn configuration
   parameter logic [NOutgoingAlertsEnglishbreakfast-1:0] AsyncOnOutgoingAlertEnglishbreakfast = {
+    1'b1,
     1'b1,
     1'b1,
     1'b1,

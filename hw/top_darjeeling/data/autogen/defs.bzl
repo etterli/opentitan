@@ -99,6 +99,7 @@ DARJEELING_ALERTS = [
     "pwrmgr_fatal_fault",
     "rstmgr_fatal_fault",
     "rstmgr_fatal_cnsty_fault",
+    "rstmgr_fatal_sec_test",
     "clkmgr_recov_fault",
     "clkmgr_fatal_fault",
     "pinmux_fatal_fault",

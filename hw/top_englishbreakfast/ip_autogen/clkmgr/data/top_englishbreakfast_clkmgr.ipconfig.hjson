@@ -167,7 +167,7 @@
         clk_io_div4_secure:
         {
           src_name: io_div4
-          endpoint_ip: ast
+          endpoint_ip: rstmgr
         }
         clk_main_secure:
         {

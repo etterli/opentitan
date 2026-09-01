@@ -22,9 +22,10 @@ module englishbreakfast_pd_aon #(
   output logic       pwrmgr_low_power_o,
   output lc_ctrl_pkg::lc_tx_t       pwrmgr_fetch_en_o,
   input  prim_mubi_pkg::mubi4_t       clkmgr_idle_i,
-  input  rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump_i,
   input  rv_core_ibex_pkg::cpu_pwrmgr_t       rv_core_ibex_pwrmgr_i,
   input  logic [1:0] pwrmgr_wakeups_i,
+  output rstmgr_pkg::rstmgr_interpart_p2s_t       rstmgr_interpart_p2s_o,
+  input  rstmgr_pkg::rstmgr_interpart_s2p_t       rstmgr_interpart_s2p_i,
   input  tlul_pkg::tl_h2d_t       pwrmgr_tl_req_i,
   output tlul_pkg::tl_d2h_t       pwrmgr_tl_rsp_o,
   input  tlul_pkg::tl_h2d_t       rstmgr_tl_req_i,
@@ -202,12 +203,12 @@ module englishbreakfast_pd_aon #(
     .tl_o(pwrmgr_tl_rsp_o)
   );
 
-  rstmgr #(
+  rstmgr_part_primary #(
     .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[9:8]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .SecCheck(SecRstmgrCheck),
     .SecMaxSyncDelay(SecRstmgrMaxSyncDelay)
-  ) u_rstmgr (
+  ) u_rstmgr_part_primary (
     // Clock and reset connections
     .clk_i(clkmgr_clocks.clk_io_div4_powerup),
     .clk_por_i(clkmgr_clocks.clk_io_div4_powerup),
@@ -235,15 +236,15 @@ module englishbreakfast_pd_aon #(
     .pwr_o(pwrmgr_pwr_rst_rsp),
     .resets_o(rstmgr_resets),
     .rst_en_o(rstmgr_rst_en),
-    .alert_dump_i(alert_handler_pkg::ALERT_CRASHDUMP_DEFAULT),
-    .cpu_dump_i(rv_core_ibex_crash_dump_i),
     .sw_rst_req_o(rstmgr_sw_rst_req),
+    .interpart_p2s_o(rstmgr_interpart_p2s_o),
+    .interpart_s2p_i(rstmgr_interpart_s2p_i),
     .tl_i(rstmgr_tl_req_i),
     .tl_o(rstmgr_tl_rsp_o)
   );
 
   clkmgr #(
-    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[11:10]),
+    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[12:11]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles)
   ) u_clkmgr (
     // Clock and reset connections
@@ -270,8 +271,8 @@ module englishbreakfast_pd_aon #(
     // DFT/scan connections
     .scanmode_i,
 
-    // External alert group "englishbreakfast" [10]: recov_fault
-    // External alert group "englishbreakfast" [11]: fatal_fault
+    // External alert group "englishbreakfast" [11]: recov_fault
+    // External alert group "englishbreakfast" [12]: fatal_fault
     .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[4:3]),
     .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[4:3]),
 
@@ -297,7 +298,7 @@ module englishbreakfast_pd_aon #(
   );
 
   aon_timer #(
-    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[13]),
+    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[14]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles)
   ) u_aon_timer (
     // Clock and reset connections
@@ -310,7 +311,7 @@ module englishbreakfast_pd_aon #(
     .intr_wkup_timer_expired_o(intr_aon_timer_wkup_timer_expired),
     .intr_wdog_timer_bark_o   (intr_aon_timer_wdog_timer_bark),
 
-    // External alert group "englishbreakfast" [13]: fatal_fault
+    // External alert group "englishbreakfast" [14]: fatal_fault
     .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[5]),
     .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[5]),
 

@@ -20,6 +20,9 @@ module englishbreakfast_pd_main #(
   // parameters for usbdev
   parameter bit UsbdevStub = 0,
   parameter int UsbdevRcvrWakeTimeUs = 1,
+  // parameters for rstmgr
+  parameter bit SecRstmgrCheck = 0,
+  parameter int SecRstmgrMaxSyncDelay = 2,
   // parameters for pinmux
   parameter bit SecPinmuxVolatileRawUnlockEn = 1'b0,
   parameter pinmux_pkg::target_cfg_t PinmuxTargetCfg = pinmux_pkg::DefaultTargetCfg,
@@ -83,9 +86,10 @@ module englishbreakfast_pd_main #(
   input  logic       pwrmgr_low_power_i,
   input  lc_ctrl_pkg::lc_tx_t       pwrmgr_fetch_en_i,
   output prim_mubi_pkg::mubi4_t       clkmgr_idle_o,
-  output rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump_o,
   output rv_core_ibex_pkg::cpu_pwrmgr_t       rv_core_ibex_pwrmgr_o,
   output logic [1:0] pwrmgr_wakeups_o,
+  input  rstmgr_pkg::rstmgr_interpart_p2s_t       rstmgr_interpart_p2s_i,
+  output rstmgr_pkg::rstmgr_interpart_s2p_t       rstmgr_interpart_s2p_o,
   output tlul_pkg::tl_h2d_t       pwrmgr_tl_req_o,
   input  tlul_pkg::tl_d2h_t       pwrmgr_tl_rsp_i,
   output tlul_pkg::tl_h2d_t       rstmgr_tl_req_o,
@@ -205,6 +209,7 @@ module englishbreakfast_pd_main #(
   logic        cio_usbdev_usb_dp_en_d2p;
   logic        cio_usbdev_usb_dn_d2p;
   logic        cio_usbdev_usb_dn_en_d2p;
+  // rstmgr
   // pinmux
   // flash_ctrl
   logic        cio_flash_ctrl_tck_p2d;
@@ -287,6 +292,7 @@ module englishbreakfast_pd_main #(
   logic       pinmux_usbdev_wake_detect_active;
   logic       rv_plic_msip;
   logic       rv_plic_irq;
+  rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump;
   spi_device_pkg::passthrough_req_t       spi_device_passthrough_req;
   spi_device_pkg::passthrough_rsp_t       spi_device_passthrough_rsp;
   tlul_pkg::tl_h2d_t       main_tl_rv_core_ibex__corei_req;
@@ -755,8 +761,27 @@ module englishbreakfast_pd_main #(
     .tl_o(usbdev_tl_rsp)
   );
 
+  rstmgr_part_secondary #(
+    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[10]),
+    .AlertSkewCycles(top_pkg::AlertSkewCycles)
+  ) u_rstmgr_part_secondary (
+    // Clock and reset connections
+    .clk_sec_i(clkmgr_clocks_i.clk_io_div4_secure),
+    .rst_sec_ni(rstmgr_resets_i.rst_lc_io_div4_n[rstmgr_pkg::DomainMainSel]),
+
+    // External alert group "englishbreakfast" [10]: fatal_sec_test
+    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[7]),
+    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[7]),
+
+    // Inter-module signals
+    .alert_dump_i(alert_handler_pkg::ALERT_CRASHDUMP_DEFAULT),
+    .cpu_dump_i(rv_core_ibex_crash_dump),
+    .interpart_p2s_i(rstmgr_interpart_p2s_i),
+    .interpart_s2p_o(rstmgr_interpart_s2p_o)
+  );
+
   pinmux #(
-    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[12]),
+    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[13]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .SecVolatileRawUnlockEn(SecPinmuxVolatileRawUnlockEn),
     .TargetCfg(PinmuxTargetCfg)
@@ -771,9 +796,9 @@ module englishbreakfast_pd_main #(
     // DFT/scan connections
     .scanmode_i,
 
-    // External alert group "englishbreakfast" [12]: fatal_fault
-    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[7]),
-    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[7]),
+    // External alert group "englishbreakfast" [13]: fatal_fault
+    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[8]),
+    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[8]),
 
     // Inter-module signals
     .lc_hw_debug_clr_i(lc_ctrl_pkg::Off),
@@ -828,7 +853,7 @@ module englishbreakfast_pd_main #(
   );
 
   flash_ctrl #(
-    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[18:14]),
+    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[19:15]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .RndCnstAddrKey(RndCnstFlashCtrlAddrKey),
     .RndCnstDataKey(RndCnstFlashCtrlDataKey),
@@ -859,13 +884,13 @@ module englishbreakfast_pd_main #(
     .intr_op_done_o   (intr_flash_ctrl_op_done),
     .intr_corr_err_o  (intr_flash_ctrl_corr_err),
 
-    // External alert group "englishbreakfast" [14]: recov_err
-    // External alert group "englishbreakfast" [15]: fatal_std_err
-    // External alert group "englishbreakfast" [16]: fatal_err
-    // External alert group "englishbreakfast" [17]: fatal_prim_flash_alert
-    // External alert group "englishbreakfast" [18]: recov_prim_flash_alert
-    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[12:8]),
-    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[12:8]),
+    // External alert group "englishbreakfast" [15]: recov_err
+    // External alert group "englishbreakfast" [16]: fatal_std_err
+    // External alert group "englishbreakfast" [17]: fatal_err
+    // External alert group "englishbreakfast" [18]: fatal_prim_flash_alert
+    // External alert group "englishbreakfast" [19]: recov_prim_flash_alert
+    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[13:9]),
+    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[13:9]),
 
     // CIO inputs
     .cio_tck_i   (cio_flash_ctrl_tck_p2d),
@@ -907,16 +932,16 @@ module englishbreakfast_pd_main #(
   );
 
   rv_plic #(
-    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[19]),
+    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[20]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles)
   ) u_rv_plic (
     // Clock and reset connections
     .clk_i(clkmgr_clocks_i.clk_main_secure),
     .rst_ni(rstmgr_resets_i.rst_sys_n[rstmgr_pkg::DomainMainSel]),
 
-    // External alert group "englishbreakfast" [19]: fatal_fault
-    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[13]),
-    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[13]),
+    // External alert group "englishbreakfast" [20]: fatal_fault
+    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[14]),
+    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[14]),
 
     // Inter-module signals
     .irq_o(rv_plic_irq),
@@ -931,7 +956,7 @@ module englishbreakfast_pd_main #(
   );
 
   aes #(
-    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[21:20]),
+    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[22:21]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .AES192Enable(1'b1),
     .AESGCMEnable(AesAESGCMEnable),
@@ -953,10 +978,10 @@ module englishbreakfast_pd_main #(
     .rst_ni(rstmgr_resets_i.rst_sys_n[rstmgr_pkg::DomainMainSel]),
     .rst_edn_ni(rstmgr_resets_i.rst_sys_n[rstmgr_pkg::DomainMainSel]),
 
-    // External alert group "englishbreakfast" [20]: recov_ctrl_update_err
-    // External alert group "englishbreakfast" [21]: fatal_fault
-    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[15:14]),
-    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[15:14]),
+    // External alert group "englishbreakfast" [21]: recov_ctrl_update_err
+    // External alert group "englishbreakfast" [22]: fatal_fault
+    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[16:15]),
+    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[16:15]),
 
     // Inter-module signals
     .idle_o(clkmgr_idle_o),
@@ -971,7 +996,7 @@ module englishbreakfast_pd_main #(
   );
 
   sram_ctrl #(
-    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[22]),
+    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[23]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .RndCnstSramKey(RndCnstSramCtrlMainSramKey),
     .RndCnstSramNonce(RndCnstSramCtrlMainSramNonce),
@@ -992,9 +1017,9 @@ module englishbreakfast_pd_main #(
     .rst_ni(rstmgr_resets_i.rst_sys_n[rstmgr_pkg::DomainMainSel]),
     .rst_otp_ni(rstmgr_resets_i.rst_lc_io_div4_n[rstmgr_pkg::DomainMainSel]),
 
-    // External alert group "englishbreakfast" [22]: fatal_error
-    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[16]),
-    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[16]),
+    // External alert group "englishbreakfast" [23]: fatal_error
+    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[17]),
+    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[17]),
 
     // RACL policies
     .racl_policy_sel_ranges_ram_i('{top_racl_pkg::RACL_RANGE_T_DEFAULT}),
@@ -1017,7 +1042,7 @@ module englishbreakfast_pd_main #(
   );
 
   rom_ctrl #(
-    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[23]),
+    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[24]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .BootRomInitFile(RomCtrlBootRomInitFile),
     .FlopToKmac(RomCtrlFlopToKmac),
@@ -1030,9 +1055,9 @@ module englishbreakfast_pd_main #(
     .clk_i(clkmgr_clocks_i.clk_main_infra),
     .rst_ni(rstmgr_resets_i.rst_sys_n[rstmgr_pkg::DomainMainSel]),
 
-    // External alert group "englishbreakfast" [23]: fatal
-    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[17]),
-    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[17]),
+    // External alert group "englishbreakfast" [24]: fatal
+    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[18]),
+    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[18]),
 
     // Inter-module signals
     .rom_cfg_i(prim_rom_pkg::ROM_CFG_REQ_DEFAULT),
@@ -1048,7 +1073,7 @@ module englishbreakfast_pd_main #(
   );
 
   rv_core_ibex #(
-    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[27:24]),
+    .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[28:25]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .RndCnstLfsrSeed(RndCnstRvCoreIbexLfsrSeed),
     .RndCnstLfsrPerm(RndCnstRvCoreIbexLfsrPerm),
@@ -1103,12 +1128,12 @@ module englishbreakfast_pd_main #(
     .scanmode_i,
     .scan_rst_ni,
 
-    // External alert group "englishbreakfast" [24]: fatal_sw_err
-    // External alert group "englishbreakfast" [25]: recov_sw_err
-    // External alert group "englishbreakfast" [26]: fatal_hw_err
-    // External alert group "englishbreakfast" [27]: recov_hw_err
-    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[21:18]),
-    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[21:18]),
+    // External alert group "englishbreakfast" [25]: fatal_sw_err
+    // External alert group "englishbreakfast" [26]: recov_sw_err
+    // External alert group "englishbreakfast" [27]: fatal_hw_err
+    // External alert group "englishbreakfast" [28]: recov_hw_err
+    .alert_tx_o(outgoing_alert_englishbreakfast_tx_o[22:19]),
+    .alert_rx_i(outgoing_alert_englishbreakfast_rx_i[22:19]),
 
     // Inter-module signals
     .rst_cpu_n_o(),
@@ -1124,7 +1149,7 @@ module englishbreakfast_pd_main #(
     .esc_tx_i(prim_esc_pkg::ESC_TX_DEFAULT),
     .esc_rx_o(),
     .debug_req_i('0),
-    .crash_dump_o(rv_core_ibex_crash_dump_o),
+    .crash_dump_o(rv_core_ibex_crash_dump),
     .lc_cpu_en_i(lc_ctrl_pkg::On),
     .pwrmgr_cpu_en_i(pwrmgr_fetch_en_i),
     .pwrmgr_o(rv_core_ibex_pwrmgr_o),
