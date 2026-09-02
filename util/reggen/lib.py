@@ -43,6 +43,16 @@ _VERILOG_KEYWORDS = {
     'wire', 'with', 'within', 'wor', 'xnor', 'xor'
 }
 
+# The partitions an IP block can be split across. A non-split IP has only a
+# primary partition. Keep PARTITONS in this order. It is used to order alerts.
+PART_PRIMARY = 'primary'
+PART_SECONDARY = 'secondary'
+PARTITIONS = (PART_PRIMARY, PART_SECONDARY)
+
+# Parameters may additionally be assigned to both partitions, which emits them
+# into both partition modules.
+PART_BOTH = 'both'
+
 
 def check_str_dict(obj: object, what: str) -> Dict[str, object]:
     if not isinstance(obj, dict):
@@ -150,6 +160,19 @@ def check_bool(obj: object, what: str) -> bool:
         return obj
 
     raise ValueError(f'{what} is of type {type(obj).__name__}, not a bool.')
+
+
+def check_partition(obj: object, what: str, allow_both: bool = False) -> str:
+    '''Check that obj is a valid IP-split partition specifier.
+
+    If not, raises a ValueError; the what argument names the object.
+    '''
+    as_str = check_str(obj, what)
+    legal = list(PARTITIONS) + ([PART_BOTH] if allow_both else [])
+    if as_str not in legal:
+        raise ValueError(f'{what} is {as_str}, but must be one of '
+                         f'{", ".join(legal)}.')
+    return as_str
 
 
 def check_list(obj: object, what: str) -> List[object]:

@@ -44,7 +44,7 @@ xint | x for undefined otherwise int
 bitrange | bit number as decimal integer, or bit-range as decimal integers msb:lsb
 list | comma separated list enclosed in `[]`
 name list | comma separated list enclosed in `[]` of one or more groups that have just name and dscr keys. e.g. `{ name: "name", desc: "description"}`
-name list+ | name list that optionally contains a width
+name list+ | name list that optionally contains a width, and for split IPs an optional partition key naming the partition that owns the entry.
 parameter list | parameter list having default value optionally
 group | comma separated group of key:value enclosed in `{}`
 list of group | comma separated group of key:value enclosed in `{}` the second entry of the list is the sub group format
@@ -94,7 +94,7 @@ Key | Kind | Type | Description of Value
 --- | ---- | ---- | --------------------
 name | required | string | name of the component
 cip_id | required | int | unique comportable IP identifier
-clocking | required | list | clocking for the device
+clocking | required | list or group | clocking for the device. Non split IPs have a list. Split IPs have a dict with a list per partition.
 bus_interfaces | required | list | bus interfaces for the device
 human_name | optional | string | human-readable name of the component
 one_line_desc | optional | string | one-line description of the component
@@ -118,6 +118,7 @@ available_output_list | optional | name list+ | list of available peripheral out
 expose_reg_if | optional | python Bool | if set, expose reg interface in reg2hw signal
 interrupt_list | optional | name list+ | list of peripheral interrupts
 inter_signal_list | optional | list | list of inter-module signals
+is_split_ip | optional | python Bool | if set, this IP is split into partitions. Defaults to false. 
 no_auto_alert_regs | optional | string | Set to true to suppress automatic generation of alert test registers. Defaults to true if no alert_list is present. Otherwise this defaults to false.
 no_auto_intr_regs | optional | string | Set to true to suppress automatic generation of interrupt registers. Defaults to true if no interrupt_list is present. Otherwise this defaults to false.
 param_list | optional | parameter list | list of parameters of the IP
