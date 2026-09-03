@@ -7,12 +7,12 @@
 //
 //############################################################################
 // *Name: ast
-// *Module Description: Analog Sensors Top
+// *Module Description: Analog Sensors Top - AON Domain
 //############################################################################
 
 `include "prim_assert.sv"
 
-module ast_aon (
+module ast_part_secondary (
   // clocks / resets
   input clk_ast_adc_i,                        // Buffered AST ADC Clock
   input rst_ast_adc_ni,                       // Buffered AST ADC Reset

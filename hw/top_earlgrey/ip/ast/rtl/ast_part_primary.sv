@@ -11,7 +11,7 @@
 
 `include "prim_assert.sv"
 
-module ast_main (
+module ast_part_primary (
   // TLUL interface
   input tlul_pkg::tl_h2d_t tl_i,
   output tlul_pkg::tl_d2h_t tl_o,
