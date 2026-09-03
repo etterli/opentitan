@@ -80,6 +80,7 @@ module ast_part_secondary (
   output adc_d_val_o,                         // ADC Digital Valid
 
   // alerts
+  // TODO: refactor to prim_alert_pkg::alert_tx_t
   input ast_pkg::ast_alert_rsp_t alert_rsp_i,  // Alerts Trigger & Acknowledge Inputs
   output ast_pkg::ast_alert_req_t alert_req_o, // Alerts Output
 

@@ -31,7 +31,7 @@ module ast_part_primary (
   input logic rst_ast_es_ni,
   input prim_mubi_pkg::mubi4_t clk_src_sys_jen_i,
   // Inter-domain communication
-  input ast_aon_main_pkg::aon_to_main_t aon_to_main_i,
+  input ast_aon_main_pkg::aon_to_main_t aon_to_main_i, // todo rename and adapt package
   output ast_aon_main_pkg::main_to_aon_t main_to_aon_o,
   // Clock bypass interface
   input  logic clk_ast_ext_i,
