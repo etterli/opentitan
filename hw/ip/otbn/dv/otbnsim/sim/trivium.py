@@ -74,6 +74,11 @@ class Trivium:
     TRIVIUM_INIT_SEED = 0x758A442031E1C4616EA343EC153282A30C132B5723C5A4CF4743B3C7C32D580F74F1713A
     BIVIUM_INIT_SEED = TRIVIUM_INIT_SEED & ((1 << BIVIUM_STATE_SIZE) - 1)
 
+    # The state update runs at most 64 cipher steps in parallel. This is the largest chunk
+    # allowed by the distance between a feedback insertion and the nearest tap.
+    CHUNK_SIZE = 64
+    CHUNK_MASK = (1 << CHUNK_SIZE) - 1
+
     def __init__(
         self,
         cipher_type: CipherType,
@@ -125,6 +130,13 @@ class Trivium:
         self.seed_type = seed_type
         self.output_width = output_width
 
+        # The chunk schedule of the state update only depends on the output width, so precompute
+        # it here rather than rebuilding the chunk sizes and masks on every update.
+        self.num_full_chunks = output_width // self.CHUNK_SIZE
+        self.tail_bits = output_width % self.CHUNK_SIZE
+        self.tail_mask = (1 << self.tail_bits) - 1
+        self.tail_offset = self.num_full_chunks * self.CHUNK_SIZE
+
         # Scheduled state and seed for the current cycle interval. Next seed can be a full state
         # (multiple ints) or a partial seed (single int).
         self.next_state: Optional[Tuple[int, ...]] = None
@@ -141,7 +153,12 @@ class Trivium:
         if self.next_state is not None:
             raise Exception("cannot update more than once per cycle interval")
 
-        self.next_state = self._update(*self.state)
+        if self.cipher_type == CipherType.TRIVIUM:
+            reg1, reg2, reg3 = self.state
+            self.next_state = self._update_trivium(reg1, reg2, reg3)
+        else:
+            reg1, reg2 = self.state
+            self.next_state = self._update_bivium(reg1, reg2)
 
     def seed(self, seed: int) -> None:
         """Schedule a new seed that depending on the seed type will be injected
@@ -246,78 +263,88 @@ class Trivium:
                 regs[2] = (regs[2] & ~(1 << k)) | (b << k)
         self.state = tuple(regs)
 
-    def _update(self, *regs: int) -> Tuple[int, ...]:
-        """Advance the state by output_width cycles using integer arithmetic.
-        Updates self.ks and returns the new register state tuple."""
-        w = self.output_width
+    # The two update functions work on chunk-bit slices of the taps, which run `chunk`
+    # cipher steps at once. The main optimization ideas are:
+    # - Masking commutes with the bitwise operators. So taps are combined first and the result
+    #   is masked once, instead of masking each tap individually.
+    # - The shifted-in feedback cannot exceed the register width. For a 93-bit register,
+    #   'reg >> chunk' keeps 'width - chunk' bits and 't << (width - chunk)' tops out at bit
+    #   'width -1'. Due to this no width mask is needed after the update.
+    def _update_bivium(self, reg1: int, reg2: int) -> Tuple[int, int]:
+        """Advance the Bivium state by output_width cycles, updating self.ks."""
+        mask = self.CHUNK_MASK
         ks_int = 0
-        processed = 0
-        mask93 = (1 << 93) - 1
-        mask84 = (1 << 84) - 1
-        new_state: Tuple[int, ...]
 
-        if self.cipher_type == CipherType.TRIVIUM:
-            reg1, reg2, reg3 = regs
-            mask111 = (1 << 111) - 1
-            while processed < w:
-                chunk = min(w - processed, 64)
-                mask = (1 << chunk) - 1
-                v65 = (reg1 >> 27) & mask
-                v68 = (reg1 >> 24) & mask
-                v90 = (reg1 >> 2) & mask
-                v91 = (reg1 >> 1) & mask
-                v92 = reg1 & mask
+        for processed in range(0, self.tail_offset, self.CHUNK_SIZE):
+            and1 = ((reg1 >> 2) & (reg1 >> 1)) & mask
+            and2 = ((reg2 >> 2) & (reg2 >> 1)) & mask
+            a = ((reg1 >> 27) ^ reg1) & mask
+            b = ((reg2 >> 15) ^ reg2) & mask
+            t0 = ((reg1 >> 24) ^ and2 ^ b) & mask
+            t1 = ((reg2 >> 6) ^ and1 ^ a) & mask
 
-                v161 = (reg2 >> 15) & mask
-                v170 = (reg2 >> 6) & mask
-                v174 = (reg2 >> 2) & mask
-                v175 = (reg2 >> 1) & mask
-                v176 = reg2 & mask
+            ks_int |= (a ^ b) << processed
+            reg1 = (reg1 >> 64) | (t0 << 29)
+            reg2 = (reg2 >> 64) | (t1 << 20)
 
-                v242 = (reg3 >> 45) & mask
-                v263 = (reg3 >> 24) & mask
-                v285 = (reg3 >> 2) & mask
-                v286 = (reg3 >> 1) & mask
-                v287 = reg3 & mask
+        tail = self.tail_bits
+        if tail:
+            mask = self.tail_mask
+            and1 = ((reg1 >> 2) & (reg1 >> 1)) & mask
+            and2 = ((reg2 >> 2) & (reg2 >> 1)) & mask
+            a = ((reg1 >> 27) ^ reg1) & mask
+            b = ((reg2 >> 15) ^ reg2) & mask
+            t0 = ((reg1 >> 24) ^ and2 ^ b) & mask
+            t1 = ((reg2 >> 6) ^ and1 ^ a) & mask
 
-                t0 = (v68 ^ (v285 & v286) ^ v242 ^ v287) & mask
-                t1 = (v170 ^ (v65 ^ v92) ^ (v90 & v91)) & mask
-                t2 = (v263 ^ (v174 & v175) ^ v161 ^ v176) & mask
-
-                ks_int |= ((v65 ^ v92 ^ v161 ^ v176 ^ v242 ^ v287) & mask) << processed
-                reg1 = ((reg1 >> chunk) | (t0 << (93 - chunk))) & mask93
-                reg2 = ((reg2 >> chunk) | (t1 << (84 - chunk))) & mask84
-                reg3 = ((reg3 >> chunk) | (t2 << (111 - chunk))) & mask111
-                processed += chunk
-            new_state = (reg1, reg2, reg3)
-        else:
-            reg1, reg2 = regs
-            while processed < w:
-                chunk = min(w - processed, 64)
-                mask = (1 << chunk) - 1
-                v65 = (reg1 >> 27) & mask
-                v68 = (reg1 >> 24) & mask
-                v90 = (reg1 >> 2) & mask
-                v91 = (reg1 >> 1) & mask
-                v92 = reg1 & mask
-
-                v161 = (reg2 >> 15) & mask
-                v170 = (reg2 >> 6) & mask
-                v174 = (reg2 >> 2) & mask
-                v175 = (reg2 >> 1) & mask
-                v176 = reg2 & mask
-
-                t0 = (v68 ^ (v174 & v175) ^ v161 ^ v176) & mask
-                t1 = (v170 ^ (v65 ^ v92) ^ (v90 & v91)) & mask
-
-                ks_int |= ((v65 ^ v92 ^ v161 ^ v176) & mask) << processed
-                reg1 = ((reg1 >> chunk) | (t0 << (93 - chunk))) & mask93
-                reg2 = ((reg2 >> chunk) | (t1 << (84 - chunk))) & mask84
-                processed += chunk
-            new_state = (reg1, reg2)
+            ks_int |= (a ^ b) << self.tail_offset
+            reg1 = (reg1 >> tail) | (t0 << (93 - tail))
+            reg2 = (reg2 >> tail) | (t1 << (84 - tail))
 
         self.ks = ks_int
-        return new_state
+        return reg1, reg2
+
+    def _update_trivium(self, reg1: int, reg2: int, reg3: int) -> Tuple[int, int, int]:
+        """Advance the Trivium state by output_width cycles, updating self.ks."""
+        mask = self.CHUNK_MASK
+        ks_int = 0
+
+        for processed in range(0, self.tail_offset, self.CHUNK_SIZE):
+            and1 = ((reg1 >> 2) & (reg1 >> 1)) & mask
+            and2 = ((reg2 >> 2) & (reg2 >> 1)) & mask
+            and3 = ((reg3 >> 2) & (reg3 >> 1)) & mask
+            a = ((reg1 >> 27) ^ reg1) & mask
+            b = ((reg2 >> 15) ^ reg2) & mask
+            c = ((reg3 >> 45) ^ reg3) & mask
+            t0 = ((reg1 >> 24) ^ and3 ^ c) & mask
+            t1 = ((reg2 >> 6) ^ and1 ^ a) & mask
+            t2 = ((reg3 >> 24) ^ and2 ^ b) & mask
+
+            ks_int |= (a ^ b ^ c) << processed
+            reg1 = (reg1 >> 64) | (t0 << 29)
+            reg2 = (reg2 >> 64) | (t1 << 20)
+            reg3 = (reg3 >> 64) | (t2 << 47)
+
+        tail = self.tail_bits
+        if tail:
+            mask = self.tail_mask
+            and1 = ((reg1 >> 2) & (reg1 >> 1)) & mask
+            and2 = ((reg2 >> 2) & (reg2 >> 1)) & mask
+            and3 = ((reg3 >> 2) & (reg3 >> 1)) & mask
+            a = ((reg1 >> 27) ^ reg1) & mask
+            b = ((reg2 >> 15) ^ reg2) & mask
+            c = ((reg3 >> 45) ^ reg3) & mask
+            t0 = ((reg1 >> 24) ^ and3 ^ c) & mask
+            t1 = ((reg2 >> 6) ^ and1 ^ a) & mask
+            t2 = ((reg3 >> 24) ^ and2 ^ b) & mask
+
+            ks_int |= (a ^ b ^ c) << self.tail_offset
+            reg1 = (reg1 >> tail) | (t0 << (93 - tail))
+            reg2 = (reg2 >> tail) | (t1 << (84 - tail))
+            reg3 = (reg3 >> tail) | (t2 << (111 - tail))
+
+        self.ks = ks_int
+        return reg1, reg2, reg3
 
 
 _OUTPUT_WIDTH = 64
