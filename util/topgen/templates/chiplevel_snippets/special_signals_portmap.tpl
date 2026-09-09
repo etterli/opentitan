@@ -4,9 +4,20 @@
 <%import topgen.lib as lib%>\
 <%from topgen.merge import alert_handler_signals%>\
 <%page args="top, feature_info, cio_info, gen_bkdr_loader"/>\
+<%
+  ast = lib.find_module(top['module'], 'ast')
+  ast_internal = ast is not None and lib.is_inst(ast)
+%>\
+% if not ast_internal:
     // Base clocks from AST
     .ast_base_clks_i(ast_base_clks),
+% endif
 
+% for clk in top['unmanaged_clocks']._asdict().values():
+    // Unmanaged external clock (${clk.name})
+    .clk_${clk.name}_i(ext_clk),
+    .cg_en_${clk.name}_i(prim_mubi_pkg::MuBi4True),
+% endfor
     // Manual DFT signals
     .scan_rst_ni(scan_rst_n),
 % for domain in feature_info["has_scan_en"]:

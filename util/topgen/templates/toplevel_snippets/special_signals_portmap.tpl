@@ -10,8 +10,20 @@
   domain_clkmgr = clkmgr.get('domain')
   ## The reset tree is driven by the rstmgr's primary partition.
   domain_rstmgr = rstmgr.get('domain')
+  ast = lib.find_module(top['module'], 'ast')
+  ast_internal = ast is not None and lib.is_inst(ast)
 %>\
 % if domain_clkmgr == domain:
+% if ast_internal:
+    // Feed back clocks from AST to clkmgr.
+    // TODO: This is a temporary solution until the AST is moved into the top.
+    .clk_main_i(ast_clk_src_sys_o),
+    .clk_io_i  (ast_clk_src_io_o ),
+% if feature_info["has_usb"]:
+    .clk_usb_i (ast_clk_src_usb_o),
+% endif
+    .clk_aon_i (ast_clk_src_aon_o),
+% else:
     // All externally supplied clocks
     .clk_main_i(ast_base_clks_i.clk_sys),
     .clk_io_i  (ast_base_clks_i.clk_io ),
@@ -19,6 +31,7 @@
     .clk_usb_i (ast_base_clks_i.clk_usb),
 % endif
     .clk_aon_i (ast_base_clks_i.clk_aon),
+% endif
 % else:
     // Clocks and clock gating control from ${clkmgr['name']}
     .${clkmgr['name']}_clocks_i(${clkmgr['name']}_clocks_o),
@@ -32,6 +45,11 @@
 
 % endif\
 
+% for clk in top['unmanaged_clocks']._asdict().values():
+    // Unmanaged external clock (${clk.name}), consumed by AST in this domain
+    .clk_${clk.name}_i,
+    .cg_en_${clk.name}_i,
+% endfor
     // Manual DFT signals
     .scan_rst_ni,
 % if feature_info["has_scan_en"][domain]:

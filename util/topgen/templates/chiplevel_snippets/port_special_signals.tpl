@@ -7,9 +7,13 @@
 <%
   clkmgr = lib.find_module(top['module'], 'clkmgr')
   rstmgr = lib.find_module(top['module'], 'rstmgr')
+  ast = lib.find_module(top['module'], 'ast')
+  ast_internal = ast is not None and lib.is_inst(ast)
 %>\
+% if not ast_internal:
   // Base clocks from AST
   input ast_pkg::ast_clks_t ast_base_clks_i,
+% endif
 
 % if len(top['unmanaged_clocks']._asdict().values()) > 0:
   // Unmanaged external clocks
