@@ -176,7 +176,7 @@ initial begin
     `DRIVE_CHIP_TL_DEVICE_IF(aon_timer, aon_timer, tl, aon)
     `DRIVE_CHIP_TL_DEVICE_IF(sysrst_ctrl, sysrst_ctrl, tl, aon)
     `DRIVE_CHIP_TL_DEVICE_IF(adc_ctrl, adc_ctrl, tl, aon)
-    `DRIVE_CHIP_TL_EXT_DEVICE_IF(ast, ast, tl)
+    `DRIVE_CHIP_TL_DEVICE_IF(ast, ast_part_primary, tl, main)
 `endif
 
     // And this can consume time, so they go at the end of this block.
