@@ -23,7 +23,8 @@
 
   // List of unmanaged external clocks
   unmanaged_clocks: [
-    // { name: "my_ext" }
+    // AST external clock, driven from a pad and used by the AST clock bypass path.
+    { name: "ast_ext" }
   ]
 
   // This is the clock data structure of the design.
@@ -450,45 +451,49 @@
     },
     { name: "ast",
       type: "ast",
+      // Split IP: primary partition in the Main PD, secondary in the AON PD.
       clock_srcs: {
-        clk_ast_tlul_i: {
-          clock: "io_div4",
-          group: "secure"
+        primary: {
+          clk_ast_tlul_i: { clock: "io_div4", group: "secure" },
+          clk_ast_es_i:   { clock: "main",    group: "secure" },
+          clk_ast_usb_i:  { clock: "usb",     group: "peri"   },
+          clk_ast_ext_i:  "ast_ext"
         },
-        clk_ast_adc_i: {
-          clock: "aon",
-          group: "secure"
-        },
-        clk_ast_alert_i: {
-          clock: "io_div4",
-          group: "secure"
-        },
-        clk_ast_es_i: {
-          clock: "main",
-          group: "secure"
-        },
-        clk_ast_rng_i: {
-          clock: "main",
-          group: "secure"
-        },
-        clk_ast_usb_i: {
-          clock: "usb",
-          group: "peri"
+        secondary: {
+          clk_ast_adc_i:   { clock: "aon",     group: "secure" },
+          clk_ast_alert_i: { clock: "io_div4", group: "secure" },
+          clk_ast_es_i:    { clock: "main",    group: "secure" },
+          clk_ast_rng_i:   { clock: "main",    group: "secure" },
+          clk_ast_tlul_i:  { clock: "io_div4", group: "secure" },
+          clk_ast_usb_i:   { clock: "usb",     group: "peri"   },
+          clk_ast_ext_i:   "ast_ext"
         }
       },
-      clock_group: "secure",
-      reset_connections: {
-        rst_ast_tlul_ni: "lc_io_div4",
-        rst_ast_adc_ni: "sys_aon",
-        rst_ast_alert_ni: "lc_io_div4",
-        rst_ast_es_ni: "sys",
-        rst_ast_rng_ni: "sys",
-        rst_ast_usb_ni: "usb"
+      clock_group: {
+        primary: "secure",
+        secondary: "secure"
       },
+      reset_connections: {
+        primary: {
+          rst_ast_tlul_ni: "lc_io_div4",
+          rst_ast_es_ni:   "sys",
+          rst_ast_usb_ni:  "usb"
+        },
+        secondary: {
+          rst_ast_adc_ni:   "sys_aon",
+          rst_ast_alert_ni: "lc_io_div4",
+          rst_ast_es_ni:    "sys",
+          rst_ast_rng_ni:   "sys",
+          rst_ast_tlul_ni:  "lc_io_div4",
+          rst_ast_usb_ni:   "usb"
+        }
+      },
+      domain: "Main",
+      domain_secondary: "Aon",
       base_addr: {
         hart: "0x40480000",
       },
-      attr: "reggen_only",
+      attr: "reggen_top",
     },
     { name: "flash_ctrl",
       type: "flash_ctrl",
@@ -645,57 +650,7 @@
   // It is used specifically to assign special attributes to specific ports.
   // For example, this allows us to designate a port as part of inter-module
   // connections.
-  port: [
-    { name: "ast",
-      inter_signal_list: [
-        { struct: "edn",
-          type: "req_rsp",
-          name: "edn",
-          // The activity direction for a port inter-signal is "opposite" of
-          // what the external module actually needs.
-          act:  "rsp",
-          package: "edn_pkg",
-        },
-
-        { struct: "lc_tx",
-          type: "uni",
-          name: "lc_dft_en",
-          // The activity direction for a port inter-signal is "opposite" of
-          // what the external module actually needs.
-          act:  "req",
-          package: "lc_ctrl_pkg",
-        },
-
-        { struct:  "ram_1p_cfg_req",
-          package: "prim_ram_1p_pkg",
-          type:    "uni",
-          name:    "ram_1p_cfg",
-          // The activity direction for a port inter-signal is "opposite" of
-          // what the external module actually needs.
-          act:     "rcv"
-        },
-
-        { struct:  "ram_1r1w_cfg_req",
-          package: "prim_ram_1r1w_pkg",
-          type:    "uni",
-          name:    "ram_1r1w_cfg",
-          // The activity direction for a port inter-signal is "opposite" of
-          // what the external module actually needs.
-          act:     "rcv"
-        },
-
-
-        { struct:  "rom_cfg_req",
-          package: "prim_rom_pkg",
-          type:    "uni",
-          name:    "rom_cfg",
-          // The activity direction for a port inter-signal is "opposite" of
-          // what the external module actually needs.
-          act:     "rcv"
-        },
-      ]
-    },
-  ]
+  port: []
 
   // Inter-module Connection.
   // format:
@@ -705,6 +660,24 @@
   //  e.g flash_ctrl0.flash: [flash_phy0.flash_ctrl]
   inter_module: {
     'connect': {
+      // AST is instantiated inside the top; wire its interfaces internally.
+      'pwrmgr.pwr_ast'          : ['ast.pwr_ast'],
+      'clkmgr.jitter_en'        : ['ast.clk_src_sys_jen'],
+      'clkmgr.io_clk_byp_req'   : ['ast.io_clk_byp_req'],
+      'clkmgr.all_clk_byp_req'  : ['ast.all_clk_byp_req'],
+      'clkmgr.hi_speed_sel'     : ['ast.ext_freq_is_96m'],
+      'ast.io_clk_byp_ack'      : ['clkmgr.io_clk_byp_ack'],
+      'ast.all_clk_byp_ack'     : ['clkmgr.all_clk_byp_ack'],
+      'ast.clk_src_io_48m'      : ['clkmgr.div_step_down_req'],
+      'ast.ast_init_done'       : ['clkmgr.calib_rdy'],
+      'ast.obs_ctrl'            : ['flash_ctrl.obs_ctrl'],
+      'ast.flash_bist_en'       : ['flash_ctrl.flash_bist_enable'],
+      'ast.flash_power_down_h'  : ['flash_ctrl.flash_power_down_h'],
+      'ast.flash_power_ready_h' : ['flash_ctrl.flash_power_ready_h'],
+      'spi_device.sck_monitor'  : ['ast.sns_spi_ext_clk'],
+      'pinmux.dft_strap_test'   : ['ast.dft_strap_test'],
+      'usbdev.usb_ref_pulse'    : ['ast.usb_ref_pulse'],
+      'usbdev.usb_ref_val'      : ['ast.usb_ref_val'],
       'pwrmgr.pwr_nvm'          : ['flash_ctrl.pwrmgr'],
       'pwrmgr.pwr_rst'          : ['rstmgr.pwr'],
       'pwrmgr.pwr_clk'          : ['clkmgr.pwr'],
@@ -749,6 +722,9 @@
     // It defines the signal in the top and connect from the module,
     // use of the signal is up to top template
     'top': [
+        // AST-generated base clocks (internal nets, fed to clkmgr).
+        'ast.clk_src_sys', 'ast.clk_src_io', 'ast.clk_src_usb', 'ast.clk_src_aon',
+
         // top level net for clocks
         'clkmgr.clocks',
 
@@ -777,24 +753,53 @@
     'external': {
         'clkmgr.clocks'                  : '',
         'clkmgr.cg_en'                   : '',
-        'clkmgr.jitter_en'               : 'clk_main_jitter_en',
-        'clkmgr.hi_speed_sel'            : 'hi_speed_sel',
-        'clkmgr.div_step_down_req'       : 'div_step_down_req',
-        'clkmgr.all_clk_byp_req'         : 'all_clk_byp_req',
-        'clkmgr.all_clk_byp_ack'         : 'all_clk_byp_ack',
-        'clkmgr.io_clk_byp_req'          : 'io_clk_byp_req',
-        'clkmgr.io_clk_byp_ack'          : 'io_clk_byp_ack',
-        'flash_ctrl.flash_bist_enable'   : 'flash_bist_enable',
-        'flash_ctrl.flash_power_down_h'  : 'flash_power_down_h',
-        'flash_ctrl.flash_power_ready_h' : 'flash_power_ready_h',
-        'flash_ctrl.obs_ctrl'            : 'obs_ctrl',
-        'flash_ctrl.fla_obs'             : 'flash_obs',
-        'peri.tl_ast'                    : 'ast_tl',
-        'pinmux.dft_strap_test'          : 'dft_strap_test'
+        // AST signals without an internal peer in englishbreakfast, plus the
+        // chip-physical / analog / DFT signals and the base clock outputs.
+        ast.entropy                      : '',
+        ast.rng_en                       : '',
+        ast.rng_fips                     : '',
+        ast.rng_val                      : '',
+        ast.rng_b                        : '',
+        ast.adc                          : '',
+        ast.ast_alert                    : '',
+        ast.lc_dft_en                    : '',
+        ast.por_n                        : '',
+        ast.vcc_supp                     : '',
+        ast.vcaon_supp                   : '',
+        ast.vcmain_supp                  : '',
+        ast.vioa_supp                    : '',
+        ast.viob_supp                    : '',
+        ast.ast_pwst                     : '',
+        ast.ast_pwst_h                   : '',
+        ast.otp_power_seq                : '',
+        ast.otp_power_seq_h              : '',
+        ast.usb_io_pu_cal                : '',
+        ast.adc_a0                       : '',
+        ast.adc_a1                       : '',
+        ast.fla_obs                      : '',
+        ast.otp_obs                      : '',
+        ast.otm_obs                      : '',
+        ast.usb_obs                      : '',
+        ast.padmux2ast                   : '',
+        ast.ast2padmux                   : '',
+        ast.mux_iob_sel                  : '',
+        ast.ast2pad_t0                   : '',
+        ast.ast2pad_t1                   : '',
+        ast.tpram_rm                     : '',
+        ast.spram_rm                     : '',
+        ast.sprom_rm                     : '',
+        ast.dft_scan_md                  : '',
+        ast.scan_shift_en                : '',
+        ast.scan_reset_n                 : '',
+        ast.clk_src_sys                  : '',
+        ast.clk_src_io                   : '',
+        ast.clk_src_usb                  : '',
+        ast.clk_src_aon                  : '',
+        ast.clk_osc_byp.primary          : 'clk_osc_byp_main',
+        ast.clk_osc_byp.secondary        : 'clk_osc_byp_aon',
         'pinmux.dft_hold_tap_sel'        : 'dft_hold_tap_sel',
         'pinmux.usb_dppullup_en'         : 'usb_dp_pullup_en',
         'pinmux.usb_dnpullup_en'         : 'usb_dn_pullup_en',
-        'pwrmgr.pwr_ast'                 : 'pwrmgr_ast',
         'rstmgr.por_n'                   : 'por_n',
         'rstmgr.resets'                  : '',
         'rstmgr.rst_en'                  : '',
@@ -804,9 +809,6 @@
         'usbdev.usb_tx_se0'              : '',
         'usbdev.usb_tx_use_d_se0'        : '',
         'usbdev.usb_rx_enable'           : '',
-        'usbdev.usb_ref_val'             : '',
-        'usbdev.usb_ref_pulse'           : '',
-        'spi_device.sck_monitor'         : 'sck_monitor',
     },
   },
 
@@ -1034,8 +1036,45 @@
       // Chip level changes
       chiplevel: {
         port_overrides: {
+          // AST is instantiated inside the top. No-peer interfaces are tied
+          // off; chip-physical signals are tied / wired here.
+          'ast.entropy'             : { unused: true },
+          'ast.adc'                 : { unused: true, tie_value: "'0" },
+          'ast.ast_alert'           : { unused: true, tie_value: "'0" },
+          'ast.rng_en'              : { unused: true, tie_value: "1'b0" },
+          'ast.rng_fips'            : { unused: true, tie_value: "1'b0" },
+          'ast.rng_val'             : { unused: true },
+          'ast.rng_b'               : { unused: true },
+          'ast.lc_dft_en'           : { unused: true, tie_value: "lc_ctrl_pkg::Off" },
+          'ast.por_n'               : { signal: 'rst_n' },
+          'ast.adc_a0'              : { unused: true, tie_value: "'0" },
+          'ast.adc_a1'              : { unused: true, tie_value: "'0" },
+          'ast.ast2pad_t0'          : { unused: true },
+          'ast.ast2pad_t1'          : { unused: true },
+          'ast.vcc_supp'            : { unused: true, tie_value: "1'b1" },
+          'ast.vcaon_supp'          : { unused: true, tie_value: "1'b1" },
+          'ast.vcmain_supp'         : { unused: true, tie_value: "1'b1" },
+          'ast.vioa_supp'           : { unused: true, tie_value: "1'b1" },
+          'ast.viob_supp'           : { unused: true, tie_value: "1'b1" },
+          'ast.ast_pwst'            : { signal: 'ast_pwst' },
+          'ast.ast_pwst_h'          : { unused: true },
+          'ast.otp_power_seq'       : { unused: true, tie_value: "'0" },
+          'ast.otp_power_seq_h'     : { unused: true },
+          'ast.usb_io_pu_cal'       : { unused: true },
+          'ast.fla_obs'             : { unused: true, tie_value: "'0" },
+          'ast.otp_obs'             : { unused: true, tie_value: "'0" },
+          'ast.otm_obs'             : { unused: true, tie_value: "'0" },
+          'ast.usb_obs'             : { unused: true, tie_value: "'0" },
+          'ast.padmux2ast'          : { signal: 'pad2ast' },
+          'ast.ast2padmux'          : { signal: 'ast2pinmux' },
+          'ast.mux_iob_sel'         : { unused: true },
+          'ast.tpram_rm'            : { unused: true },
+          'ast.spram_rm'            : { unused: true },
+          'ast.sprom_rm'            : { unused: true },
+          'ast.dft_scan_md'         : { signal: 'scanmode' },
+          'ast.scan_shift_en'       : { signal: 'scan_en' },
+          'ast.scan_reset_n'        : { signal: 'scan_rst_n' },
           'pinmux.dft_hold_tap_sel'        : { unused: true },
-          'pinmux.dft_strap_test'          : { unused: true },
           'pinmux.usb_dppullup_en'         : { signal: 'usb_dp_pullup_en' },
           'pinmux.usb_dnpullup_en'         : { signal: 'usb_dn_pullup_en' },
           'clkmgr.cg_en'                   : { unused: true },
@@ -1045,10 +1084,6 @@
           'usbdev.usb_tx_use_d_se0'        : { unused: true },
           'usbdev.usb_rx_d'                : { unused: true },
           'usbdev.usb_rx_enable'           : { unused: true },
-          'usbdev.usb_ref_val'             : { signal: 'usb_ref_val'   },
-          'usbdev.usb_ref_pulse'           : { signal: 'usb_ref_pulse' },
-          'flash_ctrl.flash_power_down_h'  : { unused: true },
-          'flash_ctrl.flash_power_ready_h' : { unused: true, tie_value: "1'b1" },
         }
       }
 
@@ -1107,6 +1142,44 @@
       // they are driven/consumed identically to the earlgrey verilator top.
       chiplevel: {
         port_overrides: {
+          // AST is instantiated inside the top. No-peer interfaces are tied
+          // off; chip-physical signals are tied / wired here.
+          'ast.entropy'             : { unused: true },
+          'ast.adc'                 : { unused: true, tie_value: "'0" },
+          'ast.ast_alert'           : { unused: true, tie_value: "'0" },
+          'ast.rng_en'              : { unused: true, tie_value: "1'b0" },
+          'ast.rng_fips'            : { unused: true, tie_value: "1'b0" },
+          'ast.rng_val'             : { unused: true },
+          'ast.rng_b'               : { unused: true },
+          'ast.lc_dft_en'           : { unused: true, tie_value: "lc_ctrl_pkg::Off" },
+          'ast.por_n'               : { signal: 'rst_n' },
+          'ast.adc_a0'              : { unused: true, tie_value: "'0" },
+          'ast.adc_a1'              : { unused: true, tie_value: "'0" },
+          'ast.ast2pad_t0'          : { unused: true },
+          'ast.ast2pad_t1'          : { unused: true },
+          'ast.vcc_supp'            : { signal: 'vcc_supp' },
+          'ast.vcaon_supp'          : { unused: true, tie_value: "1'b1" },
+          'ast.vcmain_supp'         : { unused: true, tie_value: "1'b1" },
+          'ast.vioa_supp'           : { unused: true, tie_value: "1'b1" },
+          'ast.viob_supp'           : { unused: true, tie_value: "1'b1" },
+          'ast.ast_pwst'            : { signal: 'ast_pwst' },
+          'ast.ast_pwst_h'          : { unused: true },
+          'ast.otp_power_seq'       : { unused: true, tie_value: "'0" },
+          'ast.otp_power_seq_h'     : { unused: true },
+          'ast.usb_io_pu_cal'       : { unused: true },
+          'ast.fla_obs'             : { unused: true, tie_value: "'0" },
+          'ast.otp_obs'             : { unused: true, tie_value: "'0" },
+          'ast.otm_obs'             : { unused: true, tie_value: "'0" },
+          'ast.usb_obs'             : { unused: true, tie_value: "'0" },
+          'ast.padmux2ast'          : { signal: 'pad2ast' },
+          'ast.ast2padmux'          : { signal: 'ast2pinmux' },
+          'ast.mux_iob_sel'         : { unused: true },
+          'ast.tpram_rm'            : { unused: true },
+          'ast.spram_rm'            : { unused: true },
+          'ast.sprom_rm'            : { unused: true },
+          'ast.dft_scan_md'         : { signal: 'scanmode' },
+          'ast.scan_shift_en'       : { signal: 'scan_en' },
+          'ast.scan_reset_n'        : { signal: 'scan_rst_n' },
           'pinmux.dft_hold_tap_sel' : { unused: true              },
           'pinmux.usb_dppullup_en'  : { signal: 'usb_dp_pullup_en'},
           'pinmux.usb_dnpullup_en'  : { signal: 'usb_dn_pullup_en'},
@@ -1117,8 +1190,6 @@
           'usbdev.usb_tx_d'         : { signal: 'usb_tx_d'        },
           'usbdev.usb_tx_se0'       : { signal: 'usb_tx_se0'      },
           'usbdev.usb_tx_use_d_se0' : { signal: 'usb_tx_use_d_se0'},
-          'usbdev.usb_ref_val'      : { signal: 'usb_ref_val'     },
-          'usbdev.usb_ref_pulse'    : { signal: 'usb_ref_pulse'   },
           'rv_core_ibex.fpga_info'  : { unused: true              },
         }
       }

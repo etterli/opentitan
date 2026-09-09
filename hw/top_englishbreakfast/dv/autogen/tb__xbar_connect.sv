@@ -110,7 +110,7 @@ initial begin
     `DRIVE_CHIP_TL_DEVICE_IF(rstmgr, rstmgr, tl, aon)
     `DRIVE_CHIP_TL_DEVICE_IF(clkmgr, clkmgr, tl, aon)
     `DRIVE_CHIP_TL_DEVICE_IF(pinmux, pinmux, tl, main)
-    `DRIVE_CHIP_TL_EXT_DEVICE_IF(ast, ast, tl)
+    `DRIVE_CHIP_TL_DEVICE_IF(ast, ast_part_primary, tl, main)
 `endif
 
     // And this can consume time, so they go at the end of this block.
