@@ -7,12 +7,18 @@
 //
 //############################################################################
 // *Name: ast
-// *Module Description: Analog Sensors Top
+// *Module Description: Analog Sensors Top - AON Domain
 //############################################################################
 
 `include "prim_assert.sv"
 
-module ast_aon (
+module ast_part_secondary #(
+  parameter int unsigned UsbCalibWidth   = ast_pkg::UsbCalibWidth,
+  parameter int unsigned AdcChannels     = ast_pkg::AdcChannels,
+  parameter int unsigned AdcDataWidth    = ast_pkg::AdcDataWidth,
+  parameter int unsigned Pad2AstInWidth  = ast_pkg::Pad2AstInWidth,
+  parameter int unsigned Ast2PadOutWidth = ast_pkg::Ast2PadOutWidth
+) (
   // clocks / resets
   input clk_ast_adc_i,                        // Buffered AST ADC Clock
   input rst_ast_adc_ni,                       // Buffered AST ADC Reset
@@ -27,17 +33,15 @@ module ast_aon (
   input clk_ast_usb_i,                        // Buffered AST USB Clock
   input rst_ast_usb_ni,                       // Buffered AST USB Reset
   input clk_ast_ext_i,                        // Buffered AST External Clock
-  input por_ni,                               // Power ON Reset
+  input por_n_i,                              // Power ON Reset
 
   // sensed clocks / resets
   input clkmgr_pkg::clkmgr_out_t sns_clks_i,  // Sensed Clocks
   input rstmgr_pkg::rstmgr_out_t sns_rsts_i,  // Sensed Resets
   input sns_spi_ext_clk_i,                    // Sensed SPI External Clock
 
-`ifdef AST_BYPASS_CLK
-  // Clocks' Oschillator bypass for OS FPGA
-  input ast_pkg::clks_osc_byp_t clk_osc_byp_i,  // Clocks' Oschillator bypass for OS FPGA/VERILATOR
-`endif
+  // Oscillator bypass clocks for OS FPGA/Verilator.
+  input ast_pkg::clks_osc_byp_t clk_osc_byp_i,
 
   // power OK control
   // In non-power aware DV environment, the <>_supp_i is for debug only!
@@ -51,9 +55,16 @@ module ast_aon (
   output ast_pkg::ast_pwst_t ast_pwst_o,      // AON, MAIN, IO-0 Rail, IO-1 Rail Power OK @1.1V
   output ast_pkg::ast_pwst_t ast_pwst_h_o,    // AON, MAIN, IO-9 Rail, IO-1 Rail Power OK @3.3V
 
-  // Power and IO pin connections
-  input main_pd_ni,                           // MAIN Regulator Power Down
-  input main_env_iso_en_i,                    // Enveloped ISOlation ENable for MAIN
+  // pwrmgr handshake (individual signals)
+  input  logic clk_src_sys_en_i,              // SYS Source Clock Enable
+  input  logic clk_src_io_en_i,               // IO Source Clock Enable
+  input  logic clk_src_usb_en_i,              // USB Source Clock Enable
+  input  logic main_pd_ni,                    // MAIN Regulator Power Down
+  input  logic main_env_iso_en_i,             // Enveloped ISOlation ENable for MAIN
+  output logic clk_src_sys_val_o,             // SYS Source Clock Valid
+  output logic clk_src_io_val_o,              // IO Source Clock Valid
+  output logic clk_src_usb_val_o,             // USB Source Clock Valid
+  output logic clk_src_aon_val_o,             // AON Source Clock Valid
 
   // power down monitor logic - flash/otp related
   output logic flash_power_down_h_o,          // Flash Power Down
@@ -63,25 +74,23 @@ module ast_aon (
 
   // aon source clock
   output logic clk_src_aon_o,                 // AON Source Clock
-  output logic clk_src_aon_val_o,             // AON Source Clock Valid
 
-  // USB reference and calibration (clock outputs moved to ast_main)
+  // USB reference and calibration (clock outputs moved to ast_part_primary)
   input usb_ref_pulse_i,                      // USB Reference Pulse
   input usb_ref_val_i,                        // USB Reference Valid
-  input clk_src_usb_en_i,                     // USB Source Clock Enable
-  output logic [ast_pkg::UsbCalibWidth-1:0] usb_io_pu_cal_o,  // USB IO Pull-up Calibration Setting
+  output logic [UsbCalibWidth-1:0] usb_io_pu_cal_o,  // USB IO Pull-up Calibration Setting
 
   // adc interface
-  input adc_pd_i,                             // ADC Power Down
-  input ast_pkg::awire_t adc_a0_ai,           // ADC A0 Analog Input
-  input ast_pkg::awire_t adc_a1_ai,           // ADC A1 Analog Input
-  input [ast_pkg::AdcChannels-1:0] adc_chnsel_i,       // ADC Channel Select
-  output [ast_pkg::AdcDataWidth-1:0] adc_d_o,          // ADC Digital (per channel)
+  input  adc_pd_i,                            // ADC Power Down
+  input  [ast_pkg::AdcChannels-1:0] adc_chnsel_i,   // ADC Channel Select
+  output [ast_pkg::AdcDataWidth-1:0] adc_d_o,       // ADC Digital (per channel)
   output adc_d_val_o,                         // ADC Digital Valid
+  input  ast_pkg::awire_t adc_a0_i,           // ADC A0 Analog Input
+  input  ast_pkg::awire_t adc_a1_i,           // ADC A1 Analog Input
 
   // alerts
-  input ast_pkg::ast_alert_rsp_t alert_rsp_i,  // Alerts Trigger & Acknowledge Inputs
-  output ast_pkg::ast_alert_req_t alert_req_o, // Alerts Output
+  input ast_pkg::ast_alert_rsp_t ast_alert_i,  // Alerts Trigger & Acknowledge Inputs
+  output ast_pkg::ast_alert_req_t ast_alert_o, // Alerts Output
 
   // dft interface
   input pinmux_pkg::dft_strap_test_req_t dft_strap_test_i,  // DFT Straps
@@ -93,22 +102,14 @@ module ast_aon (
   output ast_pkg::ast_obs_ctrl_t obs_ctrl_o,  // Observe Control
 
   // pad mux/pad related
-  input [ast_pkg::Pad2AstInWidth-1:0] padmux2ast_i,    // IO_2_DFT Input Signals
-  output logic [ast_pkg::Ast2PadOutWidth-1:0] ast2padmux_o,  // DFT_2_IO Output Signals
+  input [Pad2AstInWidth-1:0] padmux2ast_i,    // IO_2_DFT Input Signals
+  output logic [Ast2PadOutWidth-1:0] ast2padmux_o,  // DFT_2_IO Output Signals
   output logic [4-1:0] mux_iob_sel_o, // iob or spi selector
 
-`ifdef ANALOGSIM
-  output real ast2pad_t0_ao,                  // AST_2_PAD Analog T0 Output Signal
-  output real ast2pad_t1_ao,                  // AST_2_PAD Analog T1 Output Signal
-`else
-  output wire ast2pad_t0_ao,                  // AST_2_PAD Analog T0 Output Signal
-  output wire ast2pad_t1_ao,                  // AST_2_PAD Analog T1 Output Signal
-`endif
+  output ast_pkg::awire_t ast2pad_t0_o,             // AST_2_PAD Analog T0 Output Signal
+  output ast_pkg::awire_t ast2pad_t1_o,             // AST_2_PAD Analog T1 Output Signal
 
-  // flash and external clocks (clock bypass acks moved to ast_main)
-  input prim_mubi_pkg::mubi4_t ext_freq_is_96m_i,   // External clock frequecy is 96MHz
-  input prim_mubi_pkg::mubi4_t all_clk_byp_req_i,   // All clocks bypass request
-  input prim_mubi_pkg::mubi4_t io_clk_byp_req_i,    // IO clock bypass request
+  // flash bist enable (clock bypass requests are handled in the Main partition)
   output prim_mubi_pkg::mubi4_t flash_bist_en_o,    // Flush BIST (TAP) Enable
 
   // memories read-write margins
@@ -119,16 +120,15 @@ module ast_aon (
   // Scan interface
   output prim_mubi_pkg::mubi4_t dft_scan_md_o,  // Scan Mode output
   output scan_shift_en_o,                       // Scan Shift Enable output
-  output scan_reset_no,                          // Scan Reset output
+  output scan_reset_n_o,                        // Scan Reset output
 
   // Inter-domain communication
   output ast_pkg::aon_to_main_t aon_to_main_o,
-  input ast_pkg::main_to_aon_t main_to_aon_i
+  input  ast_pkg::main_to_aon_t main_to_aon_i
 );
 
 import ast_pkg::* ;
 import ast_reg_pkg::* ;
-import ast_pkg::* ;
 import ast_bhv_pkg::* ;
 
 ///////////////////////////////////////
@@ -136,6 +136,20 @@ import ast_bhv_pkg::* ;
 ///////////////////////////////////////
 ast_pkg::clks_byp_main_to_aon_t clks_byp_main_to_aon;
 assign clks_byp_main_to_aon = main_to_aon_i.clks_byp;
+
+///////////////////////////////////////
+// pwrmgr clock-enable forwarding (individual signals)
+///////////////////////////////////////
+// The sys/io/usb clock enables are forwarded to the Main partition and the
+// matching valids come back from it. main_pd_n is consumed locally.
+logic main_pd_n_i;
+assign main_pd_n_i = main_pd_ni;
+assign aon_to_main_o.core_clk_en  = clk_src_sys_en_i;
+assign aon_to_main_o.io_clk_en    = clk_src_io_en_i;
+assign aon_to_main_o.usb_clk_en   = clk_src_usb_en_i;
+assign clk_src_sys_val_o = main_to_aon_i.core_clk_val;
+assign clk_src_io_val_o  = main_to_aon_i.io_clk_val;
+assign clk_src_usb_val_o = main_to_aon_i.usb_clk_val;
 
 logic scan_mode, shift_en, scan_reset_n;
 logic vcc_pok, vcc_pok_h, vcc_pok_str;
@@ -156,7 +170,7 @@ prim_clock_buf #(
 assign flash_bist_en_o  = prim_mubi_pkg::MuBi4False;
 assign dft_scan_md_o    = prim_mubi_pkg::MuBi4False;
 assign scan_shift_en_o  = 1'b0;
-assign scan_reset_no    = 1'b1;
+assign scan_reset_n_o    = 1'b1;
 assign scan_mode        = 1'b0;
 assign shift_en         = 1'b0;
 assign scan_reset_n     = 1'b1;
@@ -181,7 +195,7 @@ logic rst_poks_n, rst_poks_por_n, por_sync_n;
 logic vcaon_pok_por_src, vcaon_pok_por_lat, poks_por_ack, rglssm_vcmon, rglssm_brout;
 
 assign rst_poks_n = vcc_pok_str && vcaon_pok;
-assign rst_poks_por_n = vcc_pok_str && vcaon_pok && por_ni;
+assign rst_poks_por_n = vcc_pok_str && vcaon_pok && por_n_i;
 assign poks_por_ack = vcaon_pok_por_src || rglssm_vcmon;
 
 // Reset De-Assert Sync
@@ -262,7 +276,7 @@ assign mux_iob_sel_o = 4'h0;
 logic deep_sleep;
 logic main_pd, por_sync;
 
-assign main_pd = !main_pd_ni;
+assign main_pd = !main_pd_n_i;
 assign por_sync = !por_sync_n;
 
 rglts_pdm_3p3v u_rglts_pdm_3p3v (
@@ -398,8 +412,8 @@ adc #(
   .AdcChannels ( ast_pkg::AdcChannels ),
   .AdcDataWidth ( ast_pkg::AdcDataWidth )
 ) u_adc (
-  .adc_a0_ai ( adc_a0_ai ),
-  .adc_a1_ai ( adc_a1_ai ),
+  .adc_a0_ai ( adc_a0_i ),
+  .adc_a1_ai ( adc_a1_i ),
   .adc_chnsel_i ( adc_chnsel_i[ast_pkg::AdcChannels-1:0] ),
   .adc_pd_i ( adc_pd_i ),
   .clk_adc_i ( clk_ast_adc_i ),
@@ -430,9 +444,9 @@ ast_alert u_alert_as (
   .clk_i ( clk_ast_alert_i ),
   .rst_ni ( rst_ast_alert_ni ),
   .alert_src_i ( as_alert_src ),
-  .alert_trig_i ( alert_rsp_i.alerts_trig[ast_pkg::AsSel] ),
-  .alert_ack_i ( alert_rsp_i.alerts_ack[ast_pkg::AsSel] ),
-  .alert_req_o ( alert_req_o.alerts[ast_pkg::AsSel] )
+  .alert_trig_i ( ast_alert_i.alerts_trig[ast_pkg::AsSel] ),
+  .alert_ack_i ( ast_alert_i.alerts_ack[ast_pkg::AsSel] ),
+  .alert_req_o ( ast_alert_o.alerts[ast_pkg::AsSel] )
 );
 
 // Clock Glitch (CG)
@@ -441,9 +455,9 @@ ast_alert u_alert_cg (
   .clk_i ( clk_ast_alert_i ),
   .rst_ni ( rst_ast_alert_ni ),
   .alert_src_i ( cgc_alert_src ),
-  .alert_trig_i ( alert_rsp_i.alerts_trig[ast_pkg::CgSel] ),
-  .alert_ack_i ( alert_rsp_i.alerts_ack[ast_pkg::CgSel] ),
-  .alert_req_o ( alert_req_o.alerts[ast_pkg::CgSel] )
+  .alert_trig_i ( ast_alert_i.alerts_trig[ast_pkg::CgSel] ),
+  .alert_ack_i ( ast_alert_i.alerts_ack[ast_pkg::CgSel] ),
+  .alert_req_o ( ast_alert_o.alerts[ast_pkg::CgSel] )
 );
 
 // Glitch Detector (GD)
@@ -452,9 +466,9 @@ ast_alert u_alert_gd (
   .clk_i ( clk_ast_alert_i ),
   .rst_ni ( rst_ast_alert_ni ),
   .alert_src_i ( gd_alert_src ),
-  .alert_trig_i ( alert_rsp_i.alerts_trig[ast_pkg::GdSel] ),
-  .alert_ack_i ( alert_rsp_i.alerts_ack[ast_pkg::GdSel] ),
-  .alert_req_o ( alert_req_o.alerts[ast_pkg::GdSel] )
+  .alert_trig_i ( ast_alert_i.alerts_trig[ast_pkg::GdSel] ),
+  .alert_ack_i ( ast_alert_i.alerts_ack[ast_pkg::GdSel] ),
+  .alert_req_o ( ast_alert_o.alerts[ast_pkg::GdSel] )
 );
 
 // Temprature Sensor High (TS Hi)
@@ -463,9 +477,9 @@ ast_alert u_alert_ts_hi (
   .clk_i ( clk_ast_alert_i ),
   .rst_ni ( rst_ast_alert_ni ),
   .alert_src_i ( ts_alert_hi_src ),
-  .alert_trig_i ( alert_rsp_i.alerts_trig[ast_pkg::TsHiSel] ),
-  .alert_ack_i ( alert_rsp_i.alerts_ack[ast_pkg::TsHiSel] ),
-  .alert_req_o ( alert_req_o.alerts[ast_pkg::TsHiSel] )
+  .alert_trig_i ( ast_alert_i.alerts_trig[ast_pkg::TsHiSel] ),
+  .alert_ack_i ( ast_alert_i.alerts_ack[ast_pkg::TsHiSel] ),
+  .alert_req_o ( ast_alert_o.alerts[ast_pkg::TsHiSel] )
 );
 
 // Temprature Sensor Low (TS Lo)
@@ -474,9 +488,9 @@ ast_alert u_alert_ts_lo (
   .clk_i ( clk_ast_alert_i ),
   .rst_ni ( rst_ast_alert_ni ),
   .alert_src_i ( ts_alert_lo_src ),
-  .alert_trig_i ( alert_rsp_i.alerts_trig[ast_pkg::TsLoSel] ),
-  .alert_ack_i ( alert_rsp_i.alerts_ack[ast_pkg::TsLoSel] ),
-  .alert_req_o ( alert_req_o.alerts[ast_pkg::TsLoSel] )
+  .alert_trig_i ( ast_alert_i.alerts_trig[ast_pkg::TsLoSel] ),
+  .alert_ack_i ( ast_alert_i.alerts_ack[ast_pkg::TsLoSel] ),
+  .alert_req_o ( ast_alert_o.alerts[ast_pkg::TsLoSel] )
 );
 
 // Other-0 Alert (OT0)
@@ -485,9 +499,9 @@ ast_alert u_alert_ot0 (
   .clk_i ( clk_ast_alert_i ),
   .rst_ni ( rst_ast_alert_ni ),
   .alert_src_i ( ot0_alert_src ),
-  .alert_trig_i ( alert_rsp_i.alerts_trig[ast_pkg::Ot0Sel] ),
-  .alert_ack_i ( alert_rsp_i.alerts_ack[ast_pkg::Ot0Sel] ),
-  .alert_req_o ( alert_req_o.alerts[ast_pkg::Ot0Sel] )
+  .alert_trig_i ( ast_alert_i.alerts_trig[ast_pkg::Ot0Sel] ),
+  .alert_ack_i ( ast_alert_i.alerts_ack[ast_pkg::Ot0Sel] ),
+  .alert_req_o ( ast_alert_o.alerts[ast_pkg::Ot0Sel] )
 ); // of u_alert_ot0
 
 // Other-1 Alert (OT1)
@@ -496,9 +510,9 @@ ast_alert u_alert_ot1 (
   .clk_i ( clk_ast_alert_i ),
   .rst_ni ( rst_ast_alert_ni ),
   .alert_src_i ( ot1_alert_src ),
-  .alert_trig_i ( alert_rsp_i.alerts_trig[ast_pkg::Ot1Sel] ),
-  .alert_ack_i ( alert_rsp_i.alerts_ack[ast_pkg::Ot1Sel] ),
-  .alert_req_o ( alert_req_o.alerts[ast_pkg::Ot1Sel] )
+  .alert_trig_i ( ast_alert_i.alerts_trig[ast_pkg::Ot1Sel] ),
+  .alert_ack_i ( ast_alert_i.alerts_ack[ast_pkg::Ot1Sel] ),
+  .alert_req_o ( ast_alert_o.alerts[ast_pkg::Ot1Sel] )
 ); // of u_alert_ot1
 
 // Other-2 Alert (OT2)
@@ -507,9 +521,9 @@ ast_alert u_alert_ot2 (
   .clk_i ( clk_ast_alert_i ),
   .rst_ni ( rst_ast_alert_ni ),
   .alert_src_i ( ot2_alert_src ),
-  .alert_trig_i ( alert_rsp_i.alerts_trig[Ot2Sel] ),
-  .alert_ack_i ( alert_rsp_i.alerts_ack[Ot2Sel] ),
-  .alert_req_o ( alert_req_o.alerts[Ot2Sel] )
+  .alert_trig_i ( ast_alert_i.alerts_trig[Ot2Sel] ),
+  .alert_ack_i ( ast_alert_i.alerts_ack[Ot2Sel] ),
+  .alert_req_o ( ast_alert_o.alerts[Ot2Sel] )
 ); // of u_alert_ot2
 
 // Other-3 Alert (OT3)
@@ -518,9 +532,9 @@ ast_alert u_alert_ot3 (
   .clk_i ( clk_ast_alert_i ),
   .rst_ni ( rst_ast_alert_ni ),
   .alert_src_i ( ot3_alert_src ),
-  .alert_trig_i ( alert_rsp_i.alerts_trig[Ot3Sel] ),
-  .alert_ack_i ( alert_rsp_i.alerts_ack[Ot3Sel] ),
-  .alert_req_o ( alert_req_o.alerts[Ot3Sel] )
+  .alert_trig_i ( ast_alert_i.alerts_trig[Ot3Sel] ),
+  .alert_ack_i ( ast_alert_i.alerts_ack[Ot3Sel] ),
+  .alert_req_o ( ast_alert_o.alerts[Ot3Sel] )
 ); // of u_alert_ot3
 
 // Other-4 Alert (OT4)
@@ -529,9 +543,9 @@ ast_alert u_alert_ot4 (
   .clk_i ( clk_ast_alert_i ),
   .rst_ni ( rst_ast_alert_ni ),
   .alert_src_i ( ot4_alert_src ),
-  .alert_trig_i ( alert_rsp_i.alerts_trig[ast_pkg::Ot4Sel] ),
-  .alert_ack_i ( alert_rsp_i.alerts_ack[ast_pkg::Ot4Sel] ),
-  .alert_req_o ( alert_req_o.alerts[ast_pkg::Ot4Sel] )
+  .alert_trig_i ( ast_alert_i.alerts_trig[ast_pkg::Ot4Sel] ),
+  .alert_ack_i ( ast_alert_i.alerts_ack[ast_pkg::Ot4Sel] ),
+  .alert_req_o ( ast_alert_o.alerts[ast_pkg::Ot4Sel] )
 ); // of u_alert_ot4
 
 // Other-5 Alert (OT5)
@@ -540,9 +554,9 @@ ast_alert u_alert_ot5 (
   .clk_i ( clk_ast_alert_i ),
   .rst_ni ( rst_ast_alert_ni ),
   .alert_src_i ( ot5_alert_src ),
-  .alert_trig_i ( alert_rsp_i.alerts_trig[ast_pkg::Ot5Sel] ),
-  .alert_ack_i ( alert_rsp_i.alerts_ack[ast_pkg::Ot5Sel] ),
-  .alert_req_o ( alert_req_o.alerts[ast_pkg::Ot5Sel] )
+  .alert_trig_i ( ast_alert_i.alerts_trig[ast_pkg::Ot5Sel] ),
+  .alert_ack_i ( ast_alert_i.alerts_ack[ast_pkg::Ot5Sel] ),
+  .alert_req_o ( ast_alert_o.alerts[ast_pkg::Ot5Sel] )
 ); // of u_alert_ot5
 
 // Alerts Open-Source Selection
@@ -609,11 +623,11 @@ ast_dft u_ast_dft (
 // DFT Misc Logic
 ////////////////////////////////////////
 `ifdef ANALOGSIM
-assign ast2pad_t0_ao = 0.0;
-assign ast2pad_t1_ao = 0.1;
+assign ast2pad_t0_o = 0.0;
+assign ast2pad_t1_o = 0.1;
 `else
-assign ast2pad_t0_ao = 1'bz;
-assign ast2pad_t1_ao = 1'bz;
+assign ast2pad_t0_o = 1'bz;
+assign ast2pad_t1_o = 1'bz;
 `endif
 
 ////////////////////////////////////////
@@ -671,20 +685,20 @@ assign aon_to_main_o.usb_osc_cal = usb_osc_cal;
 // Note: RNG assertions moved to ast_main.sv
 // TLUL and InitDone asserts are now in ast_main.sv
 // POs
-`ASSERT_KNOWN(VcaonPokKnownO_A, ast_pwst_o.aon_pok, clk_src_aon_o, por_ni)
-`ASSERT_KNOWN(VcmainPokKnownO_A, ast_pwst_o.main_pok, clk_src_aon_o, por_ni)
-`ASSERT_KNOWN(VioaPokKnownO_A, ast_pwst_o.io_pok[0], clk_src_aon_o, por_ni)
-`ASSERT_KNOWN(ViobPokKnownO_A, ast_pwst_o.io_pok[1], clk_src_aon_o, por_ni)
-`ASSERT_KNOWN(VcaonPokHKnownO_A, ast_pwst_h_o.aon_pok, clk_src_aon_o, por_ni)
-`ASSERT_KNOWN(VcmainPokHKnownO_A, ast_pwst_h_o.main_pok, clk_src_aon_o, por_ni)
-`ASSERT_KNOWN(VioaPokHKnownO_A, ast_pwst_h_o.io_pok[0], clk_src_aon_o, por_ni)
-`ASSERT_KNOWN(ViobPokHKnownO_A, ast_pwst_h_o.io_pok[1], clk_src_aon_o, por_ni)
+`ASSERT_KNOWN(VcaonPokKnownO_A, ast_pwst_o.aon_pok, clk_src_aon_o, por_n_i)
+`ASSERT_KNOWN(VcmainPokKnownO_A, ast_pwst_o.main_pok, clk_src_aon_o, por_n_i)
+`ASSERT_KNOWN(VioaPokKnownO_A, ast_pwst_o.io_pok[0], clk_src_aon_o, por_n_i)
+`ASSERT_KNOWN(ViobPokKnownO_A, ast_pwst_o.io_pok[1], clk_src_aon_o, por_n_i)
+`ASSERT_KNOWN(VcaonPokHKnownO_A, ast_pwst_h_o.aon_pok, clk_src_aon_o, por_n_i)
+`ASSERT_KNOWN(VcmainPokHKnownO_A, ast_pwst_h_o.main_pok, clk_src_aon_o, por_n_i)
+`ASSERT_KNOWN(VioaPokHKnownO_A, ast_pwst_h_o.io_pok[0], clk_src_aon_o, por_n_i)
+`ASSERT_KNOWN(ViobPokHKnownO_A, ast_pwst_h_o.io_pok[1], clk_src_aon_o, por_n_i)
 // FLASH/OTP
 `ASSERT_KNOWN(FlashPowerDownKnownO_A, flash_power_down_h_o, 1, ast_pwst_o.main_pok)
 `ASSERT_KNOWN(FlashPowerReadyKnownO_A, flash_power_ready_h_o, 1, ast_pwst_o.main_pok)
 `ASSERT_KNOWN(OtpPowerSeqKnownO_A, otp_power_seq_h_o, 1, ast_pwst_o.main_pok)
 // Alerts
-`ASSERT_KNOWN(AlertReqKnownO_A, alert_req_o, clk_ast_alert_i, rst_ast_alert_ni)
+`ASSERT_KNOWN(AlertReqKnownO_A, ast_alert_o, clk_ast_alert_i, rst_ast_alert_ni)
 // Read-write margins
 `ASSERT_KNOWN(TpramRmKnownO_A, tpram_rm_o, clk_ast_tlul_i, ast_pwst_o.aon_pok)
 `ASSERT_KNOWN(SpramRmKnownO_A, spram_rm_o, clk_ast_tlul_i, ast_pwst_o.aon_pok)
@@ -694,13 +708,28 @@ assign aon_to_main_o.usb_osc_cal = usb_osc_cal;
 // SCAN
 `ASSERT_KNOWN(DftScanMdKnownO_A, dft_scan_md_o, clk_ast_tlul_i, ast_pwst_o.aon_pok)
 `ASSERT_KNOWN(ScanShiftEnKnownO_A, scan_shift_en_o, clk_ast_tlul_i, ast_pwst_o.aon_pok)
-`ASSERT_KNOWN(ScanResetKnownO_A, scan_reset_no, clk_ast_tlul_i, ast_pwst_o.aon_pok)
+`ASSERT_KNOWN(ScanResetKnownO_A, scan_reset_n_o, clk_ast_tlul_i, ast_pwst_o.aon_pok)
 `ASSERT_KNOWN(FlashBistEnKnownO_A, flash_bist_en_o, clk_ast_tlul_i, ast_pwst_o.aon_pok)
+
+// Width parameters must match their ast_pkg values.
+`ASSERT_INIT(UsbCalibWidthMatch_A, UsbCalibWidth == ast_pkg::UsbCalibWidth)
+`ASSERT_INIT(AdcChannelsMatch_A, AdcChannels == ast_pkg::AdcChannels)
+`ASSERT_INIT(AdcDataWidthMatch_A, AdcDataWidth == ast_pkg::AdcDataWidth)
+`ASSERT_INIT(Pad2AstInWidthMatch_A, Pad2AstInWidth == ast_pkg::Pad2AstInWidth)
+`ASSERT_INIT(Ast2PadOutWidthMatch_A, Ast2PadOutWidth == ast_pkg::Ast2PadOutWidth)
 
 // Note: reg_we onehot assertion moved to ast_main.sv along with u_reg
 /////////////////////
 // Unused Signals  //
 /////////////////////
+// Only clk_osc_byp_i.aon is consumed by this partition (under AST_BYPASS_CLK).
+logic unused_clk_osc_byp;
+`ifdef AST_BYPASS_CLK
+assign unused_clk_osc_byp = ^{clk_osc_byp_i.sys, clk_osc_byp_i.io, clk_osc_byp_i.usb};
+`else
+assign unused_clk_osc_byp = ^clk_osc_byp_i;
+`endif
+
 logic unused_sigs;
 
 assign unused_sigs = ^{ clk_ast_usb_i,
@@ -719,11 +748,7 @@ assign unused_sigs = ^{ clk_ast_usb_i,
                         otp_obs_i[8-1:0],
                         otm_obs_i[8-1:0],
                         usb_obs_i,
-                        clk_ast_ext_i,
-                        clk_src_usb_en_i,
-                        ext_freq_is_96m_i,
-                        all_clk_byp_req_i,
-                        io_clk_byp_req_i
+                        clk_ast_ext_i
                       };
 
-endmodule : ast_aon
+endmodule : ast_part_secondary

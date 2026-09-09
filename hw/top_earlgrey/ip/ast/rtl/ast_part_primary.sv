@@ -11,7 +11,9 @@
 
 `include "prim_assert.sv"
 
-module ast_main (
+module ast_part_primary #(
+  parameter int unsigned EntropyStreams = ast_pkg::EntropyStreams
+) (
   // TLUL interface
   input tlul_pkg::tl_h2d_t tl_i,
   output tlul_pkg::tl_d2h_t tl_o,
@@ -22,47 +24,52 @@ module ast_main (
   input rng_en_i,
   input rng_fips_i,
   output logic rng_val_o,
-  output logic [ast_pkg::EntropyStreams-1:0] rng_b_o,
+  output logic [EntropyStreams-1:0] rng_b_o,
   // Entropy interface
-  input edn_pkg::edn_rsp_t entropy_rsp_i,
-  output edn_pkg::edn_req_t entropy_req_o,
+  input edn_pkg::edn_rsp_t entropy_i,
+  output edn_pkg::edn_req_t entropy_o,
   // Entropy source clock/reset
   input logic clk_ast_es_i,
   input logic rst_ast_es_ni,
   input prim_mubi_pkg::mubi4_t clk_src_sys_jen_i,
   // Inter-domain communication
-  input ast_pkg::aon_to_main_t aon_to_main_i,
+  input  ast_pkg::aon_to_main_t aon_to_main_i,
   output ast_pkg::main_to_aon_t main_to_aon_o,
   // Clock bypass interface
   input  logic clk_ast_ext_i,
-  input  logic clk_src_sys_en_i,
-  input  logic clk_src_io_en_i,
-  input  logic clk_src_usb_en_i,
   input  logic clk_ast_usb_i,                      // Buffered AST USB Clock
   input  logic rst_ast_usb_ni,                     // Buffered AST USB Reset
   input  prim_mubi_pkg::mubi4_t io_clk_byp_req_i,
   input  prim_mubi_pkg::mubi4_t all_clk_byp_req_i,
   input  prim_mubi_pkg::mubi4_t ext_freq_is_96m_i,
 
-`ifdef AST_BYPASS_CLK
-  // Clocks' Oschillator bypass for OS FPGA
-  input ast_pkg::clks_osc_byp_t clk_osc_byp_i,  // Clocks' Oschillator bypass for OS FPGA/VERILATOR
-`endif
+  // Oscillator bypass clocks for OS FPGA/Verilator.
+  input ast_pkg::clks_osc_byp_t clk_osc_byp_i,
 
   // Clock outputs
   output logic clk_src_sys_o,
-  output logic clk_src_sys_val_o,
   output logic clk_src_io_o,
-  output logic clk_src_io_val_o,
   output prim_mubi_pkg::mubi4_t clk_src_io_48m_o,
   output logic clk_src_usb_o,
-  output logic clk_src_usb_val_o,
   output prim_mubi_pkg::mubi4_t io_clk_byp_ack_o,
   output prim_mubi_pkg::mubi4_t all_clk_byp_ack_o
 );
 
 import ast_pkg::* ;
-import ast_pkg::* ;
+
+// The clock-source enables come from pwrmgr and the matching valids are returned
+// to it, but pwrmgr's pwr_ast handshake terminates in the AON (secondary)
+// partition. The enables/valids are therefore exchanged with the AON partition
+// over the intra-IP structs. They are kept as internal signals so the
+// clock-generation logic below is unchanged.
+logic clk_src_sys_en_i, clk_src_io_en_i, clk_src_usb_en_i;
+logic clk_src_sys_val_o, clk_src_io_val_o, clk_src_usb_val_o;
+assign clk_src_sys_en_i = aon_to_main_i.core_clk_en;
+assign clk_src_io_en_i  = aon_to_main_i.io_clk_en;
+assign clk_src_usb_en_i = aon_to_main_i.usb_clk_en;
+assign main_to_aon_o.core_clk_val = clk_src_sys_val_o;
+assign main_to_aon_o.io_clk_val   = clk_src_io_val_o;
+assign main_to_aon_o.usb_clk_val  = clk_src_usb_val_o;
 
 ///////////////////////////////////////
 // TLUL Register Interface
@@ -339,7 +346,7 @@ assign entropy_rate = EntropyRateWidth'(5);
 `endif
 
 ast_entropy u_entropy (
-  .entropy_rsp_i ( entropy_rsp_i ),
+  .entropy_rsp_i ( entropy_i ),
   .entropy_rate_i ( entropy_rate ),
   .clk_ast_es_i ( clk_ast_es_i ),
   .rst_ast_es_ni ( rst_ast_es_ni ),
@@ -347,14 +354,14 @@ ast_entropy u_entropy (
   .rst_src_sys_ni ( rst_src_sys_n ),
   .clk_src_sys_val_i ( clk_src_sys_val_o ),
   .clk_src_sys_jen_i ( prim_mubi_pkg::mubi4_test_true_loose(clk_src_sys_jen) ),
-  .entropy_req_o ( entropy_req_o )
+  .entropy_req_o ( entropy_o )
 );
 
 ///////////////////////////////////////
 // RNG (OS simplified - fewer ports)
 ///////////////////////////////////////
 rng #(
-  .EntropyStreams ( ast_pkg::EntropyStreams )
+  .EntropyStreams ( EntropyStreams )
 ) u_rng (
   .clk_i ( aon_to_main_i.clk_rst.clk_ast_tlul ),
   .rst_ni ( aon_to_main_i.clk_rst.rst_ast_tlul_n ),
@@ -388,12 +395,15 @@ assign main_to_aon_o.ot0_alert_src = '{p: intg_err, n: ~intg_err};
 `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ERR(RegWeOnehot_A,
    u_reg, main_to_aon_o.ot0_alert_src.p, , , clk_ast_tlul_i, rst_ast_tlul_ni)
 // RNG
+// The comportable width parameter must equal the package constant that the RNG
+// submodule and the top-level entropy connection are sized with.
+`ASSERT_INIT(EntropyStreamsMatch_A, EntropyStreams == ast_pkg::EntropyStreams)
 `ASSERT_KNOWN(RngBKnownO_A, rng_b_o, aon_to_main_i.clk_rst.clk_ast_rng,
               aon_to_main_i.clk_rst.rst_ast_rng_n)
 `ASSERT_KNOWN(RngValKnownO_A, rng_val_o, aon_to_main_i.clk_rst.clk_ast_rng,
               aon_to_main_i.clk_rst.rst_ast_rng_n)
 // ES
-`ASSERT_KNOWN(EntropyReeqKnownO_A, entropy_req_o, clk_ast_es_i,rst_ast_es_ni)
+`ASSERT_KNOWN(EntropyReeqKnownO_A, entropy_o, clk_ast_es_i,rst_ast_es_ni)
 //
 `ASSERT_KNOWN(LcClkBypAckEnKnownO_A, io_clk_byp_ack_o, clk_ast_tlul_i, rst_ast_tlul_ni)
 `ASSERT_KNOWN(AllClkBypAckEnKnownO_A, all_clk_byp_ack_o, clk_ast_tlul_i, rst_ast_tlul_ni)
@@ -406,6 +416,11 @@ assign main_to_aon_o.ot0_alert_src = '{p: intg_err, n: ~intg_err};
 /////////////////////
 // Unused Signals  //
 /////////////////////
+`ifndef AST_BYPASS_CLK
+logic unused_clk_osc_byp;
+assign unused_clk_osc_byp = ^clk_osc_byp_i;
+`endif
+
 logic unused_sigs;
 
 assign unused_sigs = ^{ reg2hw.rega0,
@@ -464,4 +479,4 @@ assign unused_sigs = ^{ reg2hw.rega0,
                         reg2hw.regb   // [0:3]
                       };
 
-endmodule : ast_main
+endmodule : ast_part_primary
