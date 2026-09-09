@@ -58,18 +58,10 @@ parameter int unsigned SramCtrlSecNumRamInst  = 1;
 parameter int unsigned SramCtrlRetNumRamInst  = 1;
 parameter int unsigned SramCtrlMetaNumRamInst = 1;
 
-// Memories Read-Write Margin Interface
-typedef struct packed {
-  logic [10-1:0] cfg;
-} tpm_rm_t;
-
-typedef struct packed {
-  logic [13-1:0] cfg;
-} spm_rm_t;
-
-typedef struct packed {
-  logic [4-1:0] cfg;
-} rom_rm_t;
+// The memory read-write margins are typed directly as the prim memory config
+// structs (prim_ram_1p_pkg::ram_1p_cfg_req_t, prim_ram_1r1w_pkg::ram_1r1w_cfg_req_t
+// and prim_rom_pkg::rom_cfg_req_t) so they connect straight to each memory's
+// ram_cfg / rom_cfg port with no separate margin type that could drift.
 
 // Aggregated memory configuration interface.
 typedef struct packed {

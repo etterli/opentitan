@@ -55,16 +55,9 @@ module ast_part_secondary #(
   output ast_pkg::ast_pwst_t ast_pwst_o,      // AON, MAIN, IO-0 Rail, IO-1 Rail Power OK @1.1V
   output ast_pkg::ast_pwst_t ast_pwst_h_o,    // AON, MAIN, IO-9 Rail, IO-1 Rail Power OK @3.3V
 
-  // pwrmgr handshake (individual signals)
-  input  logic clk_src_sys_en_i,              // SYS Source Clock Enable
-  input  logic clk_src_io_en_i,               // IO Source Clock Enable
-  input  logic clk_src_usb_en_i,              // USB Source Clock Enable
-  input  logic main_pd_ni,                    // MAIN Regulator Power Down
-  input  logic main_env_iso_en_i,             // Enveloped ISOlation ENable for MAIN
-  output logic clk_src_sys_val_o,             // SYS Source Clock Valid
-  output logic clk_src_io_val_o,              // IO Source Clock Valid
-  output logic clk_src_usb_val_o,             // USB Source Clock Valid
-  output logic clk_src_aon_val_o,             // AON Source Clock Valid
+  // Power handshake with pwrmgr
+  input  pwrmgr_pkg::pwr_ast_req_t pwr_ast_i,  // Clock enables and main power-down
+  output pwrmgr_pkg::pwr_ast_rsp_t pwr_ast_o,  // Clock valids and main POK
 
   // power down monitor logic - flash/otp related
   output logic flash_power_down_h_o,          // Flash Power Down
@@ -81,10 +74,8 @@ module ast_part_secondary #(
   output logic [UsbCalibWidth-1:0] usb_io_pu_cal_o,  // USB IO Pull-up Calibration Setting
 
   // adc interface
-  input  adc_pd_i,                            // ADC Power Down
-  input  [ast_pkg::AdcChannels-1:0] adc_chnsel_i,   // ADC Channel Select
-  output [ast_pkg::AdcDataWidth-1:0] adc_d_o,       // ADC Digital (per channel)
-  output adc_d_val_o,                         // ADC Digital Valid
+  input  ast_pkg::adc_ast_req_t adc_i,    // ADC channel-select / power-down from adc_ctrl
+  output ast_pkg::adc_ast_rsp_t adc_o,    // ADC digital result to adc_ctrl
   input  ast_pkg::awire_t adc_a0_i,           // ADC A0 Analog Input
   input  ast_pkg::awire_t adc_a1_i,           // ADC A1 Analog Input
 
@@ -113,9 +104,9 @@ module ast_part_secondary #(
   output prim_mubi_pkg::mubi4_t flash_bist_en_o,    // Flush BIST (TAP) Enable
 
   // memories read-write margins
-  output ast_pkg::tpm_rm_t tpram_rm_o,        // Two Port RAM Read-write Margin
-  output ast_pkg::spm_rm_t spram_rm_o,        // Single Port RAM Read-write Margin
-  output ast_pkg::rom_rm_t sprom_rm_o,        // Single Port ROM Read-write Margin
+  output prim_ram_1r1w_pkg::ram_1r1w_cfg_req_t tpram_rm_o,        // Two Port RAM Read-write Margin
+  output prim_ram_1p_pkg::ram_1p_cfg_req_t spram_rm_o,        // Single Port RAM Read-write Margin
+  output prim_rom_pkg::rom_cfg_req_t sprom_rm_o,        // Single Port ROM Read-write Margin
 
   // Scan interface
   output prim_mubi_pkg::mubi4_t dft_scan_md_o,  // Scan Mode output
@@ -138,18 +129,33 @@ ast_pkg::clks_byp_main_to_aon_t clks_byp_main_to_aon;
 assign clks_byp_main_to_aon = main_to_aon_i.clks_byp;
 
 ///////////////////////////////////////
-// pwrmgr clock-enable forwarding (individual signals)
+// pwrmgr handshake (pwr_ast) and ADC digital interface unpacking
 ///////////////////////////////////////
-// The sys/io/usb clock enables are forwarded to the Main partition and the
-// matching valids come back from it. main_pd_n is consumed locally.
-logic main_pd_n_i;
-assign main_pd_n_i = main_pd_ni;
-assign aon_to_main_o.core_clk_en  = clk_src_sys_en_i;
-assign aon_to_main_o.io_clk_en    = clk_src_io_en_i;
-assign aon_to_main_o.usb_clk_en   = clk_src_usb_en_i;
-assign clk_src_sys_val_o = main_to_aon_i.core_clk_val;
-assign clk_src_io_val_o  = main_to_aon_i.io_clk_val;
-assign clk_src_usb_val_o = main_to_aon_i.usb_clk_val;
+// main_pd_n and main_env_iso_en are consumed locally; the sys/io/usb clock
+// enables are forwarded to the Main partition and the matching valids come back
+// from it. slow_clk_val and main_pok are produced in this partition.
+logic main_pd_n_i, main_env_iso_en_i;
+logic clk_src_aon_val_o;
+assign main_pd_n_i       = pwr_ast_i.main_pd_n;
+assign main_env_iso_en_i = pwr_ast_i.pwr_clamp_env;
+assign aon_to_main_o.core_clk_en  = pwr_ast_i.core_clk_en;
+assign aon_to_main_o.io_clk_en    = pwr_ast_i.io_clk_en;
+assign aon_to_main_o.usb_clk_en   = pwr_ast_i.usb_clk_en;
+assign pwr_ast_o.slow_clk_val = clk_src_aon_val_o;
+assign pwr_ast_o.core_clk_val = main_to_aon_i.core_clk_val;
+assign pwr_ast_o.io_clk_val   = main_to_aon_i.io_clk_val;
+assign pwr_ast_o.usb_clk_val  = main_to_aon_i.usb_clk_val;
+assign pwr_ast_o.main_pok     = ast_pwst_o.main_pok;
+
+// ADC digital interface to adc_ctrl unpacked into the internal per-signal form.
+logic adc_pd_i;
+logic [AdcChannels-1:0] adc_chnsel_i;
+logic [AdcDataWidth-1:0] adc_d_o;
+logic adc_d_val_o;
+assign adc_pd_i     = adc_i.pd;
+assign adc_chnsel_i = adc_i.channel_sel;
+assign adc_o.data       = adc_d_o;
+assign adc_o.data_valid = adc_d_val_o;
 
 logic scan_mode, shift_en, scan_reset_n;
 logic vcc_pok, vcc_pok_h, vcc_pok_str;
@@ -748,7 +754,9 @@ assign unused_sigs = ^{ clk_ast_usb_i,
                         otp_obs_i[8-1:0],
                         otm_obs_i[8-1:0],
                         usb_obs_i,
-                        clk_ast_ext_i
+                        clk_ast_ext_i,
+                        pwr_ast_i.pwr_clamp,
+                        pwr_ast_i.slow_clk_en
                       };
 
 endmodule : ast_part_secondary

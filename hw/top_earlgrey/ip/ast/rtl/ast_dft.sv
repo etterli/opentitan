@@ -16,9 +16,9 @@ module ast_dft (
   output ast_pkg::ast_obs_ctrl_t obs_ctrl_o,  // Observe Control
   output logic [ast_pkg::Ast2PadOutWidth-1:0] ast2padmux_o,  // DFT observed outputs
   // memories read-write margins
-  output ast_pkg::tpm_rm_t tpram_rm_o,      // Two Port RAM Read-write Margin
-  output ast_pkg::spm_rm_t spram_rm_o,      // Single Port RAM Read-write Margin
-  output ast_pkg::rom_rm_t sprom_rm_o       // Single Port ROM Read-write Margin
+  output prim_ram_1r1w_pkg::ram_1r1w_cfg_req_t tpram_rm_o,      // Two Port RAM Read-write Margin
+  output prim_ram_1p_pkg::ram_1p_cfg_req_t spram_rm_o,      // Single Port RAM Read-write Margin
+  output prim_rom_pkg::rom_cfg_req_t sprom_rm_o       // Single Port ROM Read-write Margin
 );
 
 // DFT to AST Digital PADs
