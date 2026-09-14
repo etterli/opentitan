@@ -12,7 +12,14 @@
 
 `include "prim_assert.sv"
 
-module ast (
+module ast #(
+  parameter int unsigned EntropyStreams   = ast_pkg::EntropyStreams,
+  parameter int unsigned UsbCalibWidth    = ast_pkg::UsbCalibWidth,
+  parameter int unsigned AdcChannels      = ast_pkg::AdcChannels,
+  parameter int unsigned AdcDataWidth     = ast_pkg::AdcDataWidth,
+  parameter int unsigned Pad2AstInWidth   = ast_pkg::Pad2AstInWidth,
+  parameter int unsigned Ast2PadOutWidth  = ast_pkg::Ast2PadOutWidth
+) (
   // tlul if
   input tlul_pkg::tl_h2d_t tl_i,              // TLUL H2D
   output tlul_pkg::tl_d2h_t tl_o,             // TLUL D2H
@@ -145,13 +152,6 @@ module ast (
   output scan_shift_en_o,                       // Scan Shift Enable output
   output scan_reset_no                          // Scan Reset output
 );
-
-localparam int unsigned EntropyStreams   = ast_pkg::EntropyStreams;
-localparam int unsigned UsbCalibWidth    = ast_pkg::UsbCalibWidth;
-localparam int unsigned AdcChannels      = ast_pkg::AdcChannels;
-localparam int unsigned AdcDataWidth     = ast_pkg::AdcDataWidth;
-localparam int unsigned Pad2AstInWidth   = ast_pkg::Pad2AstInWidth;
-localparam int unsigned Ast2PadOutWidth  = ast_pkg::Ast2PadOutWidth;
 
 // Inter-domain communication signals
 ast_pkg::aon_to_main_t aon_to_main;

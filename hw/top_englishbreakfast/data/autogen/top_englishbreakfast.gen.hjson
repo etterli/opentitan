@@ -3015,9 +3015,185 @@
       }
       param_decl: {}
       memory: {}
-      param_list: []
+      param_list:
+      [
+        {
+          name: EntropyStreams
+          desc: Number of RNG bit streams
+          type: int unsigned
+          default: 4
+          local: "true"
+          expose: "true"
+          name_top: AstEntropyStreams
+        }
+        {
+          name: UsbCalibWidth
+          desc: Width of the USB IO pull-up calibration setting
+          type: int unsigned
+          default: 20
+          local: "true"
+          expose: "true"
+          name_top: AstUsbCalibWidth
+        }
+        {
+          name: AdcChannels
+          desc: Number of ADC channels
+          type: int unsigned
+          default: 2
+          local: "true"
+          expose: "true"
+          name_top: AstAdcChannels
+        }
+        {
+          name: AdcDataWidth
+          desc: Width of the ADC digital data output
+          type: int unsigned
+          default: 10
+          local: "true"
+          expose: "true"
+          name_top: AstAdcDataWidth
+        }
+        {
+          name: Pad2AstInWidth
+          desc: Width of the DFT pad-to-AST input signal bus
+          type: int unsigned
+          default: 8
+          local: "true"
+          expose: "true"
+          name_top: AstPad2AstInWidth
+        }
+        {
+          name: Ast2PadOutWidth
+          desc: Width of the DFT AST-to-pad output signal bus
+          type: int unsigned
+          default: 9
+          local: "true"
+          expose: "true"
+          name_top: AstAst2PadOutWidth
+        }
+      ]
       inter_signal_list:
       [
+        {
+          name: rng_b
+          desc: RNG bit stream(s) generated
+          struct: logic
+          type: uni
+          act: req
+          width:
+          {
+            name: EntropyStreams
+            desc: Number of RNG bit streams
+            param_type: int unsigned
+            unpacked_dimensions: null
+            default: 4
+            local: true
+            expose: true
+            name_top: AstEntropyStreams
+          }
+          inst_name: ast
+          index: -1
+        }
+        {
+          name: usb_io_pu_cal
+          desc: USB IO pull-up calibration setting
+          struct: logic
+          type: uni
+          act: req
+          width:
+          {
+            name: UsbCalibWidth
+            desc: Width of the USB IO pull-up calibration setting
+            param_type: int unsigned
+            unpacked_dimensions: null
+            default: 20
+            local: true
+            expose: true
+            name_top: AstUsbCalibWidth
+          }
+          inst_name: ast
+          index: -1
+        }
+        {
+          name: adc_chnsel
+          desc: ADC channel select
+          struct: logic
+          type: uni
+          act: rcv
+          width:
+          {
+            name: AdcChannels
+            desc: Number of ADC channels
+            param_type: int unsigned
+            unpacked_dimensions: null
+            default: 2
+            local: true
+            expose: true
+            name_top: AstAdcChannels
+          }
+          inst_name: ast
+          index: -1
+        }
+        {
+          name: adc_d
+          desc: ADC digital data output
+          struct: logic
+          type: uni
+          act: req
+          width:
+          {
+            name: AdcDataWidth
+            desc: Width of the ADC digital data output
+            param_type: int unsigned
+            unpacked_dimensions: null
+            default: 10
+            local: true
+            expose: true
+            name_top: AstAdcDataWidth
+          }
+          inst_name: ast
+          index: -1
+        }
+        {
+          name: padmux2ast
+          desc: IO-to-DFT input signals
+          struct: logic
+          type: uni
+          act: rcv
+          width:
+          {
+            name: Pad2AstInWidth
+            desc: Width of the DFT pad-to-AST input signal bus
+            param_type: int unsigned
+            unpacked_dimensions: null
+            default: 8
+            local: true
+            expose: true
+            name_top: AstPad2AstInWidth
+          }
+          inst_name: ast
+          index: -1
+        }
+        {
+          name: ast2padmux
+          desc: DFT-to-IO output signals
+          struct: logic
+          type: uni
+          act: req
+          width:
+          {
+            name: Ast2PadOutWidth
+            desc: Width of the DFT AST-to-pad output signal bus
+            param_type: int unsigned
+            unpacked_dimensions: null
+            default: 9
+            local: true
+            expose: true
+            name_top: AstAst2PadOutWidth
+          }
+          inst_name: ast
+          index: -1
+        }
         {
           name: tl
           struct: tl
@@ -11615,6 +11791,126 @@
         act: rsp
         width: 1
         inst_name: aon_timer
+        index: -1
+      }
+      {
+        name: rng_b
+        desc: RNG bit stream(s) generated
+        struct: logic
+        type: uni
+        act: req
+        width:
+        {
+          name: EntropyStreams
+          desc: Number of RNG bit streams
+          param_type: int unsigned
+          unpacked_dimensions: null
+          default: 4
+          local: true
+          expose: true
+          name_top: AstEntropyStreams
+        }
+        inst_name: ast
+        index: -1
+      }
+      {
+        name: usb_io_pu_cal
+        desc: USB IO pull-up calibration setting
+        struct: logic
+        type: uni
+        act: req
+        width:
+        {
+          name: UsbCalibWidth
+          desc: Width of the USB IO pull-up calibration setting
+          param_type: int unsigned
+          unpacked_dimensions: null
+          default: 20
+          local: true
+          expose: true
+          name_top: AstUsbCalibWidth
+        }
+        inst_name: ast
+        index: -1
+      }
+      {
+        name: adc_chnsel
+        desc: ADC channel select
+        struct: logic
+        type: uni
+        act: rcv
+        width:
+        {
+          name: AdcChannels
+          desc: Number of ADC channels
+          param_type: int unsigned
+          unpacked_dimensions: null
+          default: 2
+          local: true
+          expose: true
+          name_top: AstAdcChannels
+        }
+        inst_name: ast
+        index: -1
+      }
+      {
+        name: adc_d
+        desc: ADC digital data output
+        struct: logic
+        type: uni
+        act: req
+        width:
+        {
+          name: AdcDataWidth
+          desc: Width of the ADC digital data output
+          param_type: int unsigned
+          unpacked_dimensions: null
+          default: 10
+          local: true
+          expose: true
+          name_top: AstAdcDataWidth
+        }
+        inst_name: ast
+        index: -1
+      }
+      {
+        name: padmux2ast
+        desc: IO-to-DFT input signals
+        struct: logic
+        type: uni
+        act: rcv
+        width:
+        {
+          name: Pad2AstInWidth
+          desc: Width of the DFT pad-to-AST input signal bus
+          param_type: int unsigned
+          unpacked_dimensions: null
+          default: 8
+          local: true
+          expose: true
+          name_top: AstPad2AstInWidth
+        }
+        inst_name: ast
+        index: -1
+      }
+      {
+        name: ast2padmux
+        desc: DFT-to-IO output signals
+        struct: logic
+        type: uni
+        act: req
+        width:
+        {
+          name: Ast2PadOutWidth
+          desc: Width of the DFT AST-to-pad output signal bus
+          param_type: int unsigned
+          unpacked_dimensions: null
+          default: 9
+          local: true
+          expose: true
+          name_top: AstAst2PadOutWidth
+        }
+        inst_name: ast
         index: -1
       }
       {
