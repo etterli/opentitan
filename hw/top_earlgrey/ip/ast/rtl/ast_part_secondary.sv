@@ -54,6 +54,7 @@ module ast_part_secondary #(
   input viob_supp_i,                          // VIOB Rail Supply Test for OS FPGA
   output ast_pkg::ast_pwst_t ast_pwst_o,      // AON, MAIN, IO-0 Rail, IO-1 Rail Power OK @1.1V
   output ast_pkg::ast_pwst_t ast_pwst_h_o,    // AON, MAIN, IO-9 Rail, IO-1 Rail Power OK @3.3V
+  output logic [1:0] rstmgr_por_n_o,          // Per-power-domain POR for rstmgr.por_n
 
   // Power and IO pin connections
   input main_pd_ni,                           // MAIN Regulator Power Down
@@ -226,6 +227,7 @@ logic rglssm_vmppr, vcmain_pok_por_src;
 assign vcmain_pok_por_src = vcaon_pok_por_lat && vcmain_pok_h && !rglssm_vmppr;
 assign vcmain_pok_por = scan_mode ? scan_reset_n : vcmain_pok_por_src;
 assign ast_pwst_o.main_pok = vcmain_pok_por;
+assign rstmgr_por_n_o = {vcmain_pok_por, vcaon_pok_por};
 
 ///////////////////////////////////////
 // VIOA POK (Always ON)
