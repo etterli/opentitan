@@ -23,7 +23,7 @@
 
   // List of unmanaged external clocks
   unmanaged_clocks: [
-    { name: "ast_ext" }
+    { name: "ast_ext" } // TODO: this generates a cg_en which is not used. should we fall back to a regular port?
   ]
 
   // This is the clock data structure of the design.
@@ -1187,20 +1187,7 @@
   // It is used specifically to assign special attributes to specific ports.
   // For example, this allows us to designate a port as part of inter-module
   // connections.
-  port: [
-    { name: "ast",
-      inter_signal_list: [
-        { struct: "edn",
-          type: "req_rsp",
-          name: "edn",
-          // The activity direction for a port inter-signal is "opposite" of
-          // what the external module actually needs.
-          act:  "rsp",
-          package: "edn_pkg",
-        },
-      ]
-    },
-  ],
+  port: [],
 
   // Inter-module Connection.
   // format:
@@ -1221,6 +1208,9 @@
                                    'lc_ctrl.esc_scrap_state1_tx',
                                    'pwrmgr.esc_rst_tx'],
       'aon_timer.nmi_wdog_timer_bark' : ['rv_core_ibex.nmi_wdog'],
+      // TODO: sns_xx do not connect to IPs. But these signals must be collected once IPs are split.
+      'ast.sns_clks' : ['clkmgr.clocks'],
+      'ast.sns_rsts' : ['rstmgr.resets'],
       'csrng.csrng_cmd'         : ['edn0.csrng_cmd', 'edn1.csrng_cmd'],
       'csrng.entropy_src_hw_if' : ['entropy_src.entropy_src_hw_if'],
       'rram_ctrl.otp_key'       : ['otp_ctrl.nvm_otp_key'],
@@ -1434,9 +1424,6 @@
     // ext is to create port in the top.
     'external': {
         'adc_ctrl.adc'                       : 'adc',
-        'ast.edn'                            : '',
-        'ast.lc_dft_en'                      : '',
-        'ast.obs_ctrl'                       : 'obs_ctrl',
         'otbn.ram_cfg_imem'                  : 'otbn_imem_ram_cfg',
         'otbn.ram_cfg_dmem'                  : 'otbn_dmem_ram_cfg',
         'i2c0.ram_cfg'                       : 'i2c0_ram_cfg',
@@ -1735,7 +1722,6 @@
       // Chip level changes
       chiplevel: {
         port_overrides: {
-          'ast.lc_dft_en'                   : { signal: 'lc_dft_en'       },
           'clkmgr.calib_rdy'                : { signal: 'ast_init_done'   },
           'clkmgr.cg_en'                    : { unused: true              },
           'rstmgr.rst_en'                   : { unused: true              },
@@ -1824,7 +1810,6 @@
       //  - the OTP IO (bidir) test pad
       chiplevel: {
         port_overrides: {
-          'ast.lc_dft_en'                   : { signal: 'lc_dft_en'       },
           'clkmgr.calib_rdy'                : { signal: 'ast_init_done'   },
           'clkmgr.cg_en'                    : { unused: true              },
           'rstmgr.rst_en'                   : { unused: true              },
@@ -1881,7 +1866,6 @@
       // Chip level changes
       chiplevel: {
         port_overrides: {
-          'ast.lc_dft_en'                   : { unused: true },
           'clkmgr.calib_rdy'                : { signal: 'ast_init_done' },
           'clkmgr.cg_en'                    : { unused: true },
           'rstmgr.rst_en'                   : { unused: true },
