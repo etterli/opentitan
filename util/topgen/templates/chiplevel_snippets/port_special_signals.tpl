@@ -30,9 +30,15 @@
 % endif\
 
   // Manual DFT signals
+% if feature_info["ast_is_internal"]:
+  output                        scan_rst_n_o, // reset used for test mode
+  output                        scan_en_o,
+  output prim_mubi_pkg::mubi4_t scanmode_o,  // lc_ctrl_pkg::On for Scan
+% else:
   input                        scan_rst_ni, // reset used for test mode
   input                        scan_en_i,
   input prim_mubi_pkg::mubi4_t scanmode_i,  // lc_ctrl_pkg::On for Scan
+% endif
 
 % if feature_info["has_pinmux"]:
 % if cio_info["num_mio_pads"] != 0:

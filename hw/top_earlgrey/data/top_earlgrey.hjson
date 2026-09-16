@@ -1426,6 +1426,9 @@
     // ext is to create port in the top.
     'external': {
         'adc_ctrl.adc'                       : 'adc',
+        'ast.dft_scan_md'                    : 'dft_scan_md',
+        'ast.scan_shift_en'                  : 'scan_shift_en',
+        'ast.scan_reset_n'                   : 'scan_reset_n',
         'ast.por_n'                          : 'por_n', // TODO: wire this up on chip level
         'otbn.ram_cfg_imem'                  : 'otbn_imem_ram_cfg',
         'otbn.ram_cfg_dmem'                  : 'otbn_dmem_ram_cfg',

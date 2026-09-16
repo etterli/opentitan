@@ -150,8 +150,16 @@
 % endif\
 
   // Manual DFT signals
+% if feature_info["dft_source_in_domain"][domain]:
+  output                        scan_rst_n_o, // reset used for test mode
+  % if feature_info["has_scan_en"][domain]:
+  output                        scan_en_o,
+  % endif
+  output prim_mubi_pkg::mubi4_t scanmode_o   // lc_ctrl_pkg::On for Scan
+% else: ## Receives DFT signals
   input                        scan_rst_ni, // reset used for test mode
-% if feature_info["has_scan_en"][domain]:
+  % if feature_info["has_scan_en"][domain]:
   input                        scan_en_i,
-% endif
+  % endif
   input prim_mubi_pkg::mubi4_t scanmode_i   // lc_ctrl_pkg::On for Scan
+% endif
