@@ -1367,6 +1367,8 @@
 
       // Reset manager software reset request to pwrmgr
       'rstmgr.sw_rst_req' : ['pwrmgr.sw_rst_req'],
+      // Reset manager power-on reset request from AST
+      'rstmgr.por_n' : ['ast.rstmgr_por_n'],
 
       // connection between rram_macro and rram_ctrl
       'rram_ctrl.rram_macro' : ['rram_macro.rram_macro'],
@@ -1424,6 +1426,7 @@
     // ext is to create port in the top.
     'external': {
         'adc_ctrl.adc'                       : 'adc',
+        'ast.por_n'                          : 'por_n', // TODO: wire this up on chip level
         'otbn.ram_cfg_imem'                  : 'otbn_imem_ram_cfg',
         'otbn.ram_cfg_dmem'                  : 'otbn_dmem_ram_cfg',
         'i2c0.ram_cfg'                       : 'i2c0_ram_cfg',
@@ -1460,7 +1463,6 @@
         'pinmux.usb_dnpullup_en'             : 'usb_dn_pullup_en',
         'pwrmgr.pwr_ast'                     : 'pwrmgr_ast',
         'rram_macro.rram_test_analog'        : 'rram_test_analog',
-        'rstmgr.por_n'                       : 'por_n',
         'rstmgr.resets'                      : '',
         'rstmgr.rst_en'                      : '',
         'rv_core_ibex.fpga_info'             : 'fpga_info',
