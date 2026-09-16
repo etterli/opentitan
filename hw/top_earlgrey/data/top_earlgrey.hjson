@@ -23,7 +23,7 @@
 
   // List of unmanaged external clocks
   unmanaged_clocks: [
-    // { name: "my_ext" }
+    { name: "ast_ext" }
   ]
 
   // This is the clock data structure of the design.
@@ -663,63 +663,102 @@
     { name: "ast",
       type: "ast",
       clock_srcs: {
-        clk_ast_tlul_i: {
-          clock: "io_div4",
-          group: "infra"
+        primary: {
+          clk_ast_tlul_i: {
+            clock: "io_div4",
+            group: "infra"
+          },
+          clk_ast_es_i: {
+            clock: "main",
+            group: "secure"
+          },
+          clk_ast_usb_i: {
+            clock: "usb",
+            group: "peri"
+          },
+          clk_ast_ext_i: "ast_ext",
         },
-        clk_ast_adc_i: {
-          clock: "aon",
-          group: "peri"
+        secondary: {
+          clk_ast_adc_i: {
+            clock: "aon",
+            group: "peri"
+          },
+          clk_ast_alert_i: {
+            clock: "io_div4",
+            group: "secure"
+          },
+          clk_ast_es_i: {
+            clock: "main",
+            group: "secure"
+          },
+          clk_ast_rng_i: {
+            clock: "main",
+            group: "secure"
+          },
+          clk_ast_tlul_i: {
+            clock: "io_div4",
+            group: "infra"
+          },
+          clk_ast_usb_i: {
+            clock: "usb",
+            group: "peri"
+          },
+          clk_ast_ext_i: "ast_ext",
         },
-        clk_ast_alert_i: {
-          clock: "io_div4",
-          group: "secure"
-        },
-        clk_ast_es_i: {
-          clock: "main",
-          group: "secure"
-        },
-        clk_ast_rng_i: {
-          clock: "main",
-          group: "secure"
-        },
-        clk_ast_usb_i: {
-          clock: "usb",
-          group: "peri"
-        }
       },
-      clock_group: "secure",
+      clock_group: {
+        // This has no direct effect for AST as each clock already defines its group.
+        primary: "secure",
+        secondary: "secure"
+      },
       reset_connections: {
-        rst_ast_tlul_ni: {
-          name: "lc_io_div4",
-          domain: "Main",
+        primary: {
+          rst_ast_tlul_ni: {
+            name: "lc_io_div4",
+            domain: "Main",
+          },
+          rst_ast_es_ni: {
+            name: "lc",
+            domain: "Main",
+          },
+          rst_ast_usb_ni: {
+            name: "usb",
+            domain: "Main"
+          }
         },
-        rst_ast_adc_ni: {
-          name: "lc_aon",
-          domain: "Aon"
+        secondary: {
+          rst_ast_adc_ni: {
+            name: "lc_aon",
+            domain: "Aon"
+          },
+          rst_ast_alert_ni: {
+            name: "lc_io_div4",
+            domain: "Main",
+          },
+          rst_ast_es_ni: {
+            name: "lc",
+            domain: "Main",
+          },
+          rst_ast_rng_ni: {
+            name: "lc",
+            domain: "Main",
+          },
+          rst_ast_tlul_ni: {
+            name: "lc_io_div4",
+            domain: "Main",
+          },
+          rst_ast_usb_ni: {
+            name: "usb",
+            domain: "Main"
+          }
         },
-        rst_ast_alert_ni: {
-          name: "lc_io_div4",
-          domain: "Main",
-        },
-        rst_ast_es_ni: {
-          name: "lc",
-          domain: "Main",
-        },
-        rst_ast_rng_ni: {
-          name: "lc",
-          domain: "Main",
-        },
-        rst_ast_usb_ni: {
-          name: "usb",
-          domain: "Main"
-        }
       },
       domain: "Main",
+      domain_secondary: "Aon",
       base_addr: {
         hart: "0x40480000",
       },
-      attr: "reggen_only",
+      attr: "reggen_top",
     },
     { name: "sensor_ctrl",
       type: "sensor_ctrl",
@@ -1158,24 +1197,6 @@
           // what the external module actually needs.
           act:  "rsp",
           package: "edn_pkg",
-        },
-
-        { struct: "lc_tx",
-          type: "uni",
-          name: "lc_dft_en",
-          // The activity direction for a port inter-signal is "opposite" of
-          // what the external module actually needs.
-          act:  "req",
-          package: "lc_ctrl_pkg",
-        },
-
-        { struct: "ast_obs_ctrl",
-          type: "uni",
-          name: "obs_ctrl",
-          // The activity direction for a port inter-signal is "opposite" of
-          // what the external module actually needs.
-          act:  "rcv",
-          package: "ast_pkg",
         },
       ]
     },
