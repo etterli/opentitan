@@ -271,7 +271,7 @@
       name:      "por_n",
       act:       "rcv",
       partition: "secondary",
-      desc:      "Power ON reset",
+      desc:      "External power ON reset",
     },
     { struct:    "clkmgr_out",
       type:      "uni",
