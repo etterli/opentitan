@@ -136,7 +136,7 @@
     },
     { struct:    "edn",
       type:      "req_rsp",
-      name:      "entropy",
+      name:      "edn",
       act:       "req",
       package:   "edn_pkg",
       desc:      "Entropy distribution request/response",
