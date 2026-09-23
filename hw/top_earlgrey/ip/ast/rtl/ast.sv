@@ -250,7 +250,7 @@ ast_part_secondary #(
   .sprom_rm_o              ( sprom_rm ),
   .dft_scan_md_o           ( dft_scan_md_o ),
   .scan_shift_en_o         ( scan_shift_en_o ),
-  .scan_reset_no           ( scan_reset_no ),
+  .scan_reset_n_o          ( scan_reset_no ),
   .second_to_prim_o        ( second_to_prim ),
   .prim_to_second_i        ( prim_to_second )
 );
