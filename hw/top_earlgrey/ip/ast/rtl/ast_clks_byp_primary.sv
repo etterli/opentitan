@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 //############################################################################
-// *Name: ast_clks_byp_main
+// *Name: ast_clks_byp_primary
 // *Module Description: AST Clocks Bypass - Main Power Domain
 //
 // Contains external clock generation, SW bypass control logic, and
-// SYS/IO/USB clock bypass muxes. Communicates with ast_clks_byp_aon
+// SYS/IO/USB clock bypass muxes. Communicates with ast_clks_byp_secondary
 // for AON clock bypass coordination.
 //############################################################################
 
 `include "prim_assert.sv"
 
-module ast_clks_byp_main
+module ast_clks_byp_primary
   import ast_pkg::*;
 (
   input  logic vcmain_pok_i,                       // VCMAIN POK
@@ -44,10 +44,10 @@ module ast_clks_byp_main
   input  prim_mubi_pkg::mubi4_t io_clk_byp_req_i,  // External IO clock mux for OTP bootstrap
   input  prim_mubi_pkg::mubi4_t all_clk_byp_req_i, // External all clock mux override
   input  prim_mubi_pkg::mubi4_t ext_freq_is_96m_i, // External Clock Frequency is 96MHz (else 48MHz)
-  // Interface from AON domain
-  input  clks_byp_aon_to_main_t aon_to_main_i,
-  // Interface to AON domain
-  output clks_byp_main_to_aon_t main_to_aon_o,
+  // Interface from secondary partition
+  input  clks_byp_second_to_prim_t second_to_prim_i,
+  // Interface to secondary partition
+  output clks_byp_prim_to_second_t prim_to_second_o,
   // Outputs
   output prim_mubi_pkg::mubi4_t io_clk_byp_ack_o,  // Switch IO clock to External clock
   output prim_mubi_pkg::mubi4_t all_clk_byp_ack_o, // Switch all clocks to External clock
@@ -69,7 +69,7 @@ logic clk_aon, rst_main_in_n, rst_main_da_n, rst_main_n;
 prim_clock_buf #(
   .NoFpgaBuf ( 1'b1 )
 ) u_clk_aon_buf (
-  .clk_i ( aon_to_main_i.clk_src_aon_o ),
+  .clk_i ( second_to_prim_i.clk_src_aon_o ),
   .clk_o ( clk_aon )
 );
 
@@ -775,7 +775,7 @@ always_ff @( posedge clk_aon, negedge rst_main_n ) begin
     all_clks_byp_en_src <= 1'b0;
   end else begin
     all_clks_byp_en_src <= sw_all_clk_byp && sys_clk_byp_en && io_clk_byp_en &&
-                             usb_clk_byp_en && aon_to_main_i.aon_clk_byp_en;
+                             usb_clk_byp_en && second_to_prim_i.aon_clk_byp_en;
   end
 end
 
@@ -903,10 +903,10 @@ assign force_scan_reset_o = scan_mode_d1 && !scan_mode_da;
 
 
 ////////////////////////////////////////
-// Interface to AON domain
+// Interface to secondary partition
 ////////////////////////////////////////
-assign main_to_aon_o.clk_ext_aon = clk_ext_aon;
-assign main_to_aon_o.aon_select_ext = aon_select_ext;
+assign prim_to_second_o.clk_ext_aon = clk_ext_aon;
+assign prim_to_second_o.aon_select_ext = aon_select_ext;
 
 
 /////////////////////
@@ -921,7 +921,7 @@ assign unused_sigs = ^{ io_clk_byp_sel_buf,
                         io_clk_osc_en,
                         usb_clk_osc_en,
                         clk_ast_tlul_i,
-                        aon_to_main_i.clk_src_aon_val_o
+                        second_to_prim_i.clk_src_aon_val_o
                       };
 
-endmodule : ast_clks_byp_main
+endmodule : ast_clks_byp_primary

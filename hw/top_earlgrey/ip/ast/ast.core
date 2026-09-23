@@ -57,8 +57,8 @@ filesets:
       - rtl/usb_clk.sv
       - rtl/usb_osc.sv
       - rtl/gfr_clk_mux2.sv
-      - rtl/ast_clks_byp_aon.sv
-      - rtl/ast_clks_byp_main.sv
+      - rtl/ast_clks_byp_secondary.sv
+      - rtl/ast_clks_byp_primary.sv
       - rtl/rglts_pdm_3p3v.sv
       - rtl/ast_pulse_sync.sv
       - rtl/ast_entropy.sv

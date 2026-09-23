@@ -153,8 +153,8 @@ module ast (
 
 
 // Inter-domain communication signals
-ast_pkg::aon_to_main_t aon_to_main;
-ast_pkg::main_to_aon_t main_to_aon;
+ast_pkg::second_to_prim_t second_to_prim;
+ast_pkg::prim_to_second_t prim_to_second;
 
 // Read-write margins generated in the AON domain (ast_dft, inside ast_part_secondary)
 ast_pkg::tpm_rm_t tpram_rm;
@@ -240,8 +240,8 @@ ast_part_secondary u_ast_part_secondary (
   .dft_scan_md_o           ( dft_scan_md_o ),
   .scan_shift_en_o         ( scan_shift_en_o ),
   .scan_reset_no           ( scan_reset_no ),
-  .aon_to_main_o           ( aon_to_main ),
-  .main_to_aon_i           ( main_to_aon )
+  .second_to_prim_o        ( second_to_prim ),
+  .prim_to_second_i        ( prim_to_second )
 );
 
 // Main Domain instantiation
@@ -260,8 +260,8 @@ ast_part_primary u_ast_part_primary (
   .clk_src_sys_jen_i       ( clk_src_sys_jen_i ),
   .clk_ast_es_i            ( clk_ast_es_i ),
   .rst_ast_es_ni           ( rst_ast_es_ni ),
-  .aon_to_main_i           ( aon_to_main ),
-  .main_to_aon_o           ( main_to_aon ),
+  .second_to_prim_i        ( second_to_prim ),
+  .prim_to_second_o        ( prim_to_second ),
   // Clock bypass interface
   .clk_ast_ext_i           ( clk_ast_ext_i ),
   .clk_src_sys_en_i        ( clk_src_sys_en_i ),

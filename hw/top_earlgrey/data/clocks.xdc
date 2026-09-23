@@ -20,7 +20,7 @@ create_generated_clock -name clk_main [get_pin ${clkgen}/CLKOUT0]
 create_generated_clock -name clk_usb_48 [get_pin ${clkgen}/CLKOUT1]
 create_generated_clock -name clk_aon [get_pin ${clkgen}/CLKOUT4]
 
-set clk_io_pin [get_pin ${u_ast_primary}/u_ast_clks_byp_main/u_no_scan_clk_src_io_d1ord2/u_clk_div_buf/gen_fpga_buf.gen_bufg.bufg_i/O]
+set clk_io_pin [get_pin ${u_ast_primary}/u_ast_clks_byp_primary/u_no_scan_clk_src_io_d1ord2/u_clk_div_buf/gen_fpga_buf.gen_bufg.bufg_i/O]
 create_generated_clock -name clk_io -divide_by 1 -add \
     -master_clock [get_clocks clk_main] \
     -source [get_pins ${clkgen}/CLKOUT0] \
@@ -44,7 +44,7 @@ set u_div4 ${u_clkmgr}/u_no_scan_io_div4_div
 create_generated_clock -name clk_io_div4 -divide_by 4 -source [get_pins ${u_div4}/gen_div.clk_int_reg/C] [get_pins ${u_div4}/gen_div.clk_int_reg/Q]
 
 
-set ast_src_io ${u_ast_primary}/u_ast_clks_byp_main/u_no_scan_clk_src_io_d1ord2
+set ast_src_io ${u_ast_primary}/u_ast_clks_byp_primary/u_no_scan_clk_src_io_d1ord2
 #create_generated_clock -name clk_src_io -divide_by 1 -source [get_pins ${u_pll}/CLKOUT0] \
 #  [get_pins ${ast_src_io}/gen_div2.u_div2/q_o[0]]
 
