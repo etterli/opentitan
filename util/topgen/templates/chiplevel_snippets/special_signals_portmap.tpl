@@ -4,18 +4,24 @@
 <%import topgen.lib as lib%>\
 <%from topgen.merge import alert_handler_signals%>\
 <%page args="top, feature_info, cio_info, gen_bkdr_loader"/>\
+% if not feature_info["ast_is_internal"]:
     // Base clocks from AST
     .ast_base_clks_i(ast_base_clks),
+% endif
 
     // Manual DFT signals
+% if feature_info["ast_is_internal"]:
+    .padring_scan_clk_o(padring_scan_clk),
+% else:
     .scan_rst_ni(scan_rst_n),
-% for domain in feature_info["has_scan_en"]:
-% if feature_info["has_scan_en"][domain]:
+  % for domain in feature_info["has_scan_en"]:
+  % if feature_info["has_scan_en"][domain]:
     .scan_en_i  (scan_en   ),
 <% continue %>
-% endif
-% endfor
+  % endif
+  % endfor
     .scanmode_i (scanmode  ),
+% endif
 
 % if feature_info["has_pinmux"]:
 % if cio_info["num_mio_pads"] != 0:
