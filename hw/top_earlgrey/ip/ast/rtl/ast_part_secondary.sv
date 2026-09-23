@@ -50,9 +50,11 @@ module ast_part_secondary #(
   output ast_pkg::ast_pwst_t ast_pwst_h_o,    // AON, MAIN, IO-0 Rail, IO-1 Rail Power OK @3.3V
   output logic [1:0] rstmgr_por_n_o,          // Per-power-domain POR towards rstmgr
 
+  // Pwrmgr connection
+  input pwrmgr_pkg::pwr_ast_req_t  pwrmgr_i,
+  output pwrmgr_pkg::pwr_ast_rsp_t pwrmgr_o,
+
   // Power and IO pin connections
-  input main_pd_n_i,                          // MAIN Regulator Power Down
-  input main_env_iso_en_i,                    // Enveloped ISOlation ENable for MAIN
 
   // power down monitor logic - flash/otp related
   output logic flash_power_down_h_o,          // Flash Power Down
@@ -62,12 +64,10 @@ module ast_part_secondary #(
 
   // aon source clock
   output logic clk_src_aon_o,                 // AON Source Clock
-  output logic clk_src_aon_val_o,             // AON Source Clock Valid
 
   // USB reference and calibration (clock outputs moved to ast_part_primary)
   input usb_ref_pulse_i,                      // USB Reference Pulse
   input usb_ref_val_i,                        // USB Reference Valid
-  input clk_src_usb_en_i,                     // USB Source Clock Enable
   output logic [UsbCalibWidth-1:0] usb_io_pu_cal_o,  // USB IO Pull-up Calibration Setting
 
   // adc interface
@@ -282,7 +282,7 @@ assign mux_iob_sel_o = 4'h0;
 logic deep_sleep;
 logic main_pd, por_sync;
 
-assign main_pd = !main_pd_n_i;
+assign main_pd = !pwrmgr_i.main_pd_n; // !MAIN Regulator Power Down
 assign por_sync = !por_sync_n;
 
 rglts_pdm_3p3v u_rglts_pdm_3p3v (
@@ -404,7 +404,6 @@ ast_clks_byp_secondary u_ast_clks_byp_secondary (
 );
 
 assign clk_src_aon = clks_byp_second_to_prim.clk_src_aon_o;
-assign clk_src_aon_val_o = clks_byp_second_to_prim.clk_src_aon_val_o;
 
 // AON source clock buffer
 ////////////////////////////////////////
@@ -730,7 +729,6 @@ assign second_to_prim_o.usb_osc_cal = usb_osc_cal;
 
 // Clocks
 `ASSERT_KNOWN(ClkSrcAonKnownO_A, clk_src_aon_o, 1, ast_pwst.aon_pok)
-`ASSERT_KNOWN(ClkSrcAonValKnownO_A, clk_src_aon_val_o, clk_src_aon_o, rst_aon_clk_n)
 //
 `ASSERT_KNOWN(UsbIoPuCalKnownO_A, usb_io_pu_cal_o, clk_ast_tlul_i, ast_pwst.aon_pok)
 // ADC
@@ -780,7 +778,7 @@ assign unused_sigs = ^{ clk_ast_usb_i,
                         sns_clks_i,
                         sns_rsts_i,
                         shift_en,
-                        main_env_iso_en_i,
+                        pwrmgr_i.pwr_clamp_env, // Enveloped ISOlation ENable for MAIN
                         rst_vcmpp_aon_n,
                         padmux2ast_i[Pad2AstInWidth-1:0],
                         dft_strap_test_i.valid,
@@ -788,10 +786,13 @@ assign unused_sigs = ^{ clk_ast_usb_i,
                         lc_dft_en_i[3:0],
                         obs_i,
                         clk_ast_ext_i,
-                        clk_src_usb_en_i,
+                        pwrmgr_i.usb_clk_en,
                         ext_freq_is_96m_i,
                         all_clk_byp_req_i,
-                        io_clk_byp_req_i
+                        io_clk_byp_req_i,
+                        // unused pwrmgr signals
+                        pwrmgr_i.pwr_clamp,
+                        pwrmgr_i.slow_clk_en
                       };
 
 endmodule : ast_part_secondary

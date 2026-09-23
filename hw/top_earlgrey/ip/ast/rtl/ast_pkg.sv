@@ -314,6 +314,18 @@ typedef struct packed {
     logic usb_ref_val;
   } clk_osc_second_to_prim_t;
 
+  typedef struct packed {
+    logic clk_src_io_val;
+    logic clk_src_usb_val;
+    logic clk_src_sys_val;
+  } pwrmgr_prim_to_second_t;
+
+  typedef struct packed {
+    logic clk_src_sys_en;
+    logic clk_src_io_en;
+    logic clk_src_usb_en;
+  } pwrmgr_second_to_prim_t;
+
   // Secondary to primary partition Communication Structure (OS simplified)
   typedef struct packed {
     // Clock bypass interface
@@ -338,6 +350,9 @@ typedef struct packed {
 
     // Memory configuration
     ast_mem_cfg_primary_req_t mem_cfg_req;
+
+    // pwrmgr signals
+    pwrmgr_second_to_prim_t pwrmgr_req;
   } second_to_prim_t;
 
   // Primary to secondary partition Communication Structure (OS simplified)
@@ -352,6 +367,9 @@ typedef struct packed {
 
     // Memory configuration
     ast_mem_cfg_primary_rsp_t mem_cfg_rsp;
+
+    // pwrmgr signals
+    pwrmgr_prim_to_second_t pwrmgr_rsp;
   } prim_to_second_t;
 
 endpackage  // of ast_pkg
