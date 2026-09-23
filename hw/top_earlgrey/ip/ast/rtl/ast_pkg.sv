@@ -292,7 +292,7 @@ typedef struct packed {
     logic rst_sys_clk_n;
     logic rst_io_clk_n;
     logic rst_usb_clk_n;
-  } prim_to_second_clk_rst_t;
+  } clk_rst_second_to_prim_t;
 
   // Clock bypass interface: primary to secondary partition
   typedef struct packed {
@@ -323,7 +323,10 @@ typedef struct packed {
     clk_osc_second_to_prim_t clk_osc;
 
     // Clock and reset signals
-    prim_to_second_clk_rst_t clk_rst;
+    clk_rst_second_to_prim_t clk_rst;
+
+    // Power signals
+    pwr_second_to_prim_t pwr;
 
     // Scan signals
     logic scan_mode;
