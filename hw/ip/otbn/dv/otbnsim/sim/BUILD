@@ -21,6 +21,7 @@ py_library(
         ":ispr",
         ":kmac_ispr",
         ":mai_ispr",
+        ":keymgr_ispr",
         ":trace",
         ":wsr",
     ],
@@ -142,6 +143,14 @@ py_library(
 py_library(
     name = "mai_ispr",
     srcs = ["mai_ispr.py"],
+    deps = [
+        ":ispr",
+    ],
+)
+
+py_library(
+    name = "keymgr_ispr",
+    srcs = ["keymgr_ispr.py"],
     deps = [
         ":ispr",
     ],
