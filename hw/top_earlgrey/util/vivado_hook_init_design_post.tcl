@@ -25,7 +25,31 @@ foreach pin {
   puts "CLKDIAG pin=$pin -> clocks={$clks}"
 }
 
-# Flag any unconstrained endpoints / missing clocks.
+# How many registers does each functional clock actually drive?
+# 0 / suspiciously-low = that clock is defined but does not reach its loads.
+foreach clk {clk_main clk_io clk_io_div2 clk_io_div4 clk_usb_48 clk_aon jtag_tck lc_jtag_tck rv_jtag_tck} {
+  set c [get_clocks -quiet $clk]
+  if {$c ne ""} {
+    puts "CLKDIAG2 clock=$clk period=[get_property PERIOD $c] registers=[llength [all_registers -quiet -clock $c]]"
+  } else {
+    puts "CLKDIAG2 clock=$clk MISSING"
+  }
+}
+
+# Which clock(s) actually clock the debug module / CPU / strap sampler?
+# nregs=0 => that block is not in the netlist; clocks={} => defined but unclocked.
+foreach {label pat} {rv_dm *rv_dm* ibex *u_rv_core_ibex* pinmux_tap *u_pinmux_strap_sampling*} {
+  set regs [get_cells -quiet -hierarchical -filter "IS_SEQUENTIAL && NAME =~ $pat"]
+  if {[llength $regs]} {
+    puts "CLKDIAG3 $label nregs=[llength $regs] clocks={[get_clocks -quiet -of_objects $regs]}"
+  } else {
+    puts "CLKDIAG3 $label nregs=0 (nothing matched $pat)"
+  }
+}
+
+# Unconstrained-endpoint summary straight to the log (full verbose report to a file too).
+puts "----- CLKDIAG check_timing summary -----"
+check_timing
 check_timing -verbose -file ${workroot}/clkdiag_check_timing.rpt
 
 puts "===== CLKDIAG end ====="
