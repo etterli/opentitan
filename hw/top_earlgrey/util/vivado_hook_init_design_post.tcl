@@ -47,6 +47,11 @@ foreach {label pat} {rv_dm *rv_dm* ibex *u_rv_core_ibex* pinmux_tap *u_pinmux_st
   }
 }
 
+# Cross-PD AON clock check: what clock drives the MAIN-partition AST reset-release
+# flops (u_ast_clks_byp_primary, incl. u_rst_main_da)? Should be clk_aon.
+set aon_regs [get_cells -quiet -hierarchical -filter "IS_SEQUENTIAL && NAME =~ *u_ast_clks_byp_primary*"]
+puts "CLKDIAG4 ast_clks_byp_primary regs=[llength $aon_regs] clocks={[get_clocks -quiet -of_objects $aon_regs]}"
+
 # Unconstrained-endpoint summary straight to the log (full verbose report to a file too).
 puts "----- CLKDIAG check_timing summary -----"
 check_timing
