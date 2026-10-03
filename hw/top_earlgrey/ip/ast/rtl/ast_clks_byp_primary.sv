@@ -63,12 +63,17 @@ module ast_clks_byp_primary
 );
 
 ////////////////////////////////////////
-// Local AON clock buffer
+// AON clock buffer
 ////////////////////////////////////////
+// The AON clock is generated in the secondary (Aon) partition and crosses the
+// power-domain boundary into this primary (Main) partition via the intra-IP
+// struct. On FPGA it must land on a global clock route, so enable the FPGA
+// clock buffer here (NoFpgaBuf=0). Without it the cross-partition clk_aon does
+// not distribute, rst_main_n never releases, and main-domain power-up stalls.
 logic clk_aon, rst_main_in_n, rst_main_da_n, rst_main_n;
 
 prim_clock_buf #(
-  .NoFpgaBuf ( 1'b1 )
+  .NoFpgaBuf ( 1'b0 )
 ) u_clk_aon_buf (
   .clk_i ( s2p_i.clk_src_aon_o ),
   .clk_o ( clk_aon )
