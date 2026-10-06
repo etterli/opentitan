@@ -38,6 +38,9 @@ task kmac_app_host_driver::on_enter_reset();
   cfg.vif.host_cb.data_s1   <= 'x;
   cfg.vif.host_cb.strb      <= 'x;
   cfg.vif.host_cb.req_last  <= 'x;
+  // The host is always ready to accept the response. Drive rsp_ready persistently so it is never
+  // left undriven (X), which would otherwise propagate into the DUT's app response FSM.
+  cfg.vif.host_cb.rsp_ready <= 1'b1;
 endtask
 
 task kmac_app_host_driver::send_req();
