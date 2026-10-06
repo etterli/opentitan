@@ -337,21 +337,9 @@ class kmac_scoreboard extends cip_base_scoreboard #(.CFG_T(kmac_env_cfg),
 
             `uvm_info(`gfn, "Raised in_kmac_app and sha3_absorb. Dropped sha3_idle.", UVM_HIGH)
 
-            // we need to choose the correct application interface
-            if (`KMAC_APP_VALID_TRANS(AppKeymgr)) begin
-              app_mode = AppKeymgr;
-              strength = APP_CFG[app_mode].session_cfg.kstrength;
-              if (entropy_ready) incr_and_predict_hash_cnt();
-            end else if (`KMAC_APP_VALID_TRANS(AppLc)) begin
-              app_mode = AppLc;
-              strength = APP_CFG[app_mode].session_cfg.kstrength;
-            end else if (`KMAC_APP_VALID_TRANS(AppRom)) begin
-              app_mode = AppRom;
-              strength = APP_CFG[app_mode].session_cfg.kstrength;
-            end else if (`KMAC_APP_VALID_TRANS(AppOtbn)) begin
-              `uvm_fatal(get_full_name(),
-                         "Cannot start KMAC app for OTBN (no support for dynamic apps yet)")
-            end
+            // app_mode was already latched at grant in process_kmac_app_fsm. Use it here.
+            strength = APP_CFG[app_mode].session_cfg.kstrength;
+            if (app_mode == AppKeymgr && entropy_ready) incr_and_predict_hash_cnt();
 
             // sample sideload-related coverage
             if (cfg.en_cov) begin
@@ -404,12 +392,27 @@ class kmac_scoreboard extends cip_base_scoreboard #(.CFG_T(kmac_env_cfg),
             case (app_st)
               StIdle: begin
                 app_fsm_active = 0;
+                // OTBN is a dynamic interface which is not supported by this environment yet.
+                if (cfg.m_kmac_app_agent_cfg[AppOtbn].vif.mon_cb.req_valid) begin
+                  `uvm_fatal(get_full_name(),
+                             "Cannot start KMAC app for OTBN (no support for dynamic apps yet)")
+                end
                 if (!in_kmac_app &&
                     (cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.mon_cb.req_valid ||
                      cfg.m_kmac_app_agent_cfg[AppLc].vif.mon_cb.req_valid ||
                      cfg.m_kmac_app_agent_cfg[AppRom].vif.mon_cb.req_valid)) begin
                   app_st = StAppCfg;
                   app_fsm_active = 1;
+                  // Latch the selected app at grant, matching the RTL prim_arbiter_fixed priority
+                  // (lowest index wins). This avoids a race where consumers read the stale default
+                  // app_mode (AppKeymgr) before it is updated at the first req handshake.
+                  if (cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.mon_cb.req_valid) begin
+                    app_mode = AppKeymgr;
+                  end else if (cfg.m_kmac_app_agent_cfg[AppLc].vif.mon_cb.req_valid) begin
+                    app_mode = AppLc;
+                  end else begin
+                    app_mode = AppRom;
+                  end
                 end else if (checked_kmac_cmd == CmdStart) begin
                   app_st = StSw;
                 end
