@@ -64,6 +64,10 @@ class kmac_env_cfg extends cip_base_env_cfg #(.RAL_T(kmac_reg_block));
       string name = $sformatf("m_kmac_app_agent_cfg[%0d]", i);
       m_kmac_app_agent_cfg[i] = kmac_app_agent_cfg::type_id::create(name);
       m_kmac_app_agent_cfg[i].if_mode = dv_utils_pkg::Host;
+      // Drive the second share only on masked interfaces. Unmasked interfaces (Keymgr/Lc/Rom)
+      // ignore data_s1 in the RTL, so it must be zero for the scoreboard's data_s0 ^ data_s1
+      // message reconstruction to match what the DUT absorbs.
+      m_kmac_app_agent_cfg[i].has_masking = kmac_env_pkg::APP_CFG[i].masked;
     end
     keymgr_sideload_agent_cfg = key_sideload_agent_cfg#(keymgr_dpe_pkg::hw_key_req_t)::type_id
                                 ::create("keymgr_sideload_agent_cfg");
