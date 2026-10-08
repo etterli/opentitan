@@ -21,7 +21,9 @@ parameters:
 
 targets:
   lint:
-    toplevel: ast
+    toplevel:
+      - ast_part_primary
+      - ast_part_secondary
     filesets:
       - files_rtl
     default_tool: verilator

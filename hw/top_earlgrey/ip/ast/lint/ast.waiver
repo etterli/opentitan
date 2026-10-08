@@ -12,11 +12,7 @@ waive -rules IFDEF_CODE -location {ast_part_secondary.sv} \
       -msg {Assignment to 'ast2pad_t0_ao' contained within `else block at} \
       -comment {This ifdef statement is used for analog simulations and is OK.}
 
-waive -rules IFDEF_CODE -location {ast.sv} \
-      -msg {Assignment to 'unused_analog_sigs' contained within `ifndef 'ANALOGSIM' block at} \
-      -comment {This ifdef statement is used for assigning "unused" signals and is OK.}
-
-waive -rules IFDEF_CODE -location {ast.sv} \
+waive -rules IFDEF_CODE -location {ast_part_primary.sv ast_part_secondary.sv} \
       -regexp {Assignment to 'clk_(sys|usb|aon|io)_ext' contained within `ifdef 'AST_BYPASS_CLK' block at} \
       -comment {This ifdef statement is fine as it is part of the FPGA/Verilator clock bypass mechanism.}
 
@@ -148,14 +144,6 @@ waive -rules CLOCK_USE -location {ast_part_secondary.sv} \
       -regexp {'clk_aon' is connected to 'rglts_pdm_3p3v' port 'clk_src_aon_h_i', and used as a clock} \
       -comment {This is a valid clock signal and the connection is ok here.}
 
-waive -rules CLOCK_USE -location {ast.sv} \
-      -regexp {'clk_ast_ext_i' is connected to 'ast_part_secondary' port 'clk_ast_ext_i', and used as a clock} \
-      -comment {This is a valid clock signal and the connection is ok here.}
-
-waive -rules CLOCK_USE -location {ast.sv} \
-      -regexp {'clk_ast_usb_i' is connected to 'ast_part_secondary' port 'clk_ast_usb_i', and used as a clock} \
-      -comment {This is a valid clock signal and the connection is ok here.}
-
 waive -rules CLOCK_USE -location {ast_part_primary.sv} \
       -regexp {'clk_ast_usb_i' is used for some other purpose, and as clock 'clk_i' at prim_flop.sv} \
       -comment {This is a valid clock signal and the connection is ok here.}
@@ -164,7 +152,7 @@ waive -rules CLOCK_USE -location {ast_clks_byp_primary.sv} \
       -regexp {'clk_ast_ext_i' is used for some other purpose, and as clock 'clk_i' at prim_flop.sv} \
       -comment {This is a valid clock signal and the connection is ok here.}
 
-waive -rules INV_CLOCK -location {ast.sv rglts_pdm_3p3v.sv} \
+waive -rules INV_CLOCK -location {ast_part_secondary.sv rglts_pdm_3p3v.sv} \
       -regexp {'(clk_aon|clk_src_aon_h_i)' is inverted, used as clock} \
       -comment {These clocks are inverted.}
 
@@ -354,19 +342,19 @@ waive -rules RESET_MUX -location {ast_clks_byp_primary.sv} \
 
 ************************************************
 
-waive -rules RESET_USE -location {ast.sv} \
+waive -rules RESET_USE -location {ast_part_secondary.sv} \
       -regexp {'(vcmain_pok_por|vcmain_pok_por_src)' is connected to 'rglts_pdm_3p3v' port 'vcmain_pok_por_h_i', and used as an asynchronous reset or set} \
       -comment {This is reset / clock generation logic, hence special reset usage is allowed.}
 
-waive -rules RESET_USE -location {ast.sv} \
+waive -rules RESET_USE -location {ast_part_secondary.sv} \
       -msg {'vcaon_pok_por' is connected to 'rglts_pdm_3p3v' port 'vcaon_pok_por_h_i', and used as an asynchronous reset or set} \
       -comment {This is reset / clock generation logic, hence special reset usage is allowed.}
 
-waive -rules RESET_USE -location {ast.sv} \
+waive -rules RESET_USE -location {ast_part_secondary.sv} \
       -regexp {'(vcc_pok|vcmain_pok_por)' is used for some other purpose, and as asynchronous reset} \
       -comment {This is reset / clock generation logic, hence special reset usage is allowed.}
 
-waive -rules RESET_USE -location {ast.sv} \
+waive -rules RESET_USE -location {ast_part_primary.sv ast_part_secondary.sv} \
       -regexp {'rst_(usb|aon|io|sys)_clk_n' is connected to '(usb|aon|io|sys)_clk' port 'rst_(usb|aon|io|sys)_clk_ni', and used as an asynchronous reset or set ('rst_ni'|'vcore_pok_h_i'|'rst_clk_byp_n')} \
       -comment {This is reset / clock generation logic, hence special reset usage is allowed.}
 
@@ -378,11 +366,11 @@ waive -rules RESET_USE -location {ast_dft.sv} \
       -msg {'clk_io_osc_val_i' is used for some other purpose, and as asynchronous reset 'rst_clk_osc_n' at ast_dft.sv} \
       -comment {This is reset / clock generation logic, hence special reset usage is allowed.}
 
-waive -rules RESET_USE -location {ast.sv} \
+waive -rules RESET_USE -location {ast_part_secondary.sv} \
       -msg {'rst_ast_tlul_ni' is connected to 'ast_dft' port 'rst_ni', and used as an asynchronous reset or set 'rst_n' at rng} \
       -comment {This is a valid reset connection.}
 
-waive -rules RESET_USE -location {ast.sv} \
+waive -rules RESET_USE -location {ast_part_primary.sv} \
       -regexp {('rst_sys_clk_n'|'rst_usb_clk_n') is connected to ('sys_clk'|'usb_clk') port ('rst_sys_clk_ni'|'rst_usb_clk_ni'), and used as an asynchronous reset or set} \
       -comment {This is a valid reset connection.}
 
@@ -390,7 +378,7 @@ waive -rules RESET_USE -location {aon_clk.sv io_clk.sv sys_clk.sv usb_clk.sv} \
       -regexp {'(aon|io|sys|usb)_clk_en' is connected to '(aon|io|sys|usb)_osc' port '(aon|io|sys|usb)_en_i', and used as an asynchronous reset or set} \
       -comment {This is reset / clock generation logic, hence special reset usage is allowed.}
 
-waive -rules RESET_USE -location {ast.sv} \
+waive -rules RESET_USE -location {ast_part_primary.sv} \
       -regexp {'rst_ast_usb_ni' is used for some other purpose, and as asynchronous reset 'rst_ni' at prim_flop.sv} \
       -comment {This is reset generation logic, hence reset muxes are allowed.}
 
@@ -398,7 +386,7 @@ waive -rules RESET_USE -location {usb_clk.sv} \
       -regexp {'rst_usb_clk_ni' is used for some other purpose, and as asynchronous reset 'rst_ni' at prim_flop.sv} \
       -comment {This is reset generation logic, hence reset muxes are allowed.}
 
-waive -rules TRI_DRIVER -location {ast.sv} \
+waive -rules TRI_DRIVER -location {ast_part_secondary.sv} \
       -regexp {'ast2pad_(t0|t1)_ao' is driven by a tristate driver} \
       -comment {This part models a tristate driver.}
 
@@ -406,7 +394,7 @@ waive -rules TERMINAL_STATE -location {rglts_pdm_3p3v.sv} \
       -msg {Terminal state 'RGLS_BROUT' is detected. State register 'rgls_sm' is not assigned to another state.} \
       -comment {The brownout state is terminal.}
 
-waive -rules Z_USE -location {ast.sv} \
+waive -rules Z_USE -location {ast_part_secondary.sv} \
       -msg {Constant with 'Z literal value '1'bz' encountered} \
       -comment {This part models a tristate driver.}
 
