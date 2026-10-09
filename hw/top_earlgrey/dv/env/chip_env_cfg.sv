@@ -215,6 +215,10 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
     // there can also be a pending response in the peripheral.
     // However, the actual ibex data port can only support 1 outstanding item.
     m_tl_agent_cfg.max_outstanding_req = 3;
+    // The ibex data port never retracts a request that it has presented, and the snoop in
+    // cheriot_mem_sys relies on that (see its CoredReqHeld_M assumption). Stop the agent
+    // from dropping a_valid before a_ready so that it models the port faithfully.
+    m_tl_agent_cfg.allow_a_valid_drop_wo_a_ready = 0;
 
     // Set the number of RAM tiles (1 each).
     num_ram_main_tiles = 1;
