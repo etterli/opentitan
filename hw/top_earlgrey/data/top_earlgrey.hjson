@@ -227,7 +227,8 @@
             "uart1",
             "uart2",
             "uart3",
-            "gpio",
+            "gpio0",
+            "gpio1",
             "spi_device",
             "i2c0",
             "i2c1",
@@ -353,7 +354,7 @@
         hart: "0x40030000",
       },
     },
-    { name: "gpio",
+    { name: "gpio0",
       type: "gpio",
       template_type: "gpio",
       clock_srcs: {clk_i: "io_div4"},
@@ -371,13 +372,33 @@
       }
       attr: "ipgen"
     },
+    { name: "gpio1",
+      type: "gpio",
+      template_type: "gpio",
+      clock_srcs: {clk_i: "io_div4"},
+      clock_group: "peri",
+      reset_connections: {rst_ni: "lc_io_div4"},
+      base_addr: {
+        hart: "0x40050000",
+      },
+      param_decl: {
+        GpioAsHwStrapsEn: "0",
+        GpioAsyncOn: "1"
+      },
+      // The ipgen parameters must exactly match the parameters of gpio0. Topgen supports only
+      // rending one version of a templated IP.
+      ipgen_params: {
+        per_pin_view: true
+      }
+      attr: "ipgen"
+    },
     { name: "spi_device",
       type: "spi_device",
       clock_srcs: {clk_i: "io_div4", scan_clk_i: "io_div2"},
       clock_group: "peri",
       reset_connections: {rst_ni: "spi_device"},
       base_addr: {
-        hart: "0x40050000",
+        hart: "0x40060000",
       },
       param_decl: {
         "SramType": "spi_device_pkg::SramType1r1w"
@@ -1718,7 +1739,8 @@
       { instance: 'spi_device',  port: 'sd[2]',          connection: 'direct', pad: 'SPI_DEV_D2'   , desc: ''},
       { instance: 'spi_device',  port: 'sd[3]',          connection: 'direct', pad: 'SPI_DEV_D3'   , desc: ''},
       // MIOs
-      { instance: "gpio",        port: '',               connection: 'muxed' , pad: ''             , desc: ''},
+      { instance: "gpio0",       port: '',               connection: 'muxed' , pad: ''             , desc: ''},
+      { instance: "gpio1",       port: '',               connection: 'muxed' , pad: ''             , desc: ''},
       { instance: "uart0",       port: '',               connection: 'muxed' , pad: ''             , desc: ''},
       { instance: "uart1",       port: '',               connection: 'muxed' , pad: ''             , desc: ''},
       { instance: "uart2",       port: '',               connection: 'muxed' , pad: ''             , desc: ''},
