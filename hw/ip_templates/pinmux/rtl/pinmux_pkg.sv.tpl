@@ -61,6 +61,34 @@ package pinmux_pkg;
     mio_scan_role:     {NMioPads{NoScan}}
   };
 
+<%
+  insel_w = n_mio_pads + 2
+  outsel_w = n_mio_periph_out + 3
+  assert len(mio_periph_insel_legal) == n_mio_periph_in, \
+      f"mio_periph_insel_legal needs {n_mio_periph_in} entries, got {len(mio_periph_insel_legal)}"
+  assert len(mio_outsel_legal) == n_mio_pads, \
+      f"mio_outsel_legal needs {n_mio_pads} entries, got {len(mio_outsel_legal)}"
+  for name, mask in mio_periph_insel_legal:
+      assert mask & 0b11 == 0b11 and mask >> insel_w == 0, f"invalid INSEL mask for {name}"
+  for name, mask in mio_outsel_legal:
+      assert mask & 0b111 == 0b111 and mask >> outsel_w == 0, f"invalid OUTSEL mask for {name}"
+%>\
+  // Legal MIO_PERIPH_INSEL values for each MIO peripheral input. LSB corresponds to lowest index.
+  // Includes static options.
+  parameter logic [NMioPeriphIn-1:0][NMioPads+1:0] MioPeriphInselLegal = {
+% for name, mask in mio_periph_insel_legal[::-1]:
+    ${insel_w}'h${"{:0{}x}".format(mask, (insel_w + 3) // 4)}${f"  // {name}" if loop.last else f", // {name}"}
+% endfor
+  };
+
+  // Legal MIO_OUTSEL values for each MIO pad. LSB corresponds to lowest index. Includes static
+  // options.
+  parameter logic [NMioPads-1:0][NMioPeriphOut+2:0] MioOutselLegal = {
+% for name, mask in mio_outsel_legal[::-1]:
+    ${outsel_w}'h${"{:0{}x}".format(mask, (outsel_w + 3) // 4)}${f"  // {name}" if loop.last else f", // {name}"}
+% endfor
+  };
+
   // Wakeup Detector Modes
   typedef enum logic [2:0] {
     Posedge   = 3'b000,

@@ -509,6 +509,21 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
     assert (n_mio_pads > 0)
     assert (n_dio_pads > 0)
 
+    # Only the full muxing is supported, so all select indices are legal. The legal selections are
+    # passed to ipgen as (name, mask) tuples per MIO peripheral input and per MIO pad. The mask's
+    # LSB corresponds to select index 0, the name is used for comments in the generated sv code.
+    mio_pads = [pad for pad in top['pinout']['pads'] if pad['connection'] == 'muxed']
+    mio_inputs = [io for io in pinmux['ios']
+                  if io['connection'] == 'muxed' and io['type'] in ['input', 'inout']]
+    insel_mask = (1 << (n_mio_pads + 2)) - 1
+    outsel_mask = (1 << (n_mio_periph_out + 3)) - 1
+    mio_periph_insel_legal = [
+        (io['name'] + (f"[{io['idx']}]" if io['idx'] >= 0 else ''), insel_mask)
+        for io in sorted(mio_inputs, key=lambda io: io['glob_idx'])
+    ]
+    mio_outsel_legal = [(pad['name'], outsel_mask)
+                        for pad in sorted(mio_pads, key=lambda pad: pad['idx'])]
+
     log.info("Generating pinmux with following info from hjson:")
     log.info("num_wkup_detect: %d" % num_wkup_detect)
     log.info("wkup_cnt_width:  %d" % wkup_cnt_width)
@@ -527,6 +542,8 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
         "n_mio_pads": n_mio_pads,
         "n_mio_periph_in": n_mio_periph_in,
         "n_mio_periph_out": n_mio_periph_out,
+        "mio_periph_insel_legal": mio_periph_insel_legal,
+        "mio_outsel_legal": mio_outsel_legal,
         "n_dio_pads": n_dio_pads,
         "n_dio_periph_in": n_dio_periph_in,
         "n_dio_periph_out": n_dio_periph_out,
