@@ -51,6 +51,10 @@ class RegBase:
         '''
         raise NotImplementedError()
 
+    def in_section(self, section: str) -> bool:
+        '''True if at least one concrete register is in the given section'''
+        raise NotImplementedError()
+
     def get_field_list(self) -> list[Field]:
         '''Get an ordered list of the fields in the register(s)
 

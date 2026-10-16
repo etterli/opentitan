@@ -6,7 +6,7 @@
 <%
   from reggen import gen_rtl
   from reggen.access import HwAccess, SwRdAccess, SwWrAccess
-  from reggen.lib import get_basename
+  from reggen.lib import get_basename, SECTION_PRIMARY, SECTION_SECONDARY
   from reggen.register import Register
   from reggen.multi_register import MultiRegister
   from reggen.bits import Bits
@@ -33,8 +33,20 @@
 
   u_mod_base = mod_base.upper()
 
-  reg2hw_t = gen_rtl.get_iface_tx_type(block, if_name, False)
-  hw2reg_t = gen_rtl.get_iface_tx_type(block, if_name, True)
+  reg2hw_t = gen_rtl.get_iface_tx_type(block, if_name, False, section)
+  hw2reg_t = gen_rtl.get_iface_tx_type(block, if_name, True, section)
+
+  # The registers can be split into a primary section (this module, with the
+  # bus interface) and a secondary section (the _reg_top_secondary module).
+  is_secondary = section == SECTION_SECONDARY
+  has_secondary = rb.has_secondary_regs()
+  p2s_t = gen_rtl.get_iface_xing_type(block, if_name, True)
+  s2p_t = gen_rtl.get_iface_xing_type(block, if_name, False)
+  xing_in = 'reg_p2s_i' if is_secondary else 'reg_s2p_i'
+  # REGWENs implemented in the other section that gate a register of this
+  # section, and REGWENs of this section that gate a register of the other one.
+  remote_wens = rb.remote_regwens(section)
+  exported_wens = rb.remote_regwens(SECTION_PRIMARY if is_secondary else SECTION_SECONDARY)
 
   dynamic_racl_support = block.bus_interfaces.racl_support[if_name]
   static_racl_support = block.bus_interfaces.static_racl_support[if_name]
@@ -124,9 +136,48 @@
 
         finst_names[(sr, field)] = (fsig_name, finst_name)
 
+  # The reg2hw / hw2reg arrays of a multireg split across both modules keep
+  # their full size. Collect the fields implemented in the other section, which
+  # need to be tied off here.
+  other_fields = []
+  for xr in rb.all_regs:
+    if not isinstance(xr, MultiRegister) or not xr.in_section(section):
+      continue
+    for xsr in xr.cregs:
+      if xsr.section != section:
+        other_fields += [(xsr, xf) for xf in xsr.fields]
+
 %>
 `include "prim_assert.sv"
 
+% if is_secondary:
+module ${mod_name} (
+  input clk_i,
+  input rst_ni,
+
+  // To HW
+  % if rb.get_n_bits(["q","qe","re"], section):
+  output ${reg_pkg}::${reg2hw_t} reg2hw, // Write
+  % endif
+  % if rb.get_n_bits(["d","de"], section):
+  input  ${reg_pkg}::${hw2reg_t} hw2reg, // Read
+  % endif
+
+  // From / to the primary register section
+  input  ${reg_pkg}::${p2s_t} reg_p2s_i,
+  output ${reg_pkg}::${s2p_t} reg_s2p_o
+);
+
+  import ${reg_pkg}::* ;
+
+  localparam int DW = ${block.regwidth};
+
+  // register signals from the primary register section
+  logic [DW-1:0] reg_wdata;
+  logic [DW-1:0] reg_rdata_next;
+  assign reg_wdata = reg_p2s_i.wdata;
+
+% else:
 module ${mod_name}${' (' if not racl_support else ''}
 % if racl_support:
   # (
@@ -165,13 +216,19 @@ module ${mod_name}${' (' if not racl_support else ''}
 
 % endif
   // To HW
-% if rb.get_n_bits(["q","qe","re"]):
+% if rb.get_n_bits(["q","qe","re"], section):
   output ${reg_pkg}::${reg2hw_t} reg2hw, // Write
 % endif
-% if rb.get_n_bits(["d","de"]):
+% if rb.get_n_bits(["d","de"], section):
   input  ${reg_pkg}::${hw2reg_t} hw2reg, // Read
 % endif
 
+% if has_secondary:
+  // To / from the secondary register section
+  output ${reg_pkg}::${p2s_t} reg_p2s_o,
+  input  ${reg_pkg}::${s2p_t} reg_s2p_i,
+
+% endif
 % if rb.has_internal_shadowed_reg():
   output logic shadowed_storage_err_o,
   output logic shadowed_update_err_o,
@@ -446,25 +503,43 @@ module ${mod_name}${' (' if not racl_support else ''}
   assign reg_rdata = reg_rdata_next ;
   assign reg_error = addrmiss | wr_err | intg_err;
 
+% endif
+% endif
+% if rb.all_regs:
   // Define SW related signals
   // Format: <reg>_<field>_{wd|we|qs}
   //        or <reg>_{wd|we|qs} if field == 1 or 0
   % for r in regs_flat:
+    ## The primary section generates the enables of all registers, including
+    ## the ones implemented in the secondary section.
+    % if r.section == section or not is_secondary:
 ${reg_sig_decl(r)}\
-    % for f in r.fields:
+    % endif
+    % if r.section == section:
+      % for f in r.fields:
 <%
         fld_suff = '_' + f.name.lower() if len(r.fields) > 1 else ''
         sig_name = r.name.lower() + fld_suff
 %>\
 ${field_sig_decl(f, sig_name, r.hwext, r.shadowed, r.async_clk)}\
-    % endfor
+      % endfor
+    % endif
   % endfor
-  % if len(rb.clocks.values()) > 0:
+  % if remote_wens:
+
+  // REGWEN values from the ${'primary' if is_secondary else 'secondary'} register section
+    % for wen in remote_wens:
+  logic ${str_arr_sv(wen.fields[0].bits)}${wen.name.lower()}_qs;
+  assign ${wen.name.lower()}_qs = ${xing_in}.${wen.name.lower()}_qs;
+    % endfor
+  % endif
+  % if len(rb.clocks.values()) > 0 and not is_secondary:
   // Define register CDC handling.
   // CDC handling is done on a per-reg instead of per-field boundary.
   % endif
   % for r in regs_flat:
-    % if r.async_clk:
+    ## Asynchronous registers are always in the primary section.
+    % if r.async_clk and not is_secondary:
 <%
   base_name = r.async_clk[1].clock_base_name
   r_name = r.name.lower()
@@ -582,6 +657,14 @@ ${field_sig_decl(f, sig_name, r.hwext, r.shadowed, r.async_clk)}\
       fld_count = 0
 %>\
     % for sr_idx, sr in enumerate(srs):
+      % if sr.section != section:
+<%
+        # Implemented in the other register section. Advance the state the
+        # same way as processing the register would do.
+        fld_count += len(sr.fields)
+        field = sr.fields[-1]
+%>\
+      % else:
 <%
         sr_name = sr.name.lower()
 
@@ -701,8 +784,63 @@ ${reg_hdr}
 ${finst_gen(sr, field, finst_name, fsig_name, fidx)}
       % endfor
 
+      % endif
     % endfor
   % endfor
+  % if other_fields:
+${other_fields_tieoff()}\
+  % endif
+  % if is_secondary:
+
+  // Enables from the primary register section
+    % for r in regs_flat:
+      % if r.section == section:
+        % if r.needs_re():
+  assign ${r.name.lower()}_re = reg_p2s_i.${r.name.lower()}_re;
+        % endif
+        % if r.needs_we():
+  assign ${r.name.lower()}_we = reg_p2s_i.${r.name.lower()}_we;
+        % endif
+        % if len(r.fields) == 1:
+${field_wd_gen(r.fields[0], r.name.lower(), r.hwext, r.shadowed, r.async_clk, r.name, 0)}\
+        % else:
+          % for f in r.fields:
+${field_wd_gen(f, r.name.lower() + "_" + f.name.lower(), r.hwext, r.shadowed, r.async_clk, r.name, 0)}\
+          % endfor
+        % endif
+      % endif
+    % endfor
+
+  // Read data return
+  always_comb begin
+    reg_rdata_next = '0;
+    unique case (1'b1)
+    % for r in regs_flat:
+      % if r.section == section:
+      reg_p2s_i.${r.name.lower()}_hit: begin
+        % if len(r.fields) == 1:
+${rdata_gen(r.fields[0], r.name.lower())}\
+        % else:
+          % for f in r.fields:
+${rdata_gen(f, r.name.lower() + "_" + f.name.lower())}\
+          % endfor
+        % endif
+      end
+
+      % endif
+    % endfor
+      default: begin
+        reg_rdata_next = '0;
+      end
+    endcase
+  end
+
+  // Signals to the primary register section
+  assign reg_s2p_o.rdata = reg_rdata_next;
+    % for wen in exported_wens:
+  assign reg_s2p_o.${wen.name.lower()}_qs = ${wen.name.lower()}_qs;
+    % endfor
+  % else:
 
   logic [${len(regs_flat)-1}:0] addr_hit;
 % if racl_support:
@@ -816,14 +954,36 @@ ${finst_gen(sr, field, finst_name, fsig_name, fidx)}
   // Generate write-enables
   % for i, r in enumerate(regs_flat):
 ${reg_enable_gen(r, i)}\
-    % if len(r.fields) == 1:
+    % if r.section == section:
+      % if len(r.fields) == 1:
 ${field_wd_gen(r.fields[0], r.name.lower(), r.hwext, r.shadowed, r.async_clk, r.name, i)}\
-    % else:
-      % for f in r.fields:
+      % else:
+        % for f in r.fields:
 ${field_wd_gen(f, r.name.lower() + "_" + f.name.lower(), r.hwext, r.shadowed, r.async_clk, r.name, i)}\
-      % endfor
+        % endfor
+      % endif
     % endif
   % endfor
+  % if has_secondary:
+<% p2s_hit = 'racl_addr_hit_read' if racl_support else 'addr_hit' %>\
+
+  // Signals to the secondary register section
+  assign reg_p2s_o.wdata = reg_wdata;
+    % for i, r in enumerate(regs_flat):
+      % if r.section == SECTION_SECONDARY:
+  assign reg_p2s_o.${r.name.lower()}_hit = ${p2s_hit}[${i}];
+        % if r.needs_re():
+  assign reg_p2s_o.${r.name.lower()}_re = ${r.name.lower()}_re;
+        % endif
+        % if r.needs_we():
+  assign reg_p2s_o.${r.name.lower()}_we = ${r.name.lower()}_we;
+        % endif
+      % endif
+    % endfor
+    % for wen in exported_wens:
+  assign reg_p2s_o.${wen.name.lower()}_qs = ${wen.name.lower()}_qs;
+    % endfor
+  % endif
 
   // Assign write-enables to checker logic vector.
   always_comb begin
@@ -833,8 +993,9 @@ ${field_wd_gen(f, r.name.lower() + "_" + f.name.lower(), r.hwext, r.shadowed, r.
     if r.needs_we():
       # In case this is an asynchronous register, the WE signal is taken from
       # the CDC primitive input. This could be enhanced in the future to provide
-      # more protection for asynchronous registers.
-      if r.async_clk or not r.regwen:
+      # more protection for asynchronous registers. The same holds for
+      # registers of the secondary section, which gates the WE signal itself.
+      if r.async_clk or not r.regwen or r.section != section:
         we_expr = f'{r.name.lower()}_we'
       else:
         we_expr = f'{r.name.lower()}_gated_we'
@@ -857,7 +1018,12 @@ ${field_wd_gen(f, r.name.lower() + "_" + f.name.lower(), r.hwext, r.shadowed, r.
     unique case (1'b1)
 <% read_addr_hit = 'racl_addr_hit_read' if racl_support else 'addr_hit' %>\
   % for i, r in enumerate(regs_flat):
-    % if r.async_clk:
+    % if r.section != section:
+      ${read_addr_hit}[${i}]: begin
+        reg_rdata_next = reg_s2p_i.rdata;
+      end
+
+    % elif r.async_clk:
       ${read_addr_hit}[${i}]: begin
         reg_rdata_next = DW'(${r.name.lower()}_qs);
       end
@@ -962,10 +1128,17 @@ ${rdata_gen(f, r.name.lower() + "_" + f.name.lower())}\
   end
 
   % endif
+  % endif
 % endif
 
   // Unused signal tieoff
-% if rb.all_regs:
+% if is_secondary:
+
+  // wdata is not always fully used
+  // add a blanket unused statement to handle lint waivers
+  logic unused_wdata;
+  assign unused_wdata = ^reg_wdata;
+% elif rb.all_regs:
 
   // wdata / byte enable are not always fully used
   // add a blanket unused statement to handle lint waivers
@@ -974,11 +1147,11 @@ ${rdata_gen(f, r.name.lower() + "_" + f.name.lower())}\
   assign unused_wdata = ^reg_wdata;
   assign unused_be = ^reg_be;
 % endif
-% if dynamic_racl_support:
+% if dynamic_racl_support and not is_secondary:
   logic unused_policy_sel;
   assign unused_policy_sel = ^racl_policies_i;
 % endif
-% if rb.all_regs:
+% if rb.all_regs and not is_secondary:
 
   // Assertions for Register Interface
   `ASSERT_PULSE(wePulse, reg_we, ${reg_clk_expr}, !${reg_rst_expr})
@@ -1262,6 +1435,39 @@ ${space}\
   % else:
   assign ${sig_name}_wd = reg_wdata[${str_bits_sv(field.bits)}];
   % endif
+% endif
+</%def>\
+<%def name="other_fields_tieoff()">\
+<%
+  other_section = 'primary' if is_secondary else 'secondary'
+  unused_terms = []
+  for sr, fld in other_fields:
+    if fld.hwaccess.allows_write():
+      fsig_name = finst_names[(sr, fld)][0]
+      unused_terms.append(f'hw2reg.{fsig_name}.d')
+      if not sr.hwext:
+        unused_terms.append(f'hw2reg.{fsig_name}.de')
+%>\
+  // Multireg entries implemented in the ${other_section} register section
+% for sr, fld in other_fields:
+<% fsig_name = finst_names[(sr, fld)][0] %>\
+  % if fld.hwaccess.allows_read():
+  assign reg2hw.${fsig_name}.q = ${fld.bits.width()}'h${f"{fld.resval or 0:x}"};
+    % if fld.hwqe:
+  assign reg2hw.${fsig_name}.qe = 1'b0;
+    % endif
+    % if sr.hwre or (sr.shadowed and sr.hwext):
+  assign reg2hw.${fsig_name}.re = 1'b0;
+    % endif
+  % endif
+% endfor
+% if unused_terms:
+  logic unused_hw2reg;
+  assign unused_hw2reg = ^{
+  % for term in unused_terms:
+    ${term}${"" if loop.last else ","}
+  % endfor
+  };
 % endif
 </%def>\
 <%def name="rdata_gen(field, sig_name, rd_name='reg_rdata_next')">\

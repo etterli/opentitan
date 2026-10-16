@@ -7,7 +7,8 @@ from typing import Dict, List, Optional
 from reggen import register
 from reggen.clocking import Clocking
 from reggen.field import Field
-from reggen.lib import check_keys, check_str, check_name, check_bool
+from reggen.lib import (check_keys, check_str, check_name, check_bool,
+                        check_section, SECTION_PRIMARY)
 from reggen.params import ReggenParams
 from reggen.reg_base import RegBase
 from reggen.register import Register
@@ -43,6 +44,12 @@ OPTIONAL_FIELDS.update({
         's', "indicates the register must cross to a different clock domain "
         "before use.  The value shown here should correspond to one of the "
         "module's clocks."
+    ],
+    'section': [
+        's', "register section implementing the registers: 'primary' (in the "
+        "reg_top module) or 'secondary' (in the reg_top_secondary module). "
+        "Either a single value for all registers of the multireg or a list "
+        "with one value per generated register. Defaults to primary."
     ],
 })
 
@@ -186,8 +193,9 @@ class MultiRegister(RegBase):
         # it that removes any fields that are allowed by MultiRegister but
         # aren't allowed by Register. We'll pass that to the register factory
         # method.
+        # The section is resolved per concrete register below.
         reg_allowed_keys = (set(register.REQUIRED_FIELDS.keys()) |
-                            set(register.OPTIONAL_FIELDS.keys()))
+                            set(register.OPTIONAL_FIELDS.keys())) - {'section'}
         reg_rd = {
             key: value
             for key, value in rd.items() if key in reg_allowed_keys
@@ -272,6 +280,8 @@ class MultiRegister(RegBase):
 
         cregs = []
         creg_count = (count + regs_per_creg - 1) // regs_per_creg
+        sections = MultiRegister._parse_sections(
+            rd.get('section', SECTION_PRIMARY), creg_count, name)
         for creg_idx in range(creg_count):
             min_reg_idx = regs_per_creg * creg_idx
             max_reg_idx = min(min_reg_idx + regs_per_creg, count) - 1
@@ -303,7 +313,8 @@ class MultiRegister(RegBase):
                                               alias_target,
                                               merged_regwen,
                                               field_desc_override,
-                                              strip_field)
+                                              strip_field,
+                                              sections[creg_idx])
 
             # Check that we haven't overflowed the register width. This
             # shouldn't happen (because of how we calculate regs_per_creg).
@@ -318,6 +329,23 @@ class MultiRegister(RegBase):
         return MultiRegister(name, offset, count, addrsep, reinit_str, alias_target,
                              pregs, cname, regwen_multi, compact, dv_compact, cregs)
 
+    @staticmethod
+    def _parse_sections(raw: object, creg_count: int, name: str) -> List[str]:
+        '''Return the section of each concrete register of a multireg.
+
+        raw is either a single section for all concrete registers or a list
+        with one section per concrete register.
+        '''
+        what = f'section field of multireg {name}'
+        if not isinstance(raw, list):
+            return [check_section(raw, what)] * creg_count
+
+        if len(raw) != creg_count:
+            raise ValueError(f'The {what} has {len(raw)} entries, but the '
+                             f'multireg expands to {creg_count} registers.')
+        return [check_section(p, f'entry {idx} of the {what}')
+                for idx, p in enumerate(raw)]
+
     def next_offset(self, addrsep: int) -> int:
         return self.offset + len(self.cregs) * addrsep
 
@@ -329,6 +357,9 @@ class MultiRegister(RegBase):
         for reg in self.cregs:
             ret += reg.get_field_list()
         return ret
+
+    def in_section(self, section: str) -> bool:
+        return any(reg.section == section for reg in self.cregs)
 
     def is_homogeneous(self, inregwen: bool = False) -> bool:
         assert self.pregs
@@ -353,6 +384,11 @@ class MultiRegister(RegBase):
 
         if self.alias_target is not None:
             rd['alias_target'] = self.alias_target
+
+        sections = [reg.section for reg in self.cregs]
+        if any(p != SECTION_PRIMARY for p in sections):
+            rd['section'] = (sections[0] if len(set(sections)) == 1
+                             else sections)
 
         return {'multireg': rd}
 

@@ -54,6 +54,13 @@ PARTITIONS = (PART_PRIMARY, PART_SECONDARY)
 # into both partition modules.
 PART_BOTH = 'both'
 
+# The register sections of a device interface. The primary section is
+# implemented by <ip>_reg_top and the secondary section by
+# <ip>_reg_top_secondary. Sections are independent of the IP partitions.
+SECTION_PRIMARY = 'primary'
+SECTION_SECONDARY = 'secondary'
+SECTIONS = (SECTION_PRIMARY, SECTION_SECONDARY)
+
 
 def check_str_dict(obj: object, what: str) -> Dict[str, object]:
     if not isinstance(obj, dict):
@@ -173,6 +180,18 @@ def check_partition(obj: object, what: str, allow_both: bool = False) -> str:
     if as_str not in legal:
         raise ValueError(f'{what} is {as_str}, but must be one of '
                          f'{", ".join(legal)}.')
+    return as_str
+
+
+def check_section(obj: object, what: str) -> str:
+    '''Check that obj is a valid register section specifier.
+
+    If not, raises a ValueError; the what argument names the object.
+    '''
+    as_str = check_str(obj, what)
+    if as_str not in SECTIONS:
+        raise ValueError(f'{what} is {as_str}, but must be one of '
+                         f'{", ".join(SECTIONS)}.')
     return as_str
 
 

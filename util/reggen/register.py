@@ -11,7 +11,8 @@ from reggen.access import SWAccess, HWAccess
 from reggen.clocking import Clocking, ClockingItem
 from reggen.field import Field
 from reggen.lib import (check_keys, check_str, check_name, check_bool,
-                        check_list, check_str_list, check_int)
+                        check_list, check_str_list, check_int, check_section,
+                        SECTION_PRIMARY, SECTION_SECONDARY)
 from reggen.params import ReggenParams
 from reggen.reg_base import RegBase
 
@@ -93,6 +94,11 @@ OPTIONAL_FIELDS = {
     'writes_ignore_errors': [
         'b',
         "This register may update on a TL write that causes an error response."
+    ],
+    'section': [
+        's', "register section implementing the register: 'primary' (in the "
+        "reg_top module) or 'secondary' (in the reg_top_secondary module). "
+        "Defaults to primary."
     ]
 }
 
@@ -113,6 +119,7 @@ class Register(RegBase):
     storage_err_alert: str | None = None
     writes_ignore_errors: bool = False
     inregwen: str | None = None
+    section: str = SECTION_PRIMARY
     resval: int = field(init=False)
     resmask: int = field(init=False)
     name_to_field: dict[str, Field] = field(init=False)
@@ -132,6 +139,18 @@ class Register(RegBase):
             raise ValueError(
                 f"Register {self.name} has a name ending in _shadowed, but "
                 "the shadowed flag is not set.")
+
+        # The secondary register module only contains plain register storage.
+        if self.section == SECTION_SECONDARY:
+            unsupported = [('async', self.async_clk is not None),
+                           ('sync', self.sync_clk is not None),
+                           ('reinit', self.reinit is not None),
+                           ('shadowed', self.shadowed)]
+            for what, used in unsupported:
+                if used:
+                    raise ValueError(
+                        f'Register {self.name} is in the secondary section, '
+                        f'which does not support {what} registers.')
 
         # Take a copy of fields and then sort by bit index
         self.fields = sorted(self.fields, key=lambda field: field.bits.lsb)
@@ -429,11 +448,15 @@ class Register(RegBase):
                        'writes_ignore_errors flag for {} register'
                        .format(name))
 
+        section = check_section(rd.get('section', SECTION_PRIMARY),
+                                f'section for {name} register')
+
         return Register(name, offset, async_clk, sync_clk, reinit_str,
                         alias_target, desc, fields, hwext, hwqe, hwre,
                         regwen, tags, resval, shadowed,
                         update_err_alert, storage_err_alert,
-                        writes_ignore_errors, inregwen=inregwen)
+                        writes_ignore_errors, inregwen=inregwen,
+                        section=section)
 
     def next_offset(self, addrsep: int) -> int:
         return self.offset + addrsep
@@ -446,6 +469,9 @@ class Register(RegBase):
 
     def get_field_list(self) -> List[Field]:
         return self.fields
+
+    def in_section(self, section: str) -> bool:
+        return self.section == section
 
     def is_homogeneous(self, inregwen: bool = False) -> bool:
         '''True if the register has a single field.
@@ -547,7 +573,8 @@ class Register(RegBase):
                           alias_target: Optional[str],
                           regwen: Optional[str],
                           field_desc_override: Optional[str],
-                          strip_field: bool) -> 'Register':
+                          strip_field: bool,
+                          section: str = SECTION_PRIMARY) -> 'Register':
         '''Create a register that holds the fields from regs.
 
         The merged register will be have address offset and be called name.
@@ -567,6 +594,8 @@ class Register(RegBase):
         values.
 
         If strip_field is True, we drop any values from field enum types.
+
+        The merged register is implemented in the given section.
         '''
         assert regs
 
@@ -640,7 +669,7 @@ class Register(RegBase):
                         reg0.hwext, reg0.hwqe, reg0.hwre, regwen,
                         reg0.tags, new_resval, reg0.shadowed,
                         reg0.update_err_alert, reg0.storage_err_alert,
-                        reg0.writes_ignore_errors)
+                        reg0.writes_ignore_errors, section=section)
 
     def check_valid_regwen(self) -> None:
         '''Check that this register is valid for use as a REGWEN'''
@@ -746,6 +775,8 @@ class Register(RegBase):
             rd['reinit'] = self.reinit
         if self.alias_target is not None:
             rd['alias_target'] = self.alias_target
+        if self.section != SECTION_PRIMARY:
+            rd['section'] = self.section
 
         return rd
 

@@ -15,7 +15,8 @@ from reggen.clocking import Clocking, ClockingItem
 from reggen.field import Field
 from reggen.interrupt import Interrupt, IntrType
 from reggen.signal import Signal
-from reggen.lib import check_int, check_list, check_str_dict, check_str
+from reggen.lib import (check_int, check_list, check_str_dict, check_str,
+                        SECTION_SECONDARY)
 from reggen.multi_register import MultiRegister, EmptyMultiRegException
 from reggen.params import ReggenParams
 from reggen.register import Register
@@ -430,14 +431,41 @@ class RegBlock:
 
             wen_reg.check_valid_regwen()
 
-    def get_n_bits(self, bittype: list[str] = ["q"]) -> int:
+    def get_n_bits(self, bittype: list[str] = ["q"],
+                   section: str | None = None) -> int:
         '''Returns number of bits in registers in this block.
 
         This includes those expanded from multiregs. See Field.get_n_bits for a
         description of the bittype argument.
 
+        If section is given, only count the registers of that section. A
+        multireg with at least one register in the section counts with its
+        full width, since its array keeps the full size in each section.
+
         '''
-        return sum(reg.get_n_bits(bittype) for reg in self.flat_regs)
+        if section is None:
+            return sum(reg.get_n_bits(bittype) for reg in self.flat_regs)
+        return sum(reg.get_n_bits(bittype) for reg in self.all_regs
+                   if reg.in_section(section))
+
+    def has_secondary_regs(self) -> bool:
+        '''True if any register is implemented in the secondary section'''
+        return any(reg.section == SECTION_SECONDARY for reg in self.flat_regs)
+
+    def remote_regwens(self, section: str) -> list[Register]:
+        '''Return the REGWEN registers that gate a register of section but
+        are implemented in the other section.
+
+        The registers are returned in address order.
+        '''
+        names = set()
+        for reg in self.flat_regs:
+            if reg.section != section or reg.regwen is None:
+                continue
+            wen_reg = self.name_to_flat_reg[reg.regwen.lower()]
+            if wen_reg.section != section:
+                names.add(wen_reg.name)
+        return [reg for reg in self.flat_regs if reg.name in names]
 
     def as_dicts(self) -> list[object]:
         entries = []  # type: list[object]

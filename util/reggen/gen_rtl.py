@@ -5,16 +5,17 @@
 
 import logging as log
 import os
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from mako import exceptions  # type: ignore
 from mako.template import Template  # type: ignore
 import importlib.resources
 
 from reggen.ip_block import IpBlock
-from reggen.lib import check_int
+from reggen.lib import check_int, SECTION_PRIMARY, SECTION_SECONDARY, SECTIONS
 from reggen.multi_register import MultiRegister
 from reggen.reg_base import RegBase
+from reggen.reg_block import RegBlock
 from reggen.register import Register
 
 
@@ -69,10 +70,50 @@ def get_r0(reg: RegBase) -> Register:
 
 
 def get_iface_tx_type(block: IpBlock, iface_name: Optional[str],
-                      hw2reg: bool) -> str:
+                      hw2reg: bool, section: str = SECTION_PRIMARY) -> str:
     x2x = 'hw2reg' if hw2reg else 'reg2hw'
     pfx = get_type_name_pfx(block, iface_name)
-    return '_'.join([pfx, x2x, 't'])
+    section_sfx = [] if section == SECTION_PRIMARY else [section]
+    return '_'.join([pfx, x2x] + section_sfx + ['t'])
+
+
+def get_iface_xing_type(block: IpBlock, iface_name: Optional[str],
+                        to_secondary: bool) -> str:
+    '''Get the name of the type connecting the two register sections'''
+    pfx = get_type_name_pfx(block, iface_name)
+    return '_'.join([pfx, 'reg', 'p2s' if to_secondary else 's2p', 't'])
+
+
+def get_xing_members(block: IpBlock, rb: RegBlock,
+                     to_secondary: bool) -> List[Tuple[str, int]]:
+    '''Get (name, width) of the members of the type connecting the two
+    register sections.
+
+    The primary section passes the write data, the address hit (selecting the
+    read data) and the read / write enables of each secondary register and the
+    value of each primary REGWEN gating a secondary register. The secondary
+    section returns the read data and the value of each secondary REGWEN gating
+    a primary register.
+    '''
+    if to_secondary:
+        members = [('wdata', block.regwidth)]
+        for reg in rb.flat_regs:
+            if reg.section != SECTION_SECONDARY:
+                continue
+            name = reg.name.lower()
+            members.append((f'{name}_hit', 1))
+            if reg.needs_re():
+                members.append((f'{name}_re', 1))
+            if reg.needs_we():
+                members.append((f'{name}_we', 1))
+        wens = rb.remote_regwens(SECTION_SECONDARY)
+    else:
+        members = [('rdata', block.regwidth)]
+        wens = rb.remote_regwens(SECTION_PRIMARY)
+
+    members += [(f'{wen.name.lower()}_qs', wen.fields[0].bits.width())
+                for wen in wens]
+    return members
 
 
 def get_reg_tx_type(block: IpBlock, reg: RegBase, hw2reg: bool) -> str:
@@ -118,7 +159,9 @@ def gen_rtl(block: IpBlock, outdir: str) -> int:
     # Generate the register block implementation(s). For a device interface
     # with no name we generate the register module "<block>_reg_top"
     # (writing to <block>_reg_top.sv). In any other case, we also need the
-    # interface name, giving <block>_<ifname>_reg_top.
+    # interface name, giving <block>_<ifname>_reg_top. If registers are
+    # placed into the secondary section, a second module
+    # "<block>_reg_top_secondary" implements this section.
     lblock = block.name.lower()
     for if_name, rb in block.reg_blocks.items():
         if if_name is None:
@@ -126,19 +169,24 @@ def gen_rtl(block: IpBlock, outdir: str) -> int:
         else:
             mod_base = lblock + '_' + if_name.lower()
 
-        mod_name = mod_base + alias_impl + '_reg_top'
-        reg_top_path = os.path.join(outdir, mod_name + '.sv')
-        with open(reg_top_path, 'w', encoding='UTF-8') as fout:
-            try:
-                fout.write(
-                    reg_top_tpl.render(block=block,
-                                       mod_base=mod_base,
-                                       mod_name=mod_name,
-                                       if_name=if_name,
-                                       rb=rb))
-            except:  # noqa F722 for template Exception handling
-                log.error(exceptions.text_error_template().render())
-                return 1
+        sections = SECTIONS if rb.has_secondary_regs() else [SECTION_PRIMARY]
+        for section in sections:
+            mod_name = mod_base + alias_impl + '_reg_top'
+            if section != SECTION_PRIMARY:
+                mod_name += '_' + section
+            reg_top_path = os.path.join(outdir, mod_name + '.sv')
+            with open(reg_top_path, 'w', encoding='UTF-8') as fout:
+                try:
+                    fout.write(
+                        reg_top_tpl.render(block=block,
+                                           mod_base=mod_base,
+                                           mod_name=mod_name,
+                                           if_name=if_name,
+                                           rb=rb,
+                                           section=section))
+                except:  # noqa F722 for template Exception handling
+                    log.error(exceptions.text_error_template().render())
+                    return 1
 
     return 0
 
