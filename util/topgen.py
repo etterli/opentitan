@@ -509,20 +509,52 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
     assert (n_mio_pads > 0)
     assert (n_dio_pads > 0)
 
-    # Only the full muxing is supported, so all select indices are legal. The legal selections are
-    # passed to ipgen as (name, mask) tuples per MIO peripheral input and per MIO pad. The mask's
-    # LSB corresponds to select index 0, the name is used for comments in the generated sv code.
+    # Determine legal select indices of the MIO muxes as bitmasks. The mask's LSB corresponds to
+    # the lowest MIO index. The constant selections are always legal. The data passed to ipgen is
+    # augmented with the input/pad name to generate comments in generated sv code.
     mio_pads = [pad for pad in top['pinout']['pads'] if pad['connection'] == 'muxed']
+    mio_pad_idx = {pad['name']: pad['idx'] for pad in mio_pads}
     mio_inputs = [io for io in pinmux['ios']
                   if io['connection'] == 'muxed' and io['type'] in ['input', 'inout']]
-    insel_mask = (1 << (n_mio_pads + 2)) - 1
-    outsel_mask = (1 << (n_mio_periph_out + 3)) - 1
-    mio_periph_insel_legal = [
-        (io['name'] + (f"[{io['idx']}]" if io['idx'] >= 0 else ''), insel_mask)
-        for io in sorted(mio_inputs, key=lambda io: io['glob_idx'])
-    ]
-    mio_outsel_legal = [(pad['name'], outsel_mask)
-                        for pad in sorted(mio_pads, key=lambda pad: pad['idx'])]
+
+    # Dicts containing the masks per input/pad. The masks contain the constant value selection
+    # options.
+    mio_periph_insel_legal = {
+        io['glob_idx']: {'name': io['name'] + (f"[{io['idx']}]" if io['idx'] >= 0 else ''),
+                         'mask': 0b11}
+        for io in mio_inputs
+    }
+    mio_outsel_legal = {pad['idx']: {'name': pad['name'], 'mask': 0b111} for pad in mio_pads}
+
+    # For each pinmux signal
+    for io in pinmux['ios']:
+        # Only relevant for MIOs
+        if io['connection'] != 'muxed':
+            continue
+
+        # Determine the legal indices
+        if io['pads']:
+            # Non-muxable pads are not supported. Such a misconfiguration is reported by validate,
+            # skip them here.
+            pad_idxs = [mio_pad_idx[pad] for pad in io['pads'] if pad in mio_pad_idx]
+        else:
+            # An empty muxing list defines an any-to-any muxing
+            pad_idxs = range(n_mio_pads)
+
+        # For each connection create the masks
+        for pad_idx in pad_idxs:
+            # io type is view from peripheral (hjson).
+            if io['type'] in ['input', 'inout']:
+                # Add an entry for INSEL for inputs and bidir signals
+                mio_periph_insel_legal[io['glob_idx']]['mask'] |= 1 << (pad_idx + 2)
+            if io['type'] in ['output', 'inout']:
+                # Add an entry for OUTSEL for outputs and bidir signals
+                mio_outsel_legal[pad_idx]['mask'] |= 1 << (io['glob_idx'] + 3)
+
+    # Order the mask dicts by the indices and convert to a list of (name, mask) tuples for ipgen.
+    mio_periph_insel_legal = [(e['name'], e['mask'])
+                              for _, e in sorted(mio_periph_insel_legal.items())]
+    mio_outsel_legal = [(e['name'], e['mask']) for _, e in sorted(mio_outsel_legal.items())]
 
     log.info("Generating pinmux with following info from hjson:")
     log.info("num_wkup_detect: %d" % num_wkup_detect)
