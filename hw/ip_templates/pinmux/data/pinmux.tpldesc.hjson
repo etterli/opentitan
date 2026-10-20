@@ -59,6 +59,16 @@
       ]
     }
     {
+      name: "mio_insel_resvals"
+      desc: '''
+            List of integer reset values for each of the MIO_PERIPH_INSEL CSRs, ordered ascending
+            by the peripheral input index.
+            '''
+      type: "object"
+      // The default sets all MIO_PERIPH_INSEL CSRs to forward a static 0.
+      default: [0, 0, 0, 0, 0, 0, 0, 0]
+    }
+    {
       name: "mio_outsel_legal"
       desc: '''
             List of (name, mask) tuples with the legal MIO_OUTSEL values for each MIO pad,
@@ -70,6 +80,16 @@
         ["mio_pad_0", 2047], ["mio_pad_1", 2047], ["mio_pad_2", 2047], ["mio_pad_3", 2047],
         ["mio_pad_4", 2047], ["mio_pad_5", 2047], ["mio_pad_6", 2047], ["mio_pad_7", 2047]
       ]
+    }
+    {
+      name: "mio_outsel_resvals"
+      desc: '''
+            List of integer reset values for each of the MIO_PERIPH_OUTSEL CSRs, ordered ascending
+            by the MIO pad index.
+            '''
+      type: "object"
+      // The default sets all MIO_PERIPH_OUTSEL CSRs to drive high-Z.
+      default: [2, 2, 2, 2, 2, 2, 2, 2]
     }
     {
       name: "n_dio_pads"
