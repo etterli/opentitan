@@ -178,7 +178,8 @@ pad_required = {
 }
 pad_optional = {
     'desc': ['s', 'Pad description'],
-    'port_type': ['s', 'Special port type other than `inout wire`']
+    'port_type': ['s', 'Special port type other than `inout wire`'],
+    'attrs': ['g', 'Reset values of pad attribute fields']
 }
 pad_added = {
     'idx': ['d', 'the index of the pad'],
@@ -656,6 +657,11 @@ def check_pad(top: ConfigT, pad: Dict, known_pad_names: Dict,
             pad['connection'], pad['name']))
         error += 1
 
+    if 'attrs' in pad and pad['connection'] not in ['direct', 'muxed']:
+        log.warning(f"Pad {pad['name']} attrs are only supported for direct and muxed pads as "
+                    "topgen does not know if manual pads have a DIO_PAD_ATTR CSR.")
+        error += 1
+
     pad.setdefault('port_type', 'inout')
 
     return error
@@ -958,6 +964,14 @@ def check_implementation_targets(top: ConfigT, prefix: str) -> int:
                             top['pinmux']['enable_strap_sampling']):
                         log.warning(f"TAP strap 0 pad {pad['name']} of target {target['name']} "
                                     "must be a muxed pad.")
+                        error += 1
+                    # The pinmux IP expects and ensures that the TAP strap 0 pad resets to a
+                    # pull-down pad. Topgen thus does not allow to set attrs for this pad.
+                    if (entry['name'] == 'tap0' and 'attrs' in pad and
+                            top['pinmux']['enable_strap_sampling']):
+                        log.warning(f"Pad {pad['name']} must not have attrs, as it is the TAP "
+                                    f"strap 0 pad of target {target['name']} and pinmux defines "
+                                    "its attr reset value.")
                         error += 1
                     break
             else:

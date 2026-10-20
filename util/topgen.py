@@ -553,6 +553,32 @@ def _gen_muxing_resvals(top: ConfigT, n_mio_periph_in: int,
     return mio_insel_resvals, mio_outsel_resvals
 
 
+def _gen_pad_attr_resvals(
+        top: ConfigT) -> Tuple[List[Tuple[str, Dict]], List[Tuple[str, Dict]]]:
+    """Get the reset values of the pad attributes defined by the pinout of the top.
+
+    Returns a list of (name, attrs) tuples for the MIO pads and one for the DIOs, ordered by their
+    PAD_ATTR CSR index. The attrs are passed as defined in the hjson. Pads without attrs get an
+    empty dict. The pinmux template checks them and defines the reset value of all other fields.
+    """
+    mio_attrs = [(pad['name'], pad.get('attrs', {}))
+                 for pad in top['pinout']['pads'] if pad['connection'] == 'muxed']
+
+    # The DIO_PAD_ATTR CSRs are indexed by the DIO signal, not the pad. Manual IOs, like the USB
+    # ones, have a DIO_PAD_ATTR CSR, but their pad is only connected in the chiplevel template, so
+    # topgen does not know which pad it is. We thus do not support attrs for manual IOs.
+    dios = sorted((io for io in top['pinmux']['ios'] if io['connection'] != 'muxed'),
+                  key=lambda io: io['glob_idx'])
+    dio_attrs = []
+    pads = {pad['name']: pad for pad in top['pinout']['pads']}
+    for io in dios:
+        # Invalid pads lists are reported by validate.
+        pad = pads.get(io['pads'][0]) if io['connection'] == 'direct' and io['pads'] else None
+        dio_attrs.append((pad['name'], pad.get('attrs', {})) if pad else (io['name'], {}))
+
+    return mio_attrs, dio_attrs
+
+
 def _get_pinmux_params(top: ConfigT) -> ParamsT:
     """Gets parameters for pinmux ipgen from top config."""
     # Generation without pinmux and pinout configuration is not supported.
@@ -609,6 +635,9 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
     # Determine the reset values for the CSRs defining the MIO muxing.
     mio_insel_resvals, mio_outsel_resvals = _gen_muxing_resvals(top, n_mio_periph_in, n_mio_pads)
 
+    # Determine the reset values of the pad attribute CSRs.
+    mio_pad_attr_resvals, dio_pad_attr_resvals = _gen_pad_attr_resvals(top)
+
     log.info("Generating pinmux with following info from hjson:")
     log.info("num_wkup_detect:  %d" % num_wkup_detect)
     log.info("wkup_cnt_width:   %d" % wkup_cnt_width)
@@ -632,7 +661,9 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
         "mio_insel_resvals": mio_insel_resvals,
         "mio_outsel_legal": mio_outsel_legal,
         "mio_outsel_resvals": mio_outsel_resvals,
+        "mio_pad_attr_resvals": mio_pad_attr_resvals,
         "n_dio_pads": n_dio_pads,
+        "dio_pad_attr_resvals": dio_pad_attr_resvals,
         "n_dio_periph_in": n_dio_periph_in,
         "n_dio_periph_out": n_dio_periph_out,
         "enable_usb_wakeup": pinmux['enable_usb_wakeup'],
