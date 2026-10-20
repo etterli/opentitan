@@ -913,6 +913,12 @@ def check_implementation_targets(top: ConfigT, prefix: str) -> int:
             for pad in top['pinout']['pads']:
                 if entry['pad'] == pad['name']:
                     is_muxed = pad['connection'] == 'muxed'
+                    # The pinmux only pulls down a muxed TAP strap 0 pad at reset.
+                    if (entry['name'] == 'tap0' and not is_muxed and
+                            top['pinmux']['enable_strap_sampling']):
+                        log.warning(f"TAP strap 0 pad {pad['name']} of target {target['name']} "
+                                    "must be a muxed pad.")
+                        error += 1
                     break
             else:
                 log.warning('Unknown pad {}'.format(entry['pad']))
