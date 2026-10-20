@@ -46,6 +46,32 @@
       default: "8"
     }
     {
+      name: "mio_insel_legal"
+      desc: '''
+            List of (name, mask) tuples with the legal MIO_PERIPH_INSEL values for each MIO
+            peripheral input, ordered ascending by the peripheral input index.
+            '''
+      type: "object"
+      // The default is a full muxing for the default n_mio_pads and n_mio_periph_in.
+      default: [
+        ["periph_in_0", 1023], ["periph_in_1", 1023], ["periph_in_2", 1023], ["periph_in_3", 1023],
+        ["periph_in_4", 1023], ["periph_in_5", 1023], ["periph_in_6", 1023], ["periph_in_7", 1023]
+      ]
+    }
+    {
+      name: "mio_outsel_legal"
+      desc: '''
+            List of (name, mask) tuples with the legal MIO_OUTSEL values for each MIO pad,
+            ordered ascending by the MIO pad index.
+            '''
+      type: "object"
+      // The default is a full muxing for the default n_mio_pads and n_mio_periph_out.
+      default: [
+        ["mio_pad_0", 2047], ["mio_pad_1", 2047], ["mio_pad_2", 2047], ["mio_pad_3", 2047],
+        ["mio_pad_4", 2047], ["mio_pad_5", 2047], ["mio_pad_6", 2047], ["mio_pad_7", 2047]
+      ]
+    }
+    {
       name: "n_dio_pads"
       desc: "Number of DIO pads"
       type: "int"
