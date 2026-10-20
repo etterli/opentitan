@@ -178,7 +178,8 @@ pad_required = {
 }
 pad_optional = {
     'desc': ['s', 'Pad description'],
-    'port_type': ['s', 'Special port type other than `inout wire`']
+    'port_type': ['s', 'Special port type other than `inout wire`'],
+    'attrs': ['g', 'Reset values of pad attribute fields']
 }
 pad_added = {
     'idx': ['d', 'the index of the pad'],
@@ -654,6 +655,11 @@ def check_pad(top: ConfigT, pad: Dict, known_pad_names: Dict,
     if pad['connection'] not in valid_connections:
         log.warning('Connection type {} of pad {} is invalid'.format(
             pad['connection'], pad['name']))
+        error += 1
+
+    if 'attrs' in pad and pad['connection'] not in ['direct', 'muxed']:
+        log.warning(f"Pad {pad['name']} attrs are only supported for direct and muxed pads as "
+                    "topgen does not know if manual pads have a DIO_PAD_ATTR CSR.")
         error += 1
 
     pad.setdefault('port_type', 'inout')

@@ -252,7 +252,9 @@
                             Muxed pad attributes.
                             This register has WARL behavior since not each pad type may support
                             all attributes.
-                            The muxed pad that is used for TAP strap 0 has a different reset value, with `pull_en` set to 1.
+                            Non-default reset values can be defined in the top.hjson.
+                            If strap sampling is enabled, the muxed pad that is used for TAP strap
+                            0 has a fixed reset value, with `pull_en` set to 1.
                             ''',
                   count:        "NMioPads",
                   compact:      "false",
@@ -263,22 +265,25 @@
                   regwen:       "MIO_PAD_ATTR_REGWEN",
                   regwen_multi: "true",
                   cname:        "MIO_PAD",
-                  resval:       0
                   fields: [
                     { bits: "0",
                       name: "invert",
+                      resval: 0
                       desc: "Invert input and output levels."
                     },
                     { bits: "1",
                       name: "virtual_od_en",
+                      resval: 0
                       desc: "Enable virtual open drain."
                     },
                     { bits: "2",
                       name: "pull_en",
+                      resval: 0
                       desc: "Enable pull-up or pull-down resistor."
                     },
                     { bits: "3",
                       name: "pull_select",
+                      resval: 0
                       desc: "Pull select (0: pull-down, 1: pull-up)."
                       enum: [
                         { value: "0",
@@ -293,18 +298,22 @@
                     },
                     { bits: "4",
                       name: "keeper_en",
+                      resval: 0
                       desc: "Enable keeper termination. This weakly drives the previous pad output value when output is disabled, similar to a verilog `trireg`."
                     },
                     { bits: "5",
                       name: "schmitt_en",
+                      resval: 0
                       desc: "Enable the schmitt trigger."
                     },
                     { bits: "6",
                       name: "od_en",
+                      resval: 0
                       desc: "Enable open drain."
                     },
                     { bits: "7",
                       name: "input_disable",
+                      resval: 0
                       desc: '''
                             Disable input drivers.
                             Setting this to 1 for pads that are not used as input can reduce their leakage current.
@@ -312,10 +321,12 @@
                     },
                     { bits: "17:16",
                       name: "slew_rate",
+                      resval: 0
                       desc: "Slew rate (0x0: slowest, 0x3: fastest)."
                     },
                     { bits: "23:20",
                       name: "drive_strength",
+                      resval: 0
                       desc: "Drive strength (0x0: weakest, 0xf: strongest)"
                     }
                   ],
@@ -323,7 +334,8 @@
                   // read back the same value that was written to them.
                   // further, they have hardware side effects since they drive the
                   // pad attributes, and hence no random data should be written to them.
-                  // Additionally, their reset value is defined by the RTL implementation and may not equal `resval` for all instances (#24621).
+                  // Their reset value can be defined by the top and the WARL read back filter
+                  // changes `resval` if the pad does not support all attributes.
                   tags: ["excl:CsrAllTests:CsrExclAll"]
                 }
     },
@@ -356,6 +368,7 @@
                             Dedicated pad attributes.
                             This register has WARL behavior since not each pad type may support
                             all attributes.
+                            Non-default reset values can be defined in the top.hjson.
                             ''',
                   count:        "NDioPads",
                   compact:      "false",
@@ -366,22 +379,25 @@
                   regwen:       "DIO_PAD_ATTR_REGWEN",
                   regwen_multi: "true",
                   cname:        "DIO_PAD",
-                  resval:       0,
                   fields: [
                     { bits: "0",
                       name: "invert",
+                      resval: 0
                       desc: "Invert input and output levels."
                     },
                     { bits: "1",
                       name: "virtual_od_en",
+                      resval: 0
                       desc: "Enable virtual open drain."
                     },
                     { bits: "2",
                       name: "pull_en",
+                      resval: 0
                       desc: "Enable pull-up or pull-down resistor."
                     },
                     { bits: "3",
                       name: "pull_select",
+                      resval: 0
                       desc: "Pull select (0: pull-down, 1: pull-up)."
                       enum: [
                         { value: "0",
@@ -396,18 +412,22 @@
                     },
                     { bits: "4",
                       name: "keeper_en",
+                      resval: 0
                       desc: "Enable keeper termination. This weakly drives the previous pad output value when output is disabled, similar to a verilog `trireg`."
                     },
                     { bits: "5",
                       name: "schmitt_en",
+                      resval: 0
                       desc: "Enable the schmitt trigger."
                     },
                     { bits: "6",
                       name: "od_en",
+                      resval: 0
                       desc: "Enable open drain."
                     },
                     { bits: "7",
                       name: "input_disable",
+                      resval: 0
                       desc: '''
                             Disable input drivers.
                             Setting this to 1 for pads that are not used as input can reduce their leakage current.
@@ -415,10 +435,12 @@
                     },
                     { bits: "17:16",
                       name: "slew_rate",
+                      resval: 0
                       desc: "Slew rate (0x0: slowest, 0x3: fastest)."
                     },
                     { bits: "23:20",
                       name: "drive_strength",
+                      resval: 0
                       desc: "Drive strength (0x0: weakest, 0xf: strongest)"
                     }
                   ],
@@ -426,7 +448,9 @@
                   // read back the same value that was written to them.
                   // further, they have hardware side effects since they drive the
                   // pad attributes, and hence no random data should be written to them.
-                  tags: ["excl:CsrAllTests:CsrExclWrite"]
+                  // Their reset value can be defined by the top and the WARL read back filter
+                  // changes `resval` if the pad does not support all attributes.
+                  tags: ["excl:CsrAllTests:CsrExclAll"]
                 }
     },
 
