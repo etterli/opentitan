@@ -130,6 +130,7 @@ pinmux_sig_required = {
 }
 pinmux_sig_optional = {
     'port': ['s', 'Port name of module'],
+    'default': ['s', 'Default signal or/and pad connection'],
     'desc': ['s', 'Signal description'],
     'attr': ['s', 'Pad type for generating the correct attribute CSR']
 }
@@ -855,6 +856,24 @@ def check_pinmux(top: ConfigT, prefix: str) -> int:
                             'has duplicate pads'.format(
                                 sig['instance'], sig['port']))
                 error += 1
+            # Check the default value if given. Ignored for other connection
+            # types.
+            if 'default' in sig:
+                prefix = (f"Muxed connection of instance {sig['instance']} "
+                          f"port {sig['port']} has default: {sig['default']}")
+
+                if isinstance(sig['default'], str):
+                    if sig['default'] not in pads:
+                        log.warning(f"{prefix} which is not a known pad name")
+                        error += 1
+                elif isinstance(sig['default'], int):
+                    if not 0 <= sig['default'] <= 1:
+                        log.warning(f"{prefix} but only 0 or 1 are valid "
+                                    "constants")
+                        error += 1
+                else:
+                    log.warning(f"{prefix} which is not a pad name nor an int")
+                    error += 1
         elif sig['connection'] == 'manual':
             # This pad attr key is only allowed in the manual case,
             # as there is no way to infer the pad type automatically.

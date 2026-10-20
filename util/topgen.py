@@ -518,6 +518,41 @@ def _gen_legal_select_masks(top: ConfigT) -> Tuple[List[Tuple[str, int]], List[T
     return mio_insel_legal, mio_outsel_legal
 
 
+def _gen_muxing_resvals(top: ConfigT, n_mio_periph_in: int,
+                        n_mio_pads: int) -> Tuple[List[int], List[int]]:
+    """Determine the reset values for the INSEL and OUTSEL CSRs."""
+
+    # Per default select a static 0 for inputs and high-Z for pads.
+    mio_insel_resvals = [0] * n_mio_periph_in
+    mio_outsel_resvals = [2] * n_mio_pads
+
+    mio_pad_idx = {pad['name']: pad['idx'] for pad in top['pinout']['pads']
+                   if pad['connection'] == 'muxed'}
+
+    for io in top['pinmux']['ios']:
+        if io['connection'] != 'muxed' or 'default' not in io:
+            continue
+
+        # The first topgen pass runs before validation. Invalid defaults are reported by validate,
+        # skip them here. See top.hjson for valid default options.
+        default = io['default']
+        is_input = io['type'] in ['input', 'inout']
+        is_output = io['type'] in ['output', 'inout']
+
+        if isinstance(default, str) and default in mio_pad_idx:
+            # A valid pad is specified.
+            pad_idx = mio_pad_idx[default]
+            if is_input:
+                mio_insel_resvals[io['glob_idx']] = pad_idx + 2
+            if is_output:
+                mio_outsel_resvals[pad_idx] = io['glob_idx'] + 3
+        elif default in (0, 1) and is_input:
+            # If a constant is set only INSEL is affected (input or inout).
+            mio_insel_resvals[io['glob_idx']] = int(default)
+
+    return mio_insel_resvals, mio_outsel_resvals
+
+
 def _get_pinmux_params(top: ConfigT) -> ParamsT:
     """Gets parameters for pinmux ipgen from top config."""
     # Generation without pinmux and pinout configuration is not supported.
@@ -571,6 +606,9 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
     # Determine the legal MIO muxing options
     mio_insel_legal, mio_outsel_legal = _gen_legal_select_masks(top)
 
+    # Determine the reset values for the CSRs defining the MIO muxing.
+    mio_insel_resvals, mio_outsel_resvals = _gen_muxing_resvals(top, n_mio_periph_in, n_mio_pads)
+
     log.info("Generating pinmux with following info from hjson:")
     log.info("num_wkup_detect:  %d" % num_wkup_detect)
     log.info("wkup_cnt_width:   %d" % wkup_cnt_width)
@@ -591,7 +629,9 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
         "n_mio_periph_in": n_mio_periph_in,
         "n_mio_periph_out": n_mio_periph_out,
         "mio_insel_legal": mio_insel_legal,
+        "mio_insel_resvals": mio_insel_resvals,
         "mio_outsel_legal": mio_outsel_legal,
+        "mio_outsel_resvals": mio_outsel_resvals,
         "n_dio_pads": n_dio_pads,
         "n_dio_periph_in": n_dio_periph_in,
         "n_dio_periph_out": n_dio_periph_out,
