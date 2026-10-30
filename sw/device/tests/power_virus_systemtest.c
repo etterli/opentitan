@@ -384,14 +384,14 @@ static void configure_pinmux(void) {
                                         kTopEarlgreyPinmuxOutselGpio0Gpio0));
 
   // UART1:
-  //    RX on IOA4
-  //    TX on IOA5
+  //    RX on IOA0
+  //    TX on IOA1
   CHECK_DIF_OK(dif_pinmux_input_select(&pinmux,
                                        kTopEarlgreyPinmuxPeripheralInUart1Rx,
-                                       kTopEarlgreyPinmuxInselIoa4));
-  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIoa4,
+                                       kTopEarlgreyPinmuxInselIoa0));
+  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIoa0,
                                         kTopEarlgreyPinmuxOutselConstantHighZ));
-  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIoa5,
+  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIoa1,
                                         kTopEarlgreyPinmuxOutselUart1Tx));
 
   // Apply this configuration only for the FPGA.
@@ -411,14 +411,14 @@ static void configure_pinmux(void) {
   }
 
   // UART3:
-  //    RX on IOA0
-  //    TX on IOA1
+  //    RX on IOA4
+  //    TX on IOA5
   CHECK_DIF_OK(dif_pinmux_input_select(&pinmux,
                                        kTopEarlgreyPinmuxPeripheralInUart3Rx,
-                                       kTopEarlgreyPinmuxInselIoa0));
-  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIoa0,
+                                       kTopEarlgreyPinmuxInselIoa4));
+  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIoa4,
                                         kTopEarlgreyPinmuxOutselConstantHighZ));
-  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIoa1,
+  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIoa5,
                                         kTopEarlgreyPinmuxOutselUart3Tx));
 
   // I2C0:
@@ -598,14 +598,14 @@ static void configure_pinmux_sim(void) {
   // On FPGA, UART2 uses IOB4/IOB5 as RX/TX.
   // In chip_if.sv, IOB4/IOB5 are connected to the spi_device_agent1.
   // To prevent contamination in DVSIM, switch UART2 RX/TX to other MIOs.
-  //    RX on IOR12
-  //    TX on IOR11
+  //    RX on IOC10
+  //    TX on IOC11
   CHECK_DIF_OK(dif_pinmux_input_select(&pinmux,
                                        kTopEarlgreyPinmuxPeripheralInUart2Rx,
-                                       kTopEarlgreyPinmuxInselIor12));
-  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIor12,
+                                       kTopEarlgreyPinmuxInselIoc10));
+  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIoc10,
                                         kTopEarlgreyPinmuxOutselConstantHighZ));
-  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIor13,
+  CHECK_DIF_OK(dif_pinmux_output_select(&pinmux, kTopEarlgreyPinmuxMioOutIoc11,
                                         kTopEarlgreyPinmuxOutselUart2Tx));
 
   // Configure fast slew rate, strong drive strength, and weak pull-ups for SPI
