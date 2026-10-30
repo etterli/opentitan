@@ -264,8 +264,8 @@ package pinmux_pkg;
     pad_attr_t'{default: '0}, // SPI_HOST_CLK
     pad_attr_t'{default: '0}, // SPI_DEV_CS_L
     pad_attr_t'{default: '0}, // SPI_DEV_CLK
-    pad_attr_t'{default: '0}, // IOR9
-    pad_attr_t'{default: '0}, // IOR8
+    pad_attr_t'{virt_od_en: 1'h1, default: '0}, // IOR9
+    pad_attr_t'{virt_od_en: 1'h1, default: '0}, // IOR8
     pad_attr_t'{default: '0}, // SPI_DEV_D3
     pad_attr_t'{default: '0}, // SPI_DEV_D2
     pad_attr_t'{default: '0}, // SPI_DEV_D1

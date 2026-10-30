@@ -25,8 +25,8 @@ void sysrst_ctrl_testutils_setup_dio(dif_pinmux_t *pinmux) {
   dif_result_t res =
       dif_pinmux_pad_write_attrs(pinmux, kTopEarlgreyDirectPadsSysrstCtrlEcRstL,
                                  kDifPinmuxPadKindDio, in_attr, &out_attr);
-  // The FPGA does not support open drain but instead has virtual open drain.
-  // Try to use that if open drain did not work.
+  // Not all targets support open drain on these pads, but they have virtual
+  // open drain. Try to use that if open drain did not work.
   if (res == kDifError && out_attr.flags != kDifPinmuxPadAttrOpenDrain) {
     LOG_INFO(
         "cannot use open drain for sysrst pins, trying virtual open drain");
