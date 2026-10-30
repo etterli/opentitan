@@ -39,6 +39,7 @@ module prim_pad_attr
       attr_warl_o.input_disable = 1'b1;
     end
   end else if (PadType == BidirStd ||
+               PadType == BidirStr ||
                PadType == BidirTol ||
                PadType == DualBidirTol ||
                PadType == BidirOd) begin : gen_bidir_warl
