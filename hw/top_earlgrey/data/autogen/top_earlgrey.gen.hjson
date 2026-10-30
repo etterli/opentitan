@@ -17342,7 +17342,12 @@
         instance: i2c0
         port: sda
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA7
+          IOB10
+          IOR13
+        ]
         desc: ""
         attr: ""
       }
@@ -17350,7 +17355,12 @@
         instance: i2c0
         port: scl
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA8
+          IOB9
+          IOR12
+        ]
         desc: ""
         attr: ""
       }
@@ -17358,7 +17368,12 @@
         instance: i2c1
         port: sda
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB11
+          IOB12
+          IOR11
+        ]
         desc: ""
         attr: ""
       }
@@ -17366,7 +17381,12 @@
         instance: i2c1
         port: scl
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB11
+          IOB12
+          IOR10
+        ]
         desc: ""
         attr: ""
       }
@@ -17374,7 +17394,13 @@
         instance: i2c2
         port: sda
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA7
+          IOB9
+          IOB10
+          IOC12
+        ]
         desc: ""
         attr: ""
       }
@@ -17382,7 +17408,13 @@
         instance: i2c2
         port: scl
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA8
+          IOB9
+          IOB10
+          IOC9
+        ]
         desc: ""
         attr: ""
       }
@@ -18718,7 +18750,12 @@
         width: 1
         type: inout
         idx: -1
-        pads: []
+        pads:
+        [
+          IOA7
+          IOB10
+          IOR13
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18730,7 +18767,12 @@
         width: 1
         type: inout
         idx: -1
-        pads: []
+        pads:
+        [
+          IOA8
+          IOB9
+          IOR12
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18742,7 +18784,12 @@
         width: 1
         type: inout
         idx: -1
-        pads: []
+        pads:
+        [
+          IOB11
+          IOB12
+          IOR11
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18754,7 +18801,12 @@
         width: 1
         type: inout
         idx: -1
-        pads: []
+        pads:
+        [
+          IOB11
+          IOB12
+          IOR10
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18766,7 +18818,13 @@
         width: 1
         type: inout
         idx: -1
-        pads: []
+        pads:
+        [
+          IOA7
+          IOB9
+          IOB10
+          IOC12
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18778,7 +18836,13 @@
         width: 1
         type: inout
         idx: -1
-        pads: []
+        pads:
+        [
+          IOA8
+          IOB9
+          IOB10
+          IOC9
+        ]
         attr: ""
         connection: muxed
         desc: ""
