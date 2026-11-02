@@ -5,16 +5,31 @@
 ## PINMUX register template
 ##
 ## Parameter (given by Python tool)
-##  - n_mio_periph_in:     Number of muxed peripheral inputs
-##  - n_mio_periph_out:    Number of muxed peripheral outputs
-##  - n_mio_pads:          Number of muxed IO pads
-##  - mio_insel_resvals:   A list of integer reset values for each of the MIO_PERIPH_INSEL CSRs.
-##  - mio_outsel_resvals:  A list of integer reset values for each of the MIO_PERIPH_OUTSEL CSRs.
-##  - n_dio_periph_in:     Number of dedicated peripheral inputs
-##  - n_dio_periph_out:    Number of dedicated peripheral outputs
-##  - n_dio_pads:          Number of dedicated IO pads
-##  - n_wkup_detect:       Number of wakeup condition detectors
-##  - wkup_cnt_width:      Width of wakeup counters
+##  - n_mio_periph_in:      Number of muxed peripheral inputs
+##  - n_mio_periph_out:     Number of muxed peripheral outputs
+##  - n_mio_pads:           Number of muxed IO pads
+##  - mio_insel_resvals:    A list of integer reset values for each of the MIO_PERIPH_INSEL CSRs.
+##  - mio_outsel_resvals:   A list of integer reset values for each of the MIO_PERIPH_OUTSEL CSRs.
+##  - mio_pad_attr_resvals: A list of (name, attrs) tuples for each MIO pad. attrs can map
+##                          MIO_PAD_ATTR fields to non-default reset values.
+##  - n_dio_periph_in:      Number of dedicated peripheral inputs
+##  - n_dio_periph_out:     Number of dedicated peripheral outputs
+##  - n_dio_pads:           Number of dedicated IO pads
+##  - dio_pad_attr_resvals: A list of (name, attrs) tuples for each DIO pad. attrs can map
+##                          DIO_PAD_ATTR fields to non-default reset values.
+##  - n_wkup_detect:        Number of wakeup condition detectors
+##  - wkup_cnt_width:       Width of wakeup counters
+<%namespace name="pkg" file="/rtl/pinmux_pkg.sv.tpl"/>\
+<%!
+  def render_attr_resval(pad_attrs, field):
+    """Render the reset value of a pad attribute field, indexed per pad if the pads differ."""
+    vals = [attrs.get(field, 0) for _, attrs in pad_attrs]
+    return vals[0] if len(set(vals)) == 1 else f'"{vals}[multireg_idx]"'
+%>\
+<%
+  pkg.module.check_pad_attrs("mio_pad_attr_resvals", n_mio_pads, mio_pad_attr_resvals)
+  pkg.module.check_pad_attrs("dio_pad_attr_resvals", n_dio_pads, dio_pad_attr_resvals)
+%>\
 {
   name:               "pinmux",
   human_name:         "Pin Multiplexer",
@@ -582,7 +597,9 @@
                             Muxed pad attributes.
                             This register has WARL behavior since not each pad type may support
                             all attributes.
-                            The muxed pad that is used for TAP strap 0 has a different reset value, with `pull_en` set to 1.
+                            Non-default reset values can be defined in the top.hjson.
+                            If strap sampling is enabled, the muxed pad that is used for TAP strap
+                            0 has a fixed reset value, with `pull_en` set to 1.
                             ''',
                   count:        "NMioPads",
                   compact:      "false",
@@ -593,22 +610,25 @@
                   regwen:       "MIO_PAD_ATTR_REGWEN",
                   regwen_multi: "true",
                   cname:        "MIO_PAD",
-                  resval:       0
                   fields: [
                     { bits: "0",
                       name: "invert",
+                      resval: ${render_attr_resval(mio_pad_attr_resvals, "invert")}
                       desc: "Invert input and output levels."
                     },
                     { bits: "1",
                       name: "virtual_od_en",
+                      resval: ${render_attr_resval(mio_pad_attr_resvals, "virtual_od_en")}
                       desc: "Enable virtual open drain."
                     },
                     { bits: "2",
                       name: "pull_en",
+                      resval: ${render_attr_resval(mio_pad_attr_resvals, "pull_en")}
                       desc: "Enable pull-up or pull-down resistor."
                     },
                     { bits: "3",
                       name: "pull_select",
+                      resval: ${render_attr_resval(mio_pad_attr_resvals, "pull_select")}
                       desc: "Pull select (0: pull-down, 1: pull-up)."
                       enum: [
                         { value: "0",
@@ -623,18 +643,22 @@
                     },
                     { bits: "4",
                       name: "keeper_en",
+                      resval: ${render_attr_resval(mio_pad_attr_resvals, "keeper_en")}
                       desc: "Enable keeper termination. This weakly drives the previous pad output value when output is disabled, similar to a verilog `trireg`."
                     },
                     { bits: "5",
                       name: "schmitt_en",
+                      resval: ${render_attr_resval(mio_pad_attr_resvals, "schmitt_en")}
                       desc: "Enable the schmitt trigger."
                     },
                     { bits: "6",
                       name: "od_en",
+                      resval: ${render_attr_resval(mio_pad_attr_resvals, "od_en")}
                       desc: "Enable open drain."
                     },
                     { bits: "7",
                       name: "input_disable",
+                      resval: ${render_attr_resval(mio_pad_attr_resvals, "input_disable")}
                       desc: '''
                             Disable input drivers.
                             Setting this to 1 for pads that are not used as input can reduce their leakage current.
@@ -642,10 +666,12 @@
                     },
                     { bits: "17:16",
                       name: "slew_rate",
+                      resval: ${render_attr_resval(mio_pad_attr_resvals, "slew_rate")}
                       desc: "Slew rate (0x0: slowest, 0x3: fastest)."
                     },
                     { bits: "23:20",
                       name: "drive_strength",
+                      resval: ${render_attr_resval(mio_pad_attr_resvals, "drive_strength")}
                       desc: "Drive strength (0x0: weakest, 0xf: strongest)"
                     }
                   ],
@@ -653,7 +679,8 @@
                   // read back the same value that was written to them.
                   // further, they have hardware side effects since they drive the
                   // pad attributes, and hence no random data should be written to them.
-                  // Additionally, their reset value is defined by the RTL implementation and may not equal `resval` for all instances (#24621).
+                  // Their reset value can be defined by the top and the WARL read back filter
+                  // changes `resval` if the pad does not support all attributes.
                   tags: ["excl:CsrAllTests:CsrExclAll"]
                 }
     },
@@ -686,6 +713,7 @@
                             Dedicated pad attributes.
                             This register has WARL behavior since not each pad type may support
                             all attributes.
+                            Non-default reset values can be defined in the top.hjson.
                             ''',
                   count:        "NDioPads",
                   compact:      "false",
@@ -696,22 +724,25 @@
                   regwen:       "DIO_PAD_ATTR_REGWEN",
                   regwen_multi: "true",
                   cname:        "DIO_PAD",
-                  resval:       0,
                   fields: [
                     { bits: "0",
                       name: "invert",
+                      resval: ${render_attr_resval(dio_pad_attr_resvals, "invert")}
                       desc: "Invert input and output levels."
                     },
                     { bits: "1",
                       name: "virtual_od_en",
+                      resval: ${render_attr_resval(dio_pad_attr_resvals, "virtual_od_en")}
                       desc: "Enable virtual open drain."
                     },
                     { bits: "2",
                       name: "pull_en",
+                      resval: ${render_attr_resval(dio_pad_attr_resvals, "pull_en")}
                       desc: "Enable pull-up or pull-down resistor."
                     },
                     { bits: "3",
                       name: "pull_select",
+                      resval: ${render_attr_resval(dio_pad_attr_resvals, "pull_select")}
                       desc: "Pull select (0: pull-down, 1: pull-up)."
                       enum: [
                         { value: "0",
@@ -726,18 +757,22 @@
                     },
                     { bits: "4",
                       name: "keeper_en",
+                      resval: ${render_attr_resval(dio_pad_attr_resvals, "keeper_en")}
                       desc: "Enable keeper termination. This weakly drives the previous pad output value when output is disabled, similar to a verilog `trireg`."
                     },
                     { bits: "5",
                       name: "schmitt_en",
+                      resval: ${render_attr_resval(dio_pad_attr_resvals, "schmitt_en")}
                       desc: "Enable the schmitt trigger."
                     },
                     { bits: "6",
                       name: "od_en",
+                      resval: ${render_attr_resval(dio_pad_attr_resvals, "od_en")}
                       desc: "Enable open drain."
                     },
                     { bits: "7",
                       name: "input_disable",
+                      resval: ${render_attr_resval(dio_pad_attr_resvals, "input_disable")}
                       desc: '''
                             Disable input drivers.
                             Setting this to 1 for pads that are not used as input can reduce their leakage current.
@@ -745,10 +780,12 @@
                     },
                     { bits: "17:16",
                       name: "slew_rate",
+                      resval: ${render_attr_resval(dio_pad_attr_resvals, "slew_rate")}
                       desc: "Slew rate (0x0: slowest, 0x3: fastest)."
                     },
                     { bits: "23:20",
                       name: "drive_strength",
+                      resval: ${render_attr_resval(dio_pad_attr_resvals, "drive_strength")}
                       desc: "Drive strength (0x0: weakest, 0xf: strongest)"
                     }
                   ],
@@ -756,7 +793,9 @@
                   // read back the same value that was written to them.
                   // further, they have hardware side effects since they drive the
                   // pad attributes, and hence no random data should be written to them.
-                  tags: ["excl:CsrAllTests:CsrExclWrite"]
+                  // Their reset value can be defined by the top and the WARL read back filter
+                  // changes `resval` if the pad does not support all attributes.
+                  tags: ["excl:CsrAllTests:CsrExclAll"]
                 }
     },
 
