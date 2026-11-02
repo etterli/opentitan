@@ -754,10 +754,13 @@ def check_pinmux(top: ConfigT, prefix: str) -> int:
     # where we tick off already connected direct pads.
     known_direct_pads = {}
     direct_pad_attr = {}
+    known_muxed_pads = set()
     for pad in top['pinout']['pads']:
         if pad['connection'] == 'direct':
             known_direct_pads[pad['name']] = 1
             direct_pad_attr[pad['name']] = pad['type']
+        elif pad['connection'] == 'muxed':
+            known_muxed_pads.add(pad['name'])
 
     # Note: the actual signal crosscheck is deferred until the merge stage,
     # since we have no idea at this point which IOs comportable IPs expose.
@@ -839,11 +842,17 @@ def check_pinmux(top: ConfigT, prefix: str) -> int:
                     'an associated pad attribute field'.format(
                         sig['instance'], sig['port']))
                 error += 1
-            # TODO: An empty pads list means full muxing. Restricting the pads
-            # is not supported yet.
-            if pads:
+            # An empty pads list means that the signal can be muxed to all
+            # pads. Otherwise, the list restricts the muxing to muxed pads.
+            for padname in pads:
+                if padname not in known_muxed_pads:
+                    log.warning('Muxed connection of instance {} port {} '
+                                'refers to unknown muxed pad {}'.format(
+                                    sig['instance'], sig['port'], padname))
+                    error += 1
+            if len(set(pads)) != len(pads):
                 log.warning('Muxed connection of instance {} port {} '
-                            'must have an empty pads list'.format(
+                            'has duplicate pads'.format(
                                 sig['instance'], sig['port']))
                 error += 1
         elif sig['connection'] == 'manual':
