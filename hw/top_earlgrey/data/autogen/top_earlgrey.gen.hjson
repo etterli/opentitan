@@ -16009,7 +16009,7 @@
       }
       {
         name: SPI_HOST_D0
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: direct
         desc: SPI host data
@@ -16018,7 +16018,7 @@
       }
       {
         name: SPI_HOST_D1
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: direct
         desc: SPI host data
@@ -16027,7 +16027,7 @@
       }
       {
         name: SPI_HOST_D2
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: direct
         desc: SPI host data
@@ -16036,7 +16036,7 @@
       }
       {
         name: SPI_HOST_D3
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: direct
         desc: SPI host data
@@ -16045,7 +16045,7 @@
       }
       {
         name: SPI_HOST_CLK
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: direct
         desc: SPI host clock
@@ -16054,7 +16054,7 @@
       }
       {
         name: SPI_HOST_CS_L
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: direct
         desc: SPI host chip select
@@ -16063,7 +16063,7 @@
       }
       {
         name: SPI_DEV_D0
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: direct
         desc: SPI device data
@@ -16072,7 +16072,7 @@
       }
       {
         name: SPI_DEV_D1
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: direct
         desc: SPI device data
@@ -16081,7 +16081,7 @@
       }
       {
         name: SPI_DEV_D2
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: direct
         desc: SPI device data
@@ -16090,7 +16090,7 @@
       }
       {
         name: SPI_DEV_D3
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: direct
         desc: SPI device data
@@ -16180,7 +16180,7 @@
       }
       {
         name: IOA7
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: muxed
         desc: Muxed IO pad
@@ -16189,7 +16189,7 @@
       }
       {
         name: IOA8
-        type: BidirStd
+        type: BidirStr
         bank: VIOA
         connection: muxed
         desc: Muxed IO pad
@@ -16198,7 +16198,7 @@
       }
       {
         name: IOB0
-        type: BidirStd
+        type: BidirStr
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16207,7 +16207,7 @@
       }
       {
         name: IOB1
-        type: BidirStd
+        type: BidirStr
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16216,7 +16216,7 @@
       }
       {
         name: IOB2
-        type: BidirStd
+        type: BidirStr
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16225,7 +16225,7 @@
       }
       {
         name: IOB3
-        type: BidirStd
+        type: BidirStr
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16234,7 +16234,7 @@
       }
       {
         name: IOB4
-        type: BidirStd
+        type: BidirStr
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16243,7 +16243,7 @@
       }
       {
         name: IOB5
-        type: BidirStd
+        type: BidirStr
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16252,7 +16252,7 @@
       }
       {
         name: IOB6
-        type: BidirStd
+        type: BidirStr
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16279,7 +16279,7 @@
       }
       {
         name: IOB9
-        type: BidirStd
+        type: BidirStr
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16288,7 +16288,7 @@
       }
       {
         name: IOB10
-        type: BidirStd
+        type: BidirStr
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16297,7 +16297,7 @@
       }
       {
         name: IOB11
-        type: BidirStd
+        type: BidirStr
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16306,7 +16306,7 @@
       }
       {
         name: IOB12
-        type: BidirStd
+        type: BidirStr
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16599,7 +16599,7 @@
           SPI_HOST_CLK
         ]
         desc: ""
-        attr: BidirStd
+        attr: BidirStr
       }
       {
         instance: spi_host0
@@ -16610,7 +16610,7 @@
           SPI_HOST_CS_L
         ]
         desc: ""
-        attr: BidirStd
+        attr: BidirStr
       }
       {
         instance: spi_host0
@@ -16621,7 +16621,7 @@
           SPI_HOST_D0
         ]
         desc: ""
-        attr: BidirStd
+        attr: BidirStr
       }
       {
         instance: spi_host0
@@ -16632,7 +16632,7 @@
           SPI_HOST_D1
         ]
         desc: ""
-        attr: BidirStd
+        attr: BidirStr
       }
       {
         instance: spi_host0
@@ -16643,7 +16643,7 @@
           SPI_HOST_D2
         ]
         desc: ""
-        attr: BidirStd
+        attr: BidirStr
       }
       {
         instance: spi_host0
@@ -16654,7 +16654,7 @@
           SPI_HOST_D3
         ]
         desc: ""
-        attr: BidirStd
+        attr: BidirStr
       }
       {
         instance: spi_device
@@ -16687,7 +16687,7 @@
           SPI_DEV_D0
         ]
         desc: ""
-        attr: BidirStd
+        attr: BidirStr
       }
       {
         instance: spi_device
@@ -16698,7 +16698,7 @@
           SPI_DEV_D1
         ]
         desc: ""
-        attr: BidirStd
+        attr: BidirStr
       }
       {
         instance: spi_device
@@ -16709,7 +16709,7 @@
           SPI_DEV_D2
         ]
         desc: ""
-        attr: BidirStd
+        attr: BidirStr
       }
       {
         instance: spi_device
@@ -16720,7 +16720,7 @@
           SPI_DEV_D3
         ]
         desc: ""
-        attr: BidirStd
+        attr: BidirStr
       }
       {
         instance: gpio0
@@ -17008,7 +17008,7 @@
         [
           SPI_HOST_D0
         ]
-        attr: BidirStd
+        attr: BidirStr
         connection: direct
         desc: ""
         domain: Main
@@ -17023,7 +17023,7 @@
         [
           SPI_HOST_D1
         ]
-        attr: BidirStd
+        attr: BidirStr
         connection: direct
         desc: ""
         domain: Main
@@ -17038,7 +17038,7 @@
         [
           SPI_HOST_D2
         ]
-        attr: BidirStd
+        attr: BidirStr
         connection: direct
         desc: ""
         domain: Main
@@ -17053,7 +17053,7 @@
         [
           SPI_HOST_D3
         ]
-        attr: BidirStd
+        attr: BidirStr
         connection: direct
         desc: ""
         domain: Main
@@ -17068,7 +17068,7 @@
         [
           SPI_DEV_D0
         ]
-        attr: BidirStd
+        attr: BidirStr
         connection: direct
         desc: ""
         domain: Main
@@ -17083,7 +17083,7 @@
         [
           SPI_DEV_D1
         ]
-        attr: BidirStd
+        attr: BidirStr
         connection: direct
         desc: ""
         domain: Main
@@ -17098,7 +17098,7 @@
         [
           SPI_DEV_D2
         ]
-        attr: BidirStd
+        attr: BidirStr
         connection: direct
         desc: ""
         domain: Main
@@ -17113,7 +17113,7 @@
         [
           SPI_DEV_D3
         ]
-        attr: BidirStd
+        attr: BidirStr
         connection: direct
         desc: ""
         domain: Main
@@ -18356,7 +18356,7 @@
         [
           SPI_HOST_CLK
         ]
-        attr: BidirStd
+        attr: BidirStr
         connection: direct
         desc: ""
         domain: Main
@@ -18371,7 +18371,7 @@
         [
           SPI_HOST_CS_L
         ]
-        attr: BidirStd
+        attr: BidirStr
         connection: direct
         desc: ""
         domain: Main
