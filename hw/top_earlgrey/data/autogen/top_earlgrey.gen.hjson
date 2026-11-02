@@ -17358,7 +17358,12 @@
         instance: i3c0
         port: scl
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA8
+          IOB11
+          IOR12
+        ]
         desc: ""
         attr: ""
       }
@@ -17366,7 +17371,12 @@
         instance: i3c0
         port: sda
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA7
+          IOB12
+          IOR13
+        ]
         desc: ""
         attr: ""
       }
@@ -17374,7 +17384,12 @@
         instance: i3c0
         port: ctrl_sda_pu
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA2
+          IOB8
+          IOR7
+        ]
         desc: ""
         attr: ""
       }
@@ -17382,7 +17397,12 @@
         instance: i3c0
         port: rstdet_scl
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA8
+          IOB11
+          IOR12
+        ]
         desc: ""
         attr: ""
       }
@@ -17390,7 +17410,12 @@
         instance: i3c0
         port: rstdet_sda
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA7
+          IOB12
+          IOR13
+        ]
         desc: ""
         attr: ""
       }
@@ -17398,7 +17423,12 @@
         instance: i3c1
         port: scl
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB9
+          IOB11
+          IOR10
+        ]
         desc: ""
         attr: ""
       }
@@ -17406,7 +17436,12 @@
         instance: i3c1
         port: sda
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB10
+          IOB12
+          IOR11
+        ]
         desc: ""
         attr: ""
       }
@@ -17414,7 +17449,12 @@
         instance: i3c1
         port: ctrl_sda_pu
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB7
+          IOB10
+          IOR2
+        ]
         desc: ""
         attr: ""
       }
@@ -17422,7 +17462,12 @@
         instance: i3c1
         port: rstdet_scl
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB9
+          IOB11
+          IOR10
+        ]
         desc: ""
         attr: ""
       }
@@ -17430,7 +17475,12 @@
         instance: i3c1
         port: rstdet_sda
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB10
+          IOB12
+          IOR11
+        ]
         desc: ""
         attr: ""
       }
@@ -18708,7 +18758,12 @@
         width: 1
         type: inout
         idx: -1
-        pads: []
+        pads:
+        [
+          IOA8
+          IOB11
+          IOR12
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18720,7 +18775,12 @@
         width: 1
         type: inout
         idx: -1
-        pads: []
+        pads:
+        [
+          IOA7
+          IOB12
+          IOR13
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18732,7 +18792,12 @@
         width: 1
         type: inout
         idx: -1
-        pads: []
+        pads:
+        [
+          IOB9
+          IOB11
+          IOR10
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18744,7 +18809,12 @@
         width: 1
         type: inout
         idx: -1
-        pads: []
+        pads:
+        [
+          IOB10
+          IOB12
+          IOR11
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18925,7 +18995,12 @@
         type: input
         partition: secondary
         idx: -1
-        pads: []
+        pads:
+        [
+          IOA8
+          IOB11
+          IOR12
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18938,7 +19013,12 @@
         type: input
         partition: secondary
         idx: -1
-        pads: []
+        pads:
+        [
+          IOA7
+          IOB12
+          IOR13
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18951,7 +19031,12 @@
         type: input
         partition: secondary
         idx: -1
-        pads: []
+        pads:
+        [
+          IOB9
+          IOB11
+          IOR10
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18964,7 +19049,12 @@
         type: input
         partition: secondary
         idx: -1
-        pads: []
+        pads:
+        [
+          IOB10
+          IOB12
+          IOR11
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19174,7 +19264,12 @@
         width: 1
         type: output
         idx: -1
-        pads: []
+        pads:
+        [
+          IOA2
+          IOB8
+          IOR7
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19186,7 +19281,12 @@
         width: 1
         type: output
         idx: -1
-        pads: []
+        pads:
+        [
+          IOB7
+          IOB10
+          IOR2
+        ]
         attr: ""
         connection: muxed
         desc: ""
