@@ -116,7 +116,8 @@ module padring_verilator
     mio_in_o = '0;
     // 14 generic GPIOs
     mio_in_o[MioPadIob12:MioPadIob6] = cio_gpio_p2d[6:0];
-    mio_in_o[MioPadIor13:MioPadIor5] = cio_gpio_p2d[13:7];
+    mio_in_o[MioPadIor7:MioPadIor5] = cio_gpio_p2d[9:7];
+    mio_in_o[MioPadIor13:MioPadIor10] = cio_gpio_p2d[13:10];
     // SW straps
     mio_in_o[MioPadIoc2:MioPadIoc0] = cio_gpio_p2d[24:22];
     // TAP straps
@@ -131,8 +132,10 @@ module padring_verilator
   // 14 generic GPIOs
   assign cio_gpio_d2p[6:0]        = mio_out_i[MioPadIob12:MioPadIob6];
   assign cio_gpio_en_d2p[6:0]     = mio_oe_i[MioPadIob12:MioPadIob6];
-  assign cio_gpio_d2p[13:7]       = mio_out_i[MioPadIor13:MioPadIor5];
-  assign cio_gpio_en_d2p[13:7]    = mio_oe_i[MioPadIor13:MioPadIor5];
+  assign cio_gpio_d2p[9:7]        = mio_out_i[MioPadIor7:MioPadIor5];
+  assign cio_gpio_en_d2p[9:7]     = mio_oe_i[MioPadIor7:MioPadIor5];
+  assign cio_gpio_d2p[13:10]      = mio_out_i[MioPadIor13:MioPadIor10];
+  assign cio_gpio_en_d2p[13:10]   = mio_oe_i[MioPadIor13:MioPadIor10];
   assign cio_gpio_d2p[21:14]      = '0;
   assign cio_gpio_en_d2p[21:14]   = '0;
   // SW straps

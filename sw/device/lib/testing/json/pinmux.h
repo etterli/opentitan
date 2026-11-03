@@ -94,6 +94,8 @@ extern "C" {
     value(_, SpiHost1Sd1, kTopEarlgreyPinmuxPeripheralInSpiHost1Sd1) \
     value(_, SpiHost1Sd2, kTopEarlgreyPinmuxPeripheralInSpiHost1Sd2) \
     value(_, SpiHost1Sd3, kTopEarlgreyPinmuxPeripheralInSpiHost1Sd3) \
+    value(_, SysrstCtrlEcRstL, kTopEarlgreyPinmuxPeripheralInSysrstCtrlEcRstL) \
+    value(_, SysrstCtrlFlashWpL, kTopEarlgreyPinmuxPeripheralInSysrstCtrlFlashWpL) \
     value(_, Uart0Rx, kTopEarlgreyPinmuxPeripheralInUart0Rx) \
     value(_, Uart1Rx, kTopEarlgreyPinmuxPeripheralInUart1Rx) \
     value(_, Uart2Rx, kTopEarlgreyPinmuxPeripheralInUart2Rx) \
@@ -158,6 +160,8 @@ C_ONLY(UJSON_SERDE_ENUM(PinmuxPeripheralIn, pinmux_peripheral_in_t, TOP_EARLGREY
     value(_, Ior5, kTopEarlgreyPinmuxInselIor5) \
     value(_, Ior6, kTopEarlgreyPinmuxInselIor6) \
     value(_, Ior7, kTopEarlgreyPinmuxInselIor7) \
+    value(_, Ior8, kTopEarlgreyPinmuxInselIor8) \
+    value(_, Ior9, kTopEarlgreyPinmuxInselIor9) \
     value(_, Ior10, kTopEarlgreyPinmuxInselIor10) \
     value(_, Ior11, kTopEarlgreyPinmuxInselIor11) \
     value(_, Ior12, kTopEarlgreyPinmuxInselIor12) \
@@ -209,6 +213,8 @@ C_ONLY(UJSON_SERDE_ENUM(PinmuxInsel, pinmux_insel_t, TOP_EARLGREY_PINMUX_INSEL, 
     value(_, Ior5, kTopEarlgreyPinmuxMioOutIor5) \
     value(_, Ior6, kTopEarlgreyPinmuxMioOutIor6) \
     value(_, Ior7, kTopEarlgreyPinmuxMioOutIor7) \
+    value(_, Ior8, kTopEarlgreyPinmuxMioOutIor8) \
+    value(_, Ior9, kTopEarlgreyPinmuxMioOutIor9) \
     value(_, Ior10, kTopEarlgreyPinmuxMioOutIor10) \
     value(_, Ior11, kTopEarlgreyPinmuxMioOutIor11) \
     value(_, Ior12, kTopEarlgreyPinmuxMioOutIor12) \
@@ -294,6 +300,8 @@ C_ONLY(UJSON_SERDE_ENUM(PinmuxMioOut, pinmux_mio_out_t, TOP_EARLGREY_PINMUX_MIO_
     value(_, SpiHost1Sd1, kTopEarlgreyPinmuxOutselSpiHost1Sd1) \
     value(_, SpiHost1Sd2, kTopEarlgreyPinmuxOutselSpiHost1Sd2) \
     value(_, SpiHost1Sd3, kTopEarlgreyPinmuxOutselSpiHost1Sd3) \
+    value(_, SysrstCtrlEcRstL, kTopEarlgreyPinmuxOutselSysrstCtrlEcRstL) \
+    value(_, SysrstCtrlFlashWpL, kTopEarlgreyPinmuxOutselSysrstCtrlFlashWpL) \
     value(_, Uart0Tx, kTopEarlgreyPinmuxOutselUart0Tx) \
     value(_, Uart1Tx, kTopEarlgreyPinmuxOutselUart1Tx) \
     value(_, Uart2Tx, kTopEarlgreyPinmuxOutselUart2Tx) \
@@ -330,8 +338,6 @@ C_ONLY(UJSON_SERDE_ENUM(PinmuxOutsel, pinmux_outsel_t, TOP_EARLGREY_PINMUX_OUTSE
     value(_, SpiDeviceSd1, kTopEarlgreyDirectPadsSpiDeviceSd1) \
     value(_, SpiDeviceSd2, kTopEarlgreyDirectPadsSpiDeviceSd2) \
     value(_, SpiDeviceSd3, kTopEarlgreyDirectPadsSpiDeviceSd3) \
-    value(_, SysrstCtrlEcRstL, kTopEarlgreyDirectPadsSysrstCtrlEcRstL) \
-    value(_, SysrstCtrlFlashWpL, kTopEarlgreyDirectPadsSysrstCtrlFlashWpL) \
     value(_, SpiDeviceSck, kTopEarlgreyDirectPadsSpiDeviceSck) \
     value(_, SpiDeviceCsb, kTopEarlgreyDirectPadsSpiDeviceCsb) \
     value(_, SpiHost0Sck, kTopEarlgreyDirectPadsSpiHost0Sck) \
@@ -383,6 +389,8 @@ C_ONLY(UJSON_SERDE_ENUM(DirectPads, direct_pads_t, TOP_EARLGREY_DIRECT_PADS, WIT
     value(_, Ior5, kTopEarlgreyMuxedPadsIor5) \
     value(_, Ior6, kTopEarlgreyMuxedPadsIor6) \
     value(_, Ior7, kTopEarlgreyMuxedPadsIor7) \
+    value(_, Ior8, kTopEarlgreyMuxedPadsIor8) \
+    value(_, Ior9, kTopEarlgreyMuxedPadsIor9) \
     value(_, Ior10, kTopEarlgreyMuxedPadsIor10) \
     value(_, Ior11, kTopEarlgreyMuxedPadsIor11) \
     value(_, Ior12, kTopEarlgreyMuxedPadsIor12) \

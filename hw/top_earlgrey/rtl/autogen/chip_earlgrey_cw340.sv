@@ -31,8 +31,6 @@ module chip_earlgrey_cw340 #(
   inout SPI_DEV_D3, // Dedicated Pad for spi_device_sd
   inout SPI_DEV_CLK, // Dedicated Pad for spi_device_sck
   inout SPI_DEV_CS_L, // Dedicated Pad for spi_device_csb
-  inout IOR8, // Dedicated Pad for sysrst_ctrl_ec_rst_l
-  inout IOR9, // Dedicated Pad for sysrst_ctrl_flash_wp_l
   inout IO_CLK, // Manual Pad
   inout IO_USB_CONNECT, // Manual Pad
   inout IO_USB_DP_TX, // Manual Pad
@@ -90,10 +88,12 @@ module chip_earlgrey_cw340 #(
   inout IOR5, // MIO Pad 40
   inout IOR6, // MIO Pad 41
   inout IOR7, // MIO Pad 42
-  inout IOR10, // MIO Pad 43
-  inout IOR11, // MIO Pad 44
-  inout IOR12, // MIO Pad 45
-  inout IOR13  // MIO Pad 46
+  inout IOR8, // MIO Pad 43
+  inout IOR9, // MIO Pad 44
+  inout IOR10, // MIO Pad 45
+  inout IOR11, // MIO Pad 46
+  inout IOR12, // MIO Pad 47
+  inout IOR13  // MIO Pad 48
 );
 
   import top_earlgrey_pkg::*;
@@ -134,8 +134,6 @@ module chip_earlgrey_cw340 #(
       BidirStr, // DIO spi_host0_sck
       InputStd, // DIO spi_device_csb
       InputStd, // DIO spi_device_sck
-      BidirStd, // DIO sysrst_ctrl_flash_wp_l
-      BidirStd, // DIO sysrst_ctrl_ec_rst_l
       BidirStr, // DIO spi_device_sd
       BidirStr, // DIO spi_device_sd
       BidirStr, // DIO spi_device_sd
@@ -148,6 +146,8 @@ module chip_earlgrey_cw340 #(
       BidirStd  // DIO usbdev_usb_dp
     },
     mio_pad_type: {
+      BidirStd, // MIO Pad 48
+      BidirStd, // MIO Pad 47
       BidirStd, // MIO Pad 46
       BidirStd, // MIO Pad 45
       BidirStd, // MIO Pad 44
@@ -202,8 +202,6 @@ module chip_earlgrey_cw340 #(
       scan_role_pkg::DioPadSpiHostClkScanRole, // DIO spi_host0_sck
       scan_role_pkg::DioPadSpiDevCsLScanRole, // DIO spi_device_csb
       scan_role_pkg::DioPadSpiDevClkScanRole, // DIO spi_device_sck
-      scan_role_pkg::DioPadIor9ScanRole, // DIO sysrst_ctrl_flash_wp_l
-      scan_role_pkg::DioPadIor8ScanRole, // DIO sysrst_ctrl_ec_rst_l
       scan_role_pkg::DioPadSpiDevD3ScanRole, // DIO spi_device_sd
       scan_role_pkg::DioPadSpiDevD2ScanRole, // DIO spi_device_sd
       scan_role_pkg::DioPadSpiDevD1ScanRole, // DIO spi_device_sd
@@ -220,6 +218,8 @@ module chip_earlgrey_cw340 #(
       scan_role_pkg::MioPadIor12ScanRole,
       scan_role_pkg::MioPadIor11ScanRole,
       scan_role_pkg::MioPadIor10ScanRole,
+      scan_role_pkg::MioPadIor9ScanRole,
+      scan_role_pkg::MioPadIor8ScanRole,
       scan_role_pkg::MioPadIor7ScanRole,
       scan_role_pkg::MioPadIor6ScanRole,
       scan_role_pkg::MioPadIor5ScanRole,
@@ -283,7 +283,7 @@ module chip_earlgrey_cw340 #(
 
   logic                          [3:0] mux_iob_sel;
   logic [pinmux_reg_pkg::NMioPads-1:0] mio_in_raw;
-  logic                         [26:0] dio_in_raw;
+  logic                         [24:0] dio_in_raw;
 
   logic unused_mio_in_raw;
   logic unused_dio_in_raw;
@@ -348,8 +348,8 @@ module chip_earlgrey_cw340 #(
   padring #(
     // Padring specific counts may differ from pinmux config due
     // to custom, stubbed or added pads.
-    .NDioPads(27),
-    .NMioPads(47),
+    .NDioPads(25),
+    .NMioPads(49),
     .DioPadType ({
       BidirStd, // IO_TRIGGER
       BidirStd, // IO_CLKOUT
@@ -363,8 +363,6 @@ module chip_earlgrey_cw340 #(
       BidirStd, // IO_USB_DP_TX
       BidirStd, // IO_USB_CONNECT
       InputStd, // IO_CLK
-      BidirStd, // IOR9
-      BidirStd, // IOR8
       InputStd, // SPI_DEV_CS_L
       InputStd, // SPI_DEV_CLK
       BidirStr, // SPI_DEV_D3
@@ -384,6 +382,8 @@ module chip_earlgrey_cw340 #(
       BidirStd, // IOR12
       BidirStd, // IOR11
       BidirStd, // IOR10
+      BidirStd, // IOR9
+      BidirStd, // IOR8
       BidirStd, // IOR7
       BidirStd, // IOR6
       BidirStd, // IOR5
@@ -450,8 +450,6 @@ module chip_earlgrey_cw340 #(
       IO_USB_DP_TX,
       IO_USB_CONNECT,
       IO_CLK,
-      IOR9,
-      IOR8,
       SPI_DEV_CS_L,
       SPI_DEV_CLK,
       SPI_DEV_D3,
@@ -472,6 +470,8 @@ module chip_earlgrey_cw340 #(
       IOR12,
       IOR11,
       IOR10,
+      IOR9,
+      IOR8,
       IOR7,
       IOR6,
       IOR5,
@@ -539,8 +539,6 @@ module chip_earlgrey_cw340 #(
         manual_in_io_usb_dp_tx,
         manual_in_io_usb_connect,
         manual_in_io_clk,
-        dio_in[DioSysrstCtrlFlashWpL],
-        dio_in[DioSysrstCtrlEcRstL],
         dio_in[DioSpiDeviceCsb],
         dio_in[DioSpiDeviceSck],
         dio_in[DioSpiDeviceSd3],
@@ -568,8 +566,6 @@ module chip_earlgrey_cw340 #(
         manual_out_io_usb_dp_tx,
         manual_out_io_usb_connect,
         manual_out_io_clk,
-        dio_out[DioSysrstCtrlFlashWpL],
-        dio_out[DioSysrstCtrlEcRstL],
         dio_out[DioSpiDeviceCsb],
         dio_out[DioSpiDeviceSck],
         dio_out[DioSpiDeviceSd3],
@@ -597,8 +593,6 @@ module chip_earlgrey_cw340 #(
         manual_oe_io_usb_dp_tx,
         manual_oe_io_usb_connect,
         manual_oe_io_clk,
-        dio_oe[DioSysrstCtrlFlashWpL],
-        dio_oe[DioSysrstCtrlEcRstL],
         dio_oe[DioSpiDeviceCsb],
         dio_oe[DioSpiDeviceSck],
         dio_oe[DioSpiDeviceSd3],
@@ -626,8 +620,6 @@ module chip_earlgrey_cw340 #(
         manual_attr_io_usb_dp_tx,
         manual_attr_io_usb_connect,
         manual_attr_io_clk,
-        dio_attr[DioSysrstCtrlFlashWpL],
-        dio_attr[DioSysrstCtrlEcRstL],
         dio_attr[DioSpiDeviceCsb],
         dio_attr[DioSpiDeviceSck],
         dio_attr[DioSpiDeviceSd3],
@@ -643,11 +635,11 @@ module chip_earlgrey_cw340 #(
         manual_attr_por_n
       }),
 
-    .mio_in_o (mio_in[46:0]),
-    .mio_out_i (mio_out[46:0]),
-    .mio_oe_i (mio_oe[46:0]),
-    .mio_attr_i (mio_attr[46:0]),
-    .mio_in_raw_o (mio_in_raw[46:0])
+    .mio_in_o (mio_in[48:0]),
+    .mio_out_i (mio_out[48:0]),
+    .mio_oe_i (mio_oe[48:0]),
+    .mio_attr_i (mio_attr[48:0]),
+    .mio_in_raw_o (mio_in_raw[48:0])
   );
   // TODO: generalize this USB mux code and align with other tops.
 

@@ -69,7 +69,7 @@ set_clock_sense -positive \
 set ioa_muxed_ports [get_ports IOA*]
 set iob_muxed_ports [get_ports IOB*]
 set ioc_muxed_ports [get_ports IOC*]
-set ior_muxed_ports [get_ports -filter {NAME != IOR8 && NAME != IOR9} IOR*]
+set ior_muxed_ports [get_ports IOR*]
 set all_muxed_ports "${ioa_muxed_ports} ${iob_muxed_ports} ${ioc_muxed_ports} ${ior_muxed_ports}"
 
 ## JTAG clocks and I/O delays

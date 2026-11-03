@@ -22,6 +22,8 @@ struct Opts {
 }
 
 fn sleep_all_wakeups_test(opts: &Opts, transport: &TransportWrapper) -> Result<()> {
+    // sysrst_ctrl pwrb_in can only be muxed to IOR0, the pinmux wakeup detector uses IOC0.
+    let pwrb_pin = transport.gpio_pin("Ior0")?;
     let ioc0_pin = transport.gpio_pin("Ioc0")?;
     let uart = transport.uart("console")?;
     uart.set_flow_control(true)?;
@@ -50,8 +52,8 @@ fn sleep_all_wakeups_test(opts: &Opts, transport: &TransportWrapper) -> Result<(
         }
         match test_sleep_name.as_str() {
             "SYSRST_CTRL" => {
-                ioc0_pin.write(true)?;
-                ioc0_pin.write(false)?;
+                pwrb_pin.write(true)?;
+                pwrb_pin.write(false)?;
             }
             "PINMUX" => {
                 ioc0_pin.write(false)?;
@@ -65,7 +67,7 @@ fn sleep_all_wakeups_test(opts: &Opts, transport: &TransportWrapper) -> Result<(
             opts.timeout,
         )?;
         match test_sleep_name.as_str() {
-            "SYSRST_CTRL" => ioc0_pin.write(true)?,
+            "SYSRST_CTRL" => pwrb_pin.write(true)?,
             "PINMUX" => ioc0_pin.write(false)?,
             _ => (),
         }

@@ -1953,7 +1953,7 @@
       { instance: "sensor_ctrl", port: 'ast_debug_out[6]', connection: 'muxed',  pads: [],                desc: ''},
       { instance: "sensor_ctrl", port: 'ast_debug_out[7]', connection: 'muxed',  pads: [],                desc: ''},
       { instance: "sensor_ctrl", port: 'ast_debug_out[8]', connection: 'muxed',  pads: [],                desc: ''},
-      // Sysrst ctrl has both muxed and dedicated IOs
+      // Sysrst ctrl
       { instance: "sysrst_ctrl", port: 'ac_present',       connection: 'muxed',  pads: ['IOR2'],                   desc: ''},
       { instance: "sysrst_ctrl", port: 'key0_in',          connection: 'muxed',  pads: ['IOR1'],                   desc: ''},
       { instance: "sysrst_ctrl", port: 'key1_in',          connection: 'muxed',  pads: ['IOR3'],                   desc: ''},
