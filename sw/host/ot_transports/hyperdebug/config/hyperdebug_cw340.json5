@@ -2,6 +2,20 @@
   "includes": ["/__builtin__/hyperdebug_chipwhisperer.json5"],
   "interface": "hyper340",
   "pins": [
+    // The HyperDebug SPI2 pins sit on the OT_IOB0/IOB3/IOB1 nets, which the chip's SPI_HOST1
+    // drives. So SPI2 is of no use and we release the pins by default.
+    {
+      "name": "CN9_25",
+      "mode": "Input"
+    },
+    {
+      "name": "CN9_27",
+      "mode": "Input"
+    },
+    {
+      "name": "CN9_8",
+      "mode": "Input"
+    },
     {
       "name": "RESET",
       "mode": "OpenDrain",
@@ -57,6 +71,19 @@
     }
   ],
   "strappings": [
+    // The I3C test board on PMOD1/PMOD2 shares the OT_IOB nets with HyperDebug
+    // (SW8/SW9 closed). UART3 TX (CN10_14) sits on the OT_IOB4 net, which the
+    // board uses as SPI_DECODE2 driven by IOC10. While this is applied,
+    // ot_uart2 and the HyperDebug I2C2/I2C3 ports must not be used.
+    {
+      "name": "I3C_BOARD",
+      "pins": [
+        {
+          "name": "CN10_14",
+          "mode": "Input"
+        }
+      ]
+    },
     {
       "name": "SPI_TPM",
       "pins": [
