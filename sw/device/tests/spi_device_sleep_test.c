@@ -155,16 +155,16 @@ bool test_main(void) {
   // Phase1: spi sleep test
   LOG_INFO("Setting SPI_DIO1 to high when sleeping");
   CHECK_DIF_OK(dif_pinmux_pad_sleep_enable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd0, kDifPinmuxPadKindDio,
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD0, kDifPinmuxPadKindMio,
       kDifPinmuxSleepModeHigh));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_enable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd1, kDifPinmuxPadKindDio,
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD1, kDifPinmuxPadKindMio,
       kDifPinmuxSleepModeHigh));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_enable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd2, kDifPinmuxPadKindDio,
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD2, kDifPinmuxPadKindMio,
       kDifPinmuxSleepModeHigh));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_enable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd3, kDifPinmuxPadKindDio,
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD3, kDifPinmuxPadKindMio,
       kDifPinmuxSleepModeHigh));
   LOG_INFO("Use IOA7 to let host know when sleep is active.");
   CHECK_DIF_OK(dif_pinmux_input_select(&pinmux,
@@ -179,16 +179,16 @@ bool test_main(void) {
 
   LOG_INFO("Setting SPI_DIO1 to low when sleeping");
   CHECK_DIF_OK(dif_pinmux_pad_sleep_enable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd0, kDifPinmuxPadKindDio,
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD0, kDifPinmuxPadKindMio,
       kDifPinmuxSleepModeLow));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_enable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd1, kDifPinmuxPadKindDio,
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD1, kDifPinmuxPadKindMio,
       kDifPinmuxSleepModeLow));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_enable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd2, kDifPinmuxPadKindDio,
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD2, kDifPinmuxPadKindMio,
       kDifPinmuxSleepModeLow));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_enable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd3, kDifPinmuxPadKindDio,
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD3, kDifPinmuxPadKindMio,
       kDifPinmuxSleepModeLow));
 
   CHECK_DIF_OK(dif_pinmux_pad_sleep_enable(&pinmux, kTopEarlgreyMuxedPadsIoa7,
@@ -199,29 +199,29 @@ bool test_main(void) {
       &pinmux, kTopEarlgreyMuxedPadsIoa7, kDifPinmuxPadKindMio));
 
   CHECK_DIF_OK(dif_pinmux_pad_sleep_clear_state(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd0, kDifPinmuxPadKindDio));
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD0, kDifPinmuxPadKindMio));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_disable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd0, kDifPinmuxPadKindDio));
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD0, kDifPinmuxPadKindMio));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_clear_state(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd1, kDifPinmuxPadKindDio));
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD1, kDifPinmuxPadKindMio));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_disable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd1, kDifPinmuxPadKindDio));
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD1, kDifPinmuxPadKindMio));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_clear_state(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd2, kDifPinmuxPadKindDio));
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD2, kDifPinmuxPadKindMio));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_disable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd2, kDifPinmuxPadKindDio));
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD2, kDifPinmuxPadKindMio));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_clear_state(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd3, kDifPinmuxPadKindDio));
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD3, kDifPinmuxPadKindMio));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_disable(
-      &pinmux, kTopEarlgreyDirectPadsSpiDeviceSd3, kDifPinmuxPadKindDio));
+      &pinmux, kTopEarlgreyMuxedPadsSpiDevD3, kDifPinmuxPadKindMio));
 
   // Phase2: spi wake-up test
   // Configures to wake up when the spi cs goes low.
   wakeup_cfg = (dif_pinmux_wakeup_config_t){
       .mode = kDifPinmuxWakeupModeAnyEdge,
       .signal_filter = false,
-      .pad_type = kDifPinmuxPadKindDio,
-      .pad_select = kTopEarlgreyDirectPadsSpiDeviceCsb,
+      .pad_type = kDifPinmuxPadKindMio,
+      .pad_select = kTopEarlgreyPinmuxInselSpiDevCsL,
   };
   CHECK_DIF_OK(
       dif_pinmux_wakeup_detector_enable(&pinmux, detector, wakeup_cfg));
