@@ -2488,8 +2488,8 @@ pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 69] = [
 
 // PERIPH_INSEL ranges from 0 to NUM_MIO_PADS + 2 -1}
 //  0 and 1 are tied to value 0 and 1
-pub const NUM_MIO_PADS: usize = 47;
-pub const NUM_DIO_PADS: usize = 16;
+pub const NUM_MIO_PADS: usize = 49;
+pub const NUM_DIO_PADS: usize = 14;
 
 pub const PINMUX_MIO_PERIPH_INSEL_IDX_OFFSET: usize = 2;
 pub const PINMUX_PERIPH_OUTSEL_IDX_OFFSET: usize = 3;
@@ -2655,43 +2655,47 @@ pub enum PinmuxPeripheralIn {
     /// Peripheral Input 77
     SpiHost1Sd3 = 77,
     /// Peripheral Input 78
-    UsbdevSense = 78,
+    SysrstCtrlEcRstL = 78,
     /// Peripheral Input 79
-    Uart0Rx = 79,
+    SysrstCtrlFlashWpL = 79,
     /// Peripheral Input 80
-    Uart1Rx = 80,
+    UsbdevSense = 80,
     /// Peripheral Input 81
-    Uart2Rx = 81,
+    Uart0Rx = 81,
     /// Peripheral Input 82
-    Uart3Rx = 82,
+    Uart1Rx = 82,
     /// Peripheral Input 83
-    I3c0RstdetScl = 83,
+    Uart2Rx = 83,
     /// Peripheral Input 84
-    I3c0RstdetSda = 84,
+    Uart3Rx = 84,
     /// Peripheral Input 85
-    I3c1RstdetScl = 85,
+    I3c0RstdetScl = 85,
     /// Peripheral Input 86
-    I3c1RstdetSda = 86,
+    I3c0RstdetSda = 86,
     /// Peripheral Input 87
-    SpiDeviceTpmCsb = 87,
+    I3c1RstdetScl = 87,
     /// Peripheral Input 88
-    RramMacroTck = 88,
+    I3c1RstdetSda = 88,
     /// Peripheral Input 89
-    RramMacroTms = 89,
+    SpiDeviceTpmCsb = 89,
     /// Peripheral Input 90
-    RramMacroTdi = 90,
+    RramMacroTck = 90,
     /// Peripheral Input 91
-    SysrstCtrlAcPresent = 91,
+    RramMacroTms = 91,
     /// Peripheral Input 92
-    SysrstCtrlKey0In = 92,
+    RramMacroTdi = 92,
     /// Peripheral Input 93
-    SysrstCtrlKey1In = 93,
+    SysrstCtrlAcPresent = 93,
     /// Peripheral Input 94
-    SysrstCtrlKey2In = 94,
+    SysrstCtrlKey0In = 94,
     /// Peripheral Input 95
-    SysrstCtrlPwrbIn = 95,
+    SysrstCtrlKey1In = 95,
     /// Peripheral Input 96
-    SysrstCtrlLidOpen = 96,
+    SysrstCtrlKey2In = 96,
+    /// Peripheral Input 97
+    SysrstCtrlPwrbIn = 97,
+    /// Peripheral Input 98
+    SysrstCtrlLidOpen = 98,
 }
 
 impl TryFrom<u32> for PinmuxPeripheralIn {
@@ -2776,25 +2780,27 @@ impl TryFrom<u32> for PinmuxPeripheralIn {
             75 => Ok(Self::SpiHost1Sd1),
             76 => Ok(Self::SpiHost1Sd2),
             77 => Ok(Self::SpiHost1Sd3),
-            78 => Ok(Self::UsbdevSense),
-            79 => Ok(Self::Uart0Rx),
-            80 => Ok(Self::Uart1Rx),
-            81 => Ok(Self::Uart2Rx),
-            82 => Ok(Self::Uart3Rx),
-            83 => Ok(Self::I3c0RstdetScl),
-            84 => Ok(Self::I3c0RstdetSda),
-            85 => Ok(Self::I3c1RstdetScl),
-            86 => Ok(Self::I3c1RstdetSda),
-            87 => Ok(Self::SpiDeviceTpmCsb),
-            88 => Ok(Self::RramMacroTck),
-            89 => Ok(Self::RramMacroTms),
-            90 => Ok(Self::RramMacroTdi),
-            91 => Ok(Self::SysrstCtrlAcPresent),
-            92 => Ok(Self::SysrstCtrlKey0In),
-            93 => Ok(Self::SysrstCtrlKey1In),
-            94 => Ok(Self::SysrstCtrlKey2In),
-            95 => Ok(Self::SysrstCtrlPwrbIn),
-            96 => Ok(Self::SysrstCtrlLidOpen),
+            78 => Ok(Self::SysrstCtrlEcRstL),
+            79 => Ok(Self::SysrstCtrlFlashWpL),
+            80 => Ok(Self::UsbdevSense),
+            81 => Ok(Self::Uart0Rx),
+            82 => Ok(Self::Uart1Rx),
+            83 => Ok(Self::Uart2Rx),
+            84 => Ok(Self::Uart3Rx),
+            85 => Ok(Self::I3c0RstdetScl),
+            86 => Ok(Self::I3c0RstdetSda),
+            87 => Ok(Self::I3c1RstdetScl),
+            88 => Ok(Self::I3c1RstdetSda),
+            89 => Ok(Self::SpiDeviceTpmCsb),
+            90 => Ok(Self::RramMacroTck),
+            91 => Ok(Self::RramMacroTms),
+            92 => Ok(Self::RramMacroTdi),
+            93 => Ok(Self::SysrstCtrlAcPresent),
+            94 => Ok(Self::SysrstCtrlKey0In),
+            95 => Ok(Self::SysrstCtrlKey1In),
+            96 => Ok(Self::SysrstCtrlKey2In),
+            97 => Ok(Self::SysrstCtrlPwrbIn),
+            98 => Ok(Self::SysrstCtrlLidOpen),
             _ => Err(val),
         }
     }
@@ -2895,13 +2901,17 @@ pub enum PinmuxInsel {
     /// MIO Pad 42
     Ior7 = 44,
     /// MIO Pad 43
-    Ior10 = 45,
+    Ior8 = 45,
     /// MIO Pad 44
-    Ior11 = 46,
+    Ior9 = 46,
     /// MIO Pad 45
-    Ior12 = 47,
+    Ior10 = 47,
     /// MIO Pad 46
-    Ior13 = 48,
+    Ior11 = 48,
+    /// MIO Pad 47
+    Ior12 = 49,
+    /// MIO Pad 48
+    Ior13 = 50,
 }
 
 impl TryFrom<u32> for PinmuxInsel {
@@ -2953,10 +2963,12 @@ impl TryFrom<u32> for PinmuxInsel {
             42 => Ok(Self::Ior5),
             43 => Ok(Self::Ior6),
             44 => Ok(Self::Ior7),
-            45 => Ok(Self::Ior10),
-            46 => Ok(Self::Ior11),
-            47 => Ok(Self::Ior12),
-            48 => Ok(Self::Ior13),
+            45 => Ok(Self::Ior8),
+            46 => Ok(Self::Ior9),
+            47 => Ok(Self::Ior10),
+            48 => Ok(Self::Ior11),
+            49 => Ok(Self::Ior12),
+            50 => Ok(Self::Ior13),
             _ => Err(val),
         }
     }
@@ -3053,13 +3065,17 @@ pub enum PinmuxMioOut {
     /// MIO Pad 42
     Ior7 = 42,
     /// MIO Pad 43
-    Ior10 = 43,
+    Ior8 = 43,
     /// MIO Pad 44
-    Ior11 = 44,
+    Ior9 = 44,
     /// MIO Pad 45
-    Ior12 = 45,
+    Ior10 = 45,
     /// MIO Pad 46
-    Ior13 = 46,
+    Ior11 = 46,
+    /// MIO Pad 47
+    Ior12 = 47,
+    /// MIO Pad 48
+    Ior13 = 48,
 }
 
 impl TryFrom<u32> for PinmuxMioOut {
@@ -3109,10 +3125,12 @@ impl TryFrom<u32> for PinmuxMioOut {
             40 => Ok(Self::Ior5),
             41 => Ok(Self::Ior6),
             42 => Ok(Self::Ior7),
-            43 => Ok(Self::Ior10),
-            44 => Ok(Self::Ior11),
-            45 => Ok(Self::Ior12),
-            46 => Ok(Self::Ior13),
+            43 => Ok(Self::Ior8),
+            44 => Ok(Self::Ior9),
+            45 => Ok(Self::Ior10),
+            46 => Ok(Self::Ior11),
+            47 => Ok(Self::Ior12),
+            48 => Ok(Self::Ior13),
             _ => Err(val),
         }
     }
@@ -3285,61 +3303,65 @@ pub enum PinmuxOutsel {
     /// Peripheral Output 77
     SpiHost1Sd3 = 80,
     /// Peripheral Output 78
-    Uart0Tx = 81,
+    SysrstCtrlEcRstL = 81,
     /// Peripheral Output 79
-    Uart1Tx = 82,
+    SysrstCtrlFlashWpL = 82,
     /// Peripheral Output 80
-    Uart2Tx = 83,
+    Uart0Tx = 83,
     /// Peripheral Output 81
-    Uart3Tx = 84,
+    Uart1Tx = 84,
     /// Peripheral Output 82
-    I3c0CtrlSdaPu = 85,
+    Uart2Tx = 85,
     /// Peripheral Output 83
-    I3c1CtrlSdaPu = 86,
+    Uart3Tx = 86,
     /// Peripheral Output 84
-    SpiHost0Csb1 = 87,
+    I3c0CtrlSdaPu = 87,
     /// Peripheral Output 85
-    SpiHost0Csb2 = 88,
+    I3c1CtrlSdaPu = 88,
     /// Peripheral Output 86
-    SpiHost1Sck = 89,
+    SpiHost0Csb1 = 89,
     /// Peripheral Output 87
-    SpiHost1Csb0 = 90,
+    SpiHost0Csb2 = 90,
     /// Peripheral Output 88
-    SpiHost1Csb1 = 91,
+    SpiHost1Sck = 91,
     /// Peripheral Output 89
-    SpiHost1Csb2 = 92,
+    SpiHost1Csb0 = 92,
     /// Peripheral Output 90
-    RramMacroTdo = 93,
+    SpiHost1Csb1 = 93,
     /// Peripheral Output 91
-    SensorCtrlAstDebugOut0 = 94,
+    SpiHost1Csb2 = 94,
     /// Peripheral Output 92
-    SensorCtrlAstDebugOut1 = 95,
+    RramMacroTdo = 95,
     /// Peripheral Output 93
-    SensorCtrlAstDebugOut2 = 96,
+    SensorCtrlAstDebugOut0 = 96,
     /// Peripheral Output 94
-    SensorCtrlAstDebugOut3 = 97,
+    SensorCtrlAstDebugOut1 = 97,
     /// Peripheral Output 95
-    SensorCtrlAstDebugOut4 = 98,
+    SensorCtrlAstDebugOut2 = 98,
     /// Peripheral Output 96
-    SensorCtrlAstDebugOut5 = 99,
+    SensorCtrlAstDebugOut3 = 99,
     /// Peripheral Output 97
-    SensorCtrlAstDebugOut6 = 100,
+    SensorCtrlAstDebugOut4 = 100,
     /// Peripheral Output 98
-    SensorCtrlAstDebugOut7 = 101,
+    SensorCtrlAstDebugOut5 = 101,
     /// Peripheral Output 99
-    SensorCtrlAstDebugOut8 = 102,
+    SensorCtrlAstDebugOut6 = 102,
     /// Peripheral Output 100
-    SysrstCtrlBatDisable = 103,
+    SensorCtrlAstDebugOut7 = 103,
     /// Peripheral Output 101
-    SysrstCtrlKey0Out = 104,
+    SensorCtrlAstDebugOut8 = 104,
     /// Peripheral Output 102
-    SysrstCtrlKey1Out = 105,
+    SysrstCtrlBatDisable = 105,
     /// Peripheral Output 103
-    SysrstCtrlKey2Out = 106,
+    SysrstCtrlKey0Out = 106,
     /// Peripheral Output 104
-    SysrstCtrlPwrbOut = 107,
+    SysrstCtrlKey1Out = 107,
     /// Peripheral Output 105
-    SysrstCtrlZ3Wakeup = 108,
+    SysrstCtrlKey2Out = 108,
+    /// Peripheral Output 106
+    SysrstCtrlPwrbOut = 109,
+    /// Peripheral Output 107
+    SysrstCtrlZ3Wakeup = 110,
 }
 
 impl TryFrom<u32> for PinmuxOutsel {
@@ -3427,34 +3449,36 @@ impl TryFrom<u32> for PinmuxOutsel {
             78 => Ok(Self::SpiHost1Sd1),
             79 => Ok(Self::SpiHost1Sd2),
             80 => Ok(Self::SpiHost1Sd3),
-            81 => Ok(Self::Uart0Tx),
-            82 => Ok(Self::Uart1Tx),
-            83 => Ok(Self::Uart2Tx),
-            84 => Ok(Self::Uart3Tx),
-            85 => Ok(Self::I3c0CtrlSdaPu),
-            86 => Ok(Self::I3c1CtrlSdaPu),
-            87 => Ok(Self::SpiHost0Csb1),
-            88 => Ok(Self::SpiHost0Csb2),
-            89 => Ok(Self::SpiHost1Sck),
-            90 => Ok(Self::SpiHost1Csb0),
-            91 => Ok(Self::SpiHost1Csb1),
-            92 => Ok(Self::SpiHost1Csb2),
-            93 => Ok(Self::RramMacroTdo),
-            94 => Ok(Self::SensorCtrlAstDebugOut0),
-            95 => Ok(Self::SensorCtrlAstDebugOut1),
-            96 => Ok(Self::SensorCtrlAstDebugOut2),
-            97 => Ok(Self::SensorCtrlAstDebugOut3),
-            98 => Ok(Self::SensorCtrlAstDebugOut4),
-            99 => Ok(Self::SensorCtrlAstDebugOut5),
-            100 => Ok(Self::SensorCtrlAstDebugOut6),
-            101 => Ok(Self::SensorCtrlAstDebugOut7),
-            102 => Ok(Self::SensorCtrlAstDebugOut8),
-            103 => Ok(Self::SysrstCtrlBatDisable),
-            104 => Ok(Self::SysrstCtrlKey0Out),
-            105 => Ok(Self::SysrstCtrlKey1Out),
-            106 => Ok(Self::SysrstCtrlKey2Out),
-            107 => Ok(Self::SysrstCtrlPwrbOut),
-            108 => Ok(Self::SysrstCtrlZ3Wakeup),
+            81 => Ok(Self::SysrstCtrlEcRstL),
+            82 => Ok(Self::SysrstCtrlFlashWpL),
+            83 => Ok(Self::Uart0Tx),
+            84 => Ok(Self::Uart1Tx),
+            85 => Ok(Self::Uart2Tx),
+            86 => Ok(Self::Uart3Tx),
+            87 => Ok(Self::I3c0CtrlSdaPu),
+            88 => Ok(Self::I3c1CtrlSdaPu),
+            89 => Ok(Self::SpiHost0Csb1),
+            90 => Ok(Self::SpiHost0Csb2),
+            91 => Ok(Self::SpiHost1Sck),
+            92 => Ok(Self::SpiHost1Csb0),
+            93 => Ok(Self::SpiHost1Csb1),
+            94 => Ok(Self::SpiHost1Csb2),
+            95 => Ok(Self::RramMacroTdo),
+            96 => Ok(Self::SensorCtrlAstDebugOut0),
+            97 => Ok(Self::SensorCtrlAstDebugOut1),
+            98 => Ok(Self::SensorCtrlAstDebugOut2),
+            99 => Ok(Self::SensorCtrlAstDebugOut3),
+            100 => Ok(Self::SensorCtrlAstDebugOut4),
+            101 => Ok(Self::SensorCtrlAstDebugOut5),
+            102 => Ok(Self::SensorCtrlAstDebugOut6),
+            103 => Ok(Self::SensorCtrlAstDebugOut7),
+            104 => Ok(Self::SensorCtrlAstDebugOut8),
+            105 => Ok(Self::SysrstCtrlBatDisable),
+            106 => Ok(Self::SysrstCtrlKey0Out),
+            107 => Ok(Self::SysrstCtrlKey1Out),
+            108 => Ok(Self::SysrstCtrlKey2Out),
+            109 => Ok(Self::SysrstCtrlPwrbOut),
+            110 => Ok(Self::SysrstCtrlZ3Wakeup),
             _ => Err(val),
         }
     }
@@ -3474,12 +3498,10 @@ pub enum DirectPads {
     SpiDeviceSd1 = 7,
     SpiDeviceSd2 = 8,
     SpiDeviceSd3 = 9,
-    SysrstCtrlEcRstL = 10,
-    SysrstCtrlFlashWpL = 11,
-    SpiDeviceSck = 12,
-    SpiDeviceCsb = 13,
-    SpiHost0Sck = 14,
-    SpiHost0Csb0 = 15,
+    SpiDeviceSck = 10,
+    SpiDeviceCsb = 11,
+    SpiHost0Sck = 12,
+    SpiHost0Csb0 = 13,
 }
 
 impl TryFrom<u32> for DirectPads {
@@ -3496,12 +3518,10 @@ impl TryFrom<u32> for DirectPads {
             7 => Ok(Self::SpiDeviceSd1),
             8 => Ok(Self::SpiDeviceSd2),
             9 => Ok(Self::SpiDeviceSd3),
-            10 => Ok(Self::SysrstCtrlEcRstL),
-            11 => Ok(Self::SysrstCtrlFlashWpL),
-            12 => Ok(Self::SpiDeviceSck),
-            13 => Ok(Self::SpiDeviceCsb),
-            14 => Ok(Self::SpiHost0Sck),
-            15 => Ok(Self::SpiHost0Csb0),
+            10 => Ok(Self::SpiDeviceSck),
+            11 => Ok(Self::SpiDeviceCsb),
+            12 => Ok(Self::SpiHost0Sck),
+            13 => Ok(Self::SpiHost0Csb0),
             _ => Err(val),
         }
     }
@@ -3554,10 +3574,12 @@ pub enum MuxedPads {
     Ior5 = 40,
     Ior6 = 41,
     Ior7 = 42,
-    Ior10 = 43,
-    Ior11 = 44,
-    Ior12 = 45,
-    Ior13 = 46,
+    Ior8 = 43,
+    Ior9 = 44,
+    Ior10 = 45,
+    Ior11 = 46,
+    Ior12 = 47,
+    Ior13 = 48,
 }
 
 impl TryFrom<u32> for MuxedPads {
@@ -3607,10 +3629,12 @@ impl TryFrom<u32> for MuxedPads {
             40 => Ok(Self::Ior5),
             41 => Ok(Self::Ior6),
             42 => Ok(Self::Ior7),
-            43 => Ok(Self::Ior10),
-            44 => Ok(Self::Ior11),
-            45 => Ok(Self::Ior12),
-            46 => Ok(Self::Ior13),
+            43 => Ok(Self::Ior8),
+            44 => Ok(Self::Ior9),
+            45 => Ok(Self::Ior10),
+            46 => Ok(Self::Ior11),
+            47 => Ok(Self::Ior12),
+            48 => Ok(Self::Ior13),
             _ => Err(val),
         }
     }

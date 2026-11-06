@@ -16423,26 +16423,26 @@
         name: IOR8
         type: BidirStd
         bank: VCC
-        connection: direct
-        desc: Dedicated sysrst_ctrl output (ec_rst_l)
+        connection: muxed
+        desc: Muxed IO pad
         attrs:
         {
           virtual_od_en: 1
         }
-        idx: 19
+        idx: 43
         port_type: inout
       }
       {
         name: IOR9
         type: BidirStd
         bank: VCC
-        connection: direct
-        desc: Dedicated sysrst_ctrl output (flash_wp_l))
+        connection: muxed
+        desc: Muxed IO pad
         attrs:
         {
           virtual_od_en: 1
         }
-        idx: 20
+        idx: 44
         port_type: inout
       }
       {
@@ -16451,7 +16451,7 @@
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
-        idx: 43
+        idx: 45
         port_type: inout
       }
       {
@@ -16460,7 +16460,7 @@
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
-        idx: 44
+        idx: 46
         port_type: inout
       }
       {
@@ -16469,7 +16469,7 @@
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
-        idx: 45
+        idx: 47
         port_type: inout
       }
       {
@@ -16478,7 +16478,7 @@
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
-        idx: 46
+        idx: 48
         port_type: inout
       }
     ]
@@ -17657,7 +17657,10 @@
         instance: sysrst_ctrl
         port: ac_present
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR2
+        ]
         desc: ""
         attr: ""
       }
@@ -17665,7 +17668,10 @@
         instance: sysrst_ctrl
         port: key0_in
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR1
+        ]
         desc: ""
         attr: ""
       }
@@ -17673,7 +17679,10 @@
         instance: sysrst_ctrl
         port: key1_in
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR3
+        ]
         desc: ""
         attr: ""
       }
@@ -17681,7 +17690,10 @@
         instance: sysrst_ctrl
         port: key2_in
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR5
+        ]
         desc: ""
         attr: ""
       }
@@ -17689,7 +17701,10 @@
         instance: sysrst_ctrl
         port: pwrb_in
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR0
+        ]
         desc: ""
         attr: ""
       }
@@ -17697,37 +17712,45 @@
         instance: sysrst_ctrl
         port: bat_disable
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR12
+        ]
         desc: ""
         attr: ""
       }
       {
         instance: sysrst_ctrl
         port: ec_rst_l
-        connection: direct
+        connection: muxed
         pads:
         [
           IOR8
         ]
+        default: IOR8
         desc: ""
-        attr: BidirStd
+        attr: ""
       }
       {
         instance: sysrst_ctrl
         port: flash_wp_l
-        connection: direct
+        connection: muxed
         pads:
         [
           IOR9
         ]
+        default: IOR9
         desc: ""
-        attr: BidirStd
+        attr: ""
       }
       {
         instance: sysrst_ctrl
         port: key0_out
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR6
+        ]
         desc: ""
         attr: ""
       }
@@ -17735,7 +17758,10 @@
         instance: sysrst_ctrl
         port: key1_out
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR13
+        ]
         desc: ""
         attr: ""
       }
@@ -17743,7 +17769,10 @@
         instance: sysrst_ctrl
         port: key2_out
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR7
+        ]
         desc: ""
         attr: ""
       }
@@ -17751,7 +17780,10 @@
         instance: sysrst_ctrl
         port: pwrb_out
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR10
+        ]
         desc: ""
         attr: ""
       }
@@ -17759,7 +17791,10 @@
         instance: sysrst_ctrl
         port: lid_open
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR11
+        ]
         desc: ""
         attr: ""
       }
@@ -17767,7 +17802,10 @@
         instance: sysrst_ctrl
         port: z3_wakeup
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR4
+        ]
         desc: ""
         attr: ""
       }
@@ -18919,11 +18957,12 @@
         [
           IOR8
         ]
-        attr: BidirStd
-        connection: direct
+        attr: ""
+        connection: muxed
         desc: ""
+        default: IOR8
         domain: Aon
-        glob_idx: 10
+        glob_idx: 78
       }
       {
         name: sysrst_ctrl_flash_wp_l
@@ -18934,11 +18973,12 @@
         [
           IOR9
         ]
-        attr: BidirStd
-        connection: direct
+        attr: ""
+        connection: muxed
         desc: ""
+        default: IOR9
         domain: Aon
-        glob_idx: 11
+        glob_idx: 79
       }
       {
         name: usbdev_sense
@@ -18950,7 +18990,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 78
+        glob_idx: 80
       }
       {
         name: spi_device_sck
@@ -18965,7 +19005,7 @@
         connection: direct
         desc: ""
         domain: Main
-        glob_idx: 12
+        glob_idx: 10
       }
       {
         name: spi_device_csb
@@ -18980,7 +19020,7 @@
         connection: direct
         desc: ""
         domain: Main
-        glob_idx: 13
+        glob_idx: 11
       }
       {
         name: uart0_rx
@@ -18996,7 +19036,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 79
+        glob_idx: 81
       }
       {
         name: uart1_rx
@@ -19012,7 +19052,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 80
+        glob_idx: 82
       }
       {
         name: uart2_rx
@@ -19028,7 +19068,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 81
+        glob_idx: 83
       }
       {
         name: uart3_rx
@@ -19044,7 +19084,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 82
+        glob_idx: 84
       }
       {
         name: i3c0_rstdet_scl
@@ -19062,7 +19102,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 83
+        glob_idx: 85
       }
       {
         name: i3c0_rstdet_sda
@@ -19080,7 +19120,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 84
+        glob_idx: 86
       }
       {
         name: i3c1_rstdet_scl
@@ -19098,7 +19138,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 85
+        glob_idx: 87
       }
       {
         name: i3c1_rstdet_sda
@@ -19116,7 +19156,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 86
+        glob_idx: 88
       }
       {
         name: spi_device_tpm_csb
@@ -19128,7 +19168,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 87
+        glob_idx: 89
       }
       {
         name: rram_macro_tck
@@ -19140,7 +19180,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 88
+        glob_idx: 90
       }
       {
         name: rram_macro_tms
@@ -19152,7 +19192,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 89
+        glob_idx: 91
       }
       {
         name: rram_macro_tdi
@@ -19164,38 +19204,17 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 90
+        glob_idx: 92
       }
       {
         name: sysrst_ctrl_ac_present
         width: 1
         type: input
         idx: -1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Aon
-        glob_idx: 91
-      }
-      {
-        name: sysrst_ctrl_key0_in
-        width: 1
-        type: input
-        idx: -1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Aon
-        glob_idx: 92
-      }
-      {
-        name: sysrst_ctrl_key1_in
-        width: 1
-        type: input
-        idx: -1
-        pads: []
+        pads:
+        [
+          IOR2
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19203,11 +19222,14 @@
         glob_idx: 93
       }
       {
-        name: sysrst_ctrl_key2_in
+        name: sysrst_ctrl_key0_in
         width: 1
         type: input
         idx: -1
-        pads: []
+        pads:
+        [
+          IOR1
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19215,11 +19237,14 @@
         glob_idx: 94
       }
       {
-        name: sysrst_ctrl_pwrb_in
+        name: sysrst_ctrl_key1_in
         width: 1
         type: input
         idx: -1
-        pads: []
+        pads:
+        [
+          IOR3
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19227,16 +19252,49 @@
         glob_idx: 95
       }
       {
-        name: sysrst_ctrl_lid_open
+        name: sysrst_ctrl_key2_in
         width: 1
         type: input
         idx: -1
-        pads: []
+        pads:
+        [
+          IOR5
+        ]
         attr: ""
         connection: muxed
         desc: ""
         domain: Aon
         glob_idx: 96
+      }
+      {
+        name: sysrst_ctrl_pwrb_in
+        width: 1
+        type: input
+        idx: -1
+        pads:
+        [
+          IOR0
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Aon
+        glob_idx: 97
+      }
+      {
+        name: sysrst_ctrl_lid_open
+        width: 1
+        type: input
+        idx: -1
+        pads:
+        [
+          IOR11
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Aon
+        glob_idx: 98
       }
       {
         name: spi_host0_sck
@@ -19251,7 +19309,7 @@
         connection: direct
         desc: ""
         domain: Main
-        glob_idx: 14
+        glob_idx: 12
       }
       {
         name: spi_host0_csb
@@ -19266,7 +19324,7 @@
         connection: direct
         desc: ""
         domain: Main
-        glob_idx: 15
+        glob_idx: 13
       }
       {
         name: uart0_tx
@@ -19282,7 +19340,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 78
+        glob_idx: 80
       }
       {
         name: uart1_tx
@@ -19298,7 +19356,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 79
+        glob_idx: 81
       }
       {
         name: uart2_tx
@@ -19314,7 +19372,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 80
+        glob_idx: 82
       }
       {
         name: uart3_tx
@@ -19330,7 +19388,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 81
+        glob_idx: 83
       }
       {
         name: i3c0_ctrl_sda_pu
@@ -19347,7 +19405,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 82
+        glob_idx: 84
       }
       {
         name: i3c1_ctrl_sda_pu
@@ -19364,7 +19422,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 83
+        glob_idx: 85
       }
       {
         name: spi_host0_csb
@@ -19376,7 +19434,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 84
+        glob_idx: 86
       }
       {
         name: spi_host0_csb
@@ -19388,7 +19446,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 85
+        glob_idx: 87
       }
       {
         name: spi_host1_sck
@@ -19400,7 +19458,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 86
+        glob_idx: 88
       }
       {
         name: spi_host1_csb
@@ -19412,7 +19470,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 87
+        glob_idx: 89
       }
       {
         name: spi_host1_csb
@@ -19424,7 +19482,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 88
+        glob_idx: 90
       }
       {
         name: spi_host1_csb
@@ -19436,7 +19494,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 89
+        glob_idx: 91
       }
       {
         name: rram_macro_tdo
@@ -19448,7 +19506,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 90
+        glob_idx: 92
       }
       {
         name: sensor_ctrl_ast_debug_out
@@ -19460,7 +19518,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 91
+        glob_idx: 93
       }
       {
         name: sensor_ctrl_ast_debug_out
@@ -19472,7 +19530,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 92
+        glob_idx: 94
       }
       {
         name: sensor_ctrl_ast_debug_out
@@ -19484,7 +19542,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 93
+        glob_idx: 95
       }
       {
         name: sensor_ctrl_ast_debug_out
@@ -19496,7 +19554,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 94
+        glob_idx: 96
       }
       {
         name: sensor_ctrl_ast_debug_out
@@ -19508,7 +19566,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 95
+        glob_idx: 97
       }
       {
         name: sensor_ctrl_ast_debug_out
@@ -19520,7 +19578,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 96
+        glob_idx: 98
       }
       {
         name: sensor_ctrl_ast_debug_out
@@ -19532,7 +19590,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 97
+        glob_idx: 99
       }
       {
         name: sensor_ctrl_ast_debug_out
@@ -19544,7 +19602,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 98
+        glob_idx: 100
       }
       {
         name: sensor_ctrl_ast_debug_out
@@ -19556,38 +19614,17 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 99
+        glob_idx: 101
       }
       {
         name: sysrst_ctrl_bat_disable
         width: 1
         type: output
         idx: -1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Aon
-        glob_idx: 100
-      }
-      {
-        name: sysrst_ctrl_key0_out
-        width: 1
-        type: output
-        idx: -1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Aon
-        glob_idx: 101
-      }
-      {
-        name: sysrst_ctrl_key1_out
-        width: 1
-        type: output
-        idx: -1
-        pads: []
+        pads:
+        [
+          IOR12
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19595,11 +19632,14 @@
         glob_idx: 102
       }
       {
-        name: sysrst_ctrl_key2_out
+        name: sysrst_ctrl_key0_out
         width: 1
         type: output
         idx: -1
-        pads: []
+        pads:
+        [
+          IOR6
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19607,11 +19647,14 @@
         glob_idx: 103
       }
       {
-        name: sysrst_ctrl_pwrb_out
+        name: sysrst_ctrl_key1_out
         width: 1
         type: output
         idx: -1
-        pads: []
+        pads:
+        [
+          IOR13
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19619,33 +19662,66 @@
         glob_idx: 104
       }
       {
-        name: sysrst_ctrl_z3_wakeup
+        name: sysrst_ctrl_key2_out
         width: 1
         type: output
         idx: -1
-        pads: []
+        pads:
+        [
+          IOR7
+        ]
         attr: ""
         connection: muxed
         desc: ""
         domain: Aon
         glob_idx: 105
       }
+      {
+        name: sysrst_ctrl_pwrb_out
+        width: 1
+        type: output
+        idx: -1
+        pads:
+        [
+          IOR10
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Aon
+        glob_idx: 106
+      }
+      {
+        name: sysrst_ctrl_z3_wakeup
+        width: 1
+        type: output
+        idx: -1
+        pads:
+        [
+          IOR4
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Aon
+        glob_idx: 107
+      }
     ]
     io_counts:
     {
       dedicated:
       {
-        inouts: 12
+        inouts: 10
         inputs: 2
         outputs: 2
-        pads: 21
+        pads: 19
       }
       muxed:
       {
-        inouts: 78
+        inouts: 80
         inputs: 19
         outputs: 28
-        pads: 47
+        pads: 49
       }
     }
   }
