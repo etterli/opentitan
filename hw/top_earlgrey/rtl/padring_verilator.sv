@@ -83,9 +83,6 @@ module padring_verilator
 
   always_comb begin : assign_dio_in
     dio_in_o = '0;
-    dio_in_o[DioSpiDeviceSck] = cio_spi_device_sck_p2d;
-    dio_in_o[DioSpiDeviceCsb] = cio_spi_device_csb_p2d;
-    dio_in_o[DioSpiDeviceSd0] = cio_spi_device_sdi_p2d;
     dio_in_o[DioUsbdevUsbDp]  = cio_usbdev_dp_p2d;
     dio_in_o[DioUsbdevUsbDn]  = cio_usbdev_dn_p2d;
   end
@@ -105,8 +102,9 @@ module padring_verilator
   assign cio_usbdev_dn_d2p    = dio_out_i[DioUsbdevUsbDn];
   assign cio_usbdev_dn_en_d2p = dio_oe_i[DioUsbdevUsbDn];
 
-  assign cio_spi_device_sdo_d2p    = dio_out_i[DioSpiDeviceSd1];
-  assign cio_spi_device_sdo_en_d2p = dio_oe_i[DioSpiDeviceSd1];
+  // The SPI device pads are muxed pads.
+  assign cio_spi_device_sdo_d2p    = mio_out_i[MioPadSpiDevD1];
+  assign cio_spi_device_sdo_en_d2p = mio_oe_i[MioPadSpiDevD1];
 
   //////////////////////////////////////////////////////////////////////////
   // Multiplexed I/O mapping                                              //
@@ -125,6 +123,10 @@ module padring_verilator
     mio_in_o[MioPadIoc8] = cio_gpio_p2d[30];
     // UART RX
     mio_in_o[MioPadIoc3] = cio_uart_rx_p2d;
+    // SPI device
+    mio_in_o[MioPadSpiDevClk] = cio_spi_device_sck_p2d;
+    mio_in_o[MioPadSpiDevCsL] = cio_spi_device_csb_p2d;
+    mio_in_o[MioPadSpiDevD0]  = cio_spi_device_sdi_p2d;
     // USB VBUS sense
     mio_in_o[MioPadIoc7] = cio_usbdev_sense_p2d;
   end
