@@ -96,7 +96,7 @@ module chip_earlgrey_asic #(
   localparam int Tap0PadIdx = 42;
   localparam int Tap1PadIdx = 39;
   localparam int Dft0PadIdx = 2;
-  localparam int Dft1PadIdx = 2;
+  localparam int Dft1PadIdx = 3;
   localparam int TckPadIdx = 17;
   localparam int TmsPadIdx = 12;
   localparam int TrstNPadIdx = 18;
