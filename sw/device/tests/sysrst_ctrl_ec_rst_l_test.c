@@ -47,8 +47,8 @@ static const dif_pinmux_index_t kPeripheralInputs[] = {
 };
 
 static const dif_pinmux_index_t kInputPads[] = {
-    kTopEarlgreyPinmuxInselIor6,
-    kTopEarlgreyPinmuxInselIor7,
+    kTopEarlgreyPinmuxInselIor1,
+    kTopEarlgreyPinmuxInselIor3,
 };
 
 // Threshold/Duration values are not specific to a real-world debounce
