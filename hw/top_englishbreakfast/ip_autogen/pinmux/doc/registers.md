@@ -877,7 +877,9 @@ Register write enable for MIO PAD attributes.
 Muxed pad attributes.
 This register has WARL behavior since not each pad type may support
 all attributes.
-The muxed pad that is used for TAP strap 0 has a different reset value, with `pull_en` set to 1.
+Non-default reset values can be defined in the top.hjson.
+If strap sampling is enabled, the muxed pad that is used for TAP strap
+0 has a fixed reset value, with `pull_en` set to 1.
 - Reset default: `0x0`
 - Reset mask: `0xf300ff`
 - Register enable: [`MIO_PAD_ATTR_REGWEN`](#mio_pad_attr_regwen)
@@ -1034,6 +1036,7 @@ Register write enable for DIO PAD attributes.
 Dedicated pad attributes.
 This register has WARL behavior since not each pad type may support
 all attributes.
+Non-default reset values can be defined in the top.hjson.
 - Reset default: `0x0`
 - Reset mask: `0xf300ff`
 - Register enable: [`DIO_PAD_ATTR_REGWEN`](#dio_pad_attr_regwen)
