@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include "hw/top/dt/pinmux.h"
+#include "sw/device/lib/arch/device.h"
 #include "sw/device/lib/base/mmio.h"
 #include "sw/device/lib/dif/dif_pinmux.h"
 #include "sw/device/lib/dif/dif_uart.h"
@@ -56,22 +57,27 @@ static status_t get_uart_pads(dt_uart_t uart_dt, dt_pad_t *rx_pad,
   // Each UART can only reach a few pads. These pairs are wired to the
   // HyperDebug UARTs 2, 4, 3 and 5 and to the UART agents in DV.
   // Keep chip_if.sv in sync.
+  bool fpga = kDeviceType == kDeviceFpgaCw340;
   switch (uart_dt) {
     case kDtUart0:
       *rx_pad = kDtPadIoc3;
       *tx_pad = kDtPadIoc4;
       break;
     case kDtUart1:
-      *rx_pad = kDtPadIoa0;
-      *tx_pad = kDtPadIoa1;
+      // On the CW340 the HyperDebug UART4 nets carry IOR5/IOR6, IOA0/IOA1 are
+      // the JTAG pads.
+      *rx_pad = fpga ? kDtPadIor5 : kDtPadIoa0;
+      *tx_pad = fpga ? kDtPadIor6 : kDtPadIoa1;
       break;
     case kDtUart2:
       *rx_pad = kDtPadIob4;
       *tx_pad = kDtPadIob5;
       break;
     case kDtUart3:
-      *rx_pad = kDtPadIoa4;
-      *tx_pad = kDtPadIoa5;
+      // On the CW340 the HyperDebug UART5 nets carry IOR3/IOR4, IOA4/IOA5 are
+      // the JTAG pads.
+      *rx_pad = fpga ? kDtPadIor3 : kDtPadIoa4;
+      *tx_pad = fpga ? kDtPadIor4 : kDtPadIoa5;
       break;
     default:
       return INVALID_ARGUMENT();
