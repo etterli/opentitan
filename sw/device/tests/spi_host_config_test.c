@@ -91,22 +91,24 @@ static status_t spi_config_test(dif_spi_host_t *spi) {
 }
 
 static status_t configure_pinmux(const dif_pinmux_t *pinmux) {
+  // spi_host1 can only reach the IOB pads: CSB on IOB0, SCLK on IOB3, SD0 on
+  // IOB1 and SD1 on IOB2.
   // CSB.
-  TRY(dif_pinmux_output_select(pinmux, kTopEarlgreyPinmuxMioOutIor10,
+  TRY(dif_pinmux_output_select(pinmux, kTopEarlgreyPinmuxMioOutIob0,
                                kTopEarlgreyPinmuxOutselSpiHost1Csb0));
   // SCLK.
-  TRY(dif_pinmux_output_select(pinmux, kTopEarlgreyPinmuxMioOutIor11,
+  TRY(dif_pinmux_output_select(pinmux, kTopEarlgreyPinmuxMioOutIob3,
                                kTopEarlgreyPinmuxOutselSpiHost1Sck));
   // SD0.
   TRY(dif_pinmux_input_select(pinmux, kTopEarlgreyPinmuxPeripheralInSpiHost1Sd0,
-                              kTopEarlgreyPinmuxInselIor12));
-  TRY(dif_pinmux_output_select(pinmux, kTopEarlgreyPinmuxMioOutIor12,
+                              kTopEarlgreyPinmuxInselIob1));
+  TRY(dif_pinmux_output_select(pinmux, kTopEarlgreyPinmuxMioOutIob1,
                                kTopEarlgreyPinmuxOutselSpiHost1Sd0));
 
   // SD1.
   TRY(dif_pinmux_input_select(pinmux, kTopEarlgreyPinmuxPeripheralInSpiHost1Sd1,
-                              kTopEarlgreyPinmuxInselIor13));
-  TRY(dif_pinmux_output_select(pinmux, kTopEarlgreyPinmuxMioOutIor13,
+                              kTopEarlgreyPinmuxInselIob2));
+  TRY(dif_pinmux_output_select(pinmux, kTopEarlgreyPinmuxMioOutIob2,
                                kTopEarlgreyPinmuxOutselSpiHost1Sd1));
   return OK_STATUS();
 }
