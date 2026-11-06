@@ -16647,6 +16647,7 @@
         pads:
         [
           IOB1
+          IOB10
         ]
         desc: ""
         attr: ""
@@ -16658,6 +16659,7 @@
         pads:
         [
           IOB2
+          IOB12
         ]
         desc: ""
         attr: ""
@@ -17575,6 +17577,7 @@
         pads:
         [
           IOB4
+          IOB9
           IOC10
         ]
         desc: ""
@@ -17587,6 +17590,7 @@
         pads:
         [
           IOB5
+          IOB11
           IOC11
         ]
         desc: ""
@@ -17703,6 +17707,7 @@
         pads:
         [
           IOA8
+          IOB5
           IOB11
           IOR12
         ]
@@ -17716,6 +17721,7 @@
         pads:
         [
           IOA7
+          IOB7
           IOB12
           IOR13
         ]
@@ -17729,6 +17735,7 @@
         pads:
         [
           IOA2
+          IOB1
           IOB8
           IOR7
         ]
@@ -17742,6 +17749,7 @@
         pads:
         [
           IOA8
+          IOB5
           IOB11
           IOR12
         ]
@@ -17755,6 +17763,7 @@
         pads:
         [
           IOA7
+          IOB7
           IOB12
           IOR13
         ]
@@ -18181,6 +18190,7 @@
         pads:
         [
           IOB1
+          IOB10
         ]
         attr: ""
         connection: muxed
@@ -18196,6 +18206,7 @@
         pads:
         [
           IOB2
+          IOB12
         ]
         attr: ""
         connection: muxed
@@ -19416,6 +19427,7 @@
         pads:
         [
           IOA8
+          IOB5
           IOB11
           IOR12
         ]
@@ -19433,6 +19445,7 @@
         pads:
         [
           IOA7
+          IOB7
           IOB12
           IOR13
         ]
@@ -19614,6 +19627,7 @@
         pads:
         [
           IOB4
+          IOB9
           IOC10
         ]
         attr: ""
@@ -19647,6 +19661,7 @@
         pads:
         [
           IOA8
+          IOB5
           IOB11
           IOR12
         ]
@@ -19665,6 +19680,7 @@
         pads:
         [
           IOA7
+          IOB7
           IOB12
           IOR13
         ]
@@ -19965,6 +19981,7 @@
         pads:
         [
           IOB5
+          IOB11
           IOC11
         ]
         attr: ""
@@ -19997,6 +20014,7 @@
         pads:
         [
           IOA2
+          IOB1
           IOB8
           IOR7
         ]
