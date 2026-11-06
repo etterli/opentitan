@@ -349,13 +349,13 @@
     { name: "NMioPeriphIn",
       desc: "Number of muxed peripheral inputs",
       type: "int",
-      default: "109",
+      default: "106",
       local: "true"
     },
     { name: "NMioPeriphOut",
       desc: "Number of muxed peripheral outputs",
       type: "int",
-      default: "118",
+      default: "117",
       local: "true"
     },
     { name: "NMioPads",
@@ -471,7 +471,7 @@
                       Selecting a pad that is not legal for this peripheral input ties it
                       constantly to zero.
                       '''
-                      resval: "[2, 3, 4, 5, 8, 9, 10, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 57, 58, 0, 12, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0][multireg_idx]",
+                      resval: "[2, 3, 4, 5, 0, 0, 0, 0, 8, 9, 10, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 0, 0, 59, 60, 61, 62, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 57, 58, 0, 12, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0][multireg_idx]",
                     }
                   ]
                 }
@@ -518,7 +518,7 @@
                       Selecting a peripheral output that is not legal for this pad puts the pad
                       into high-Z.
                       '''
-                      resval: "[3, 4, 5, 6, 91, 92, 7, 8, 9, 10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 89, 90, 2, 2, 2, 2][multireg_idx]",
+                      resval: "[3, 4, 5, 6, 91, 92, 11, 12, 13, 14, 2, 2, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 89, 90, 72, 73, 74, 75][multireg_idx]",
                     }
                   ]
                   // Random writes to this field may result in pad drive conflicts,
