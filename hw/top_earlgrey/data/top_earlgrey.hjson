@@ -1949,11 +1949,6 @@
       { instance: "i3c1",        port: 'ctrl_sda_pu',      connection: 'muxed',  pads: ['IOB7',  'IOB10', 'IOR2'],  desc: ''},
       { instance: "i3c1",        port: 'rstdet_scl',       connection: 'muxed',  pads: ['IOB9',  'IOB11', 'IOR10'], desc: ''}, // Same as SCL. TODO: Implement wakeup mux
       { instance: "i3c1",        port: 'rstdet_sda',       connection: 'muxed',  pads: ['IOB10', 'IOB12', 'IOR11'], desc: ''}, // Same as SDA. TODO: Implement wakeup mux
-      // RRAM
-      { instance: "rram_macro",  port: 'tck',              connection: 'muxed',  pads: [],                desc: ''}, // TODO: remove once JTAG has its strap pin
-      { instance: "rram_macro",  port: 'tms',              connection: 'muxed',  pads: [],                desc: ''}, // TODO: remove once JTAG has its strap pin
-      { instance: "rram_macro",  port: 'tdi',              connection: 'muxed',  pads: [],                desc: ''}, // TODO: remove once JTAG has its strap pin
-      { instance: "rram_macro",  port: 'tdo',              connection: 'muxed',  pads: [],                desc: ''}, // TODO: remove once JTAG has its strap pin
       // AST / sensor_ctrl
       { instance: "sensor_ctrl", port: 'ast_debug_out[0]', connection: 'muxed',  pads: ['IOA7'],        desc: ''},
       { instance: "sensor_ctrl", port: 'ast_debug_out[1]', connection: 'muxed',  pads: ['IOA8'],        desc: ''},
