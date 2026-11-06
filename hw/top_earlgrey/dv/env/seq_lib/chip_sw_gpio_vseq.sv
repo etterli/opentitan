@@ -34,7 +34,10 @@ class chip_sw_gpio_vseq extends chip_sw_base_vseq;
     // input test can see when the SW stops driving them.
     gpios_mask = get_gpios_if_mask(gpio_idx);
     for (int i = 0; i < NUM_GPIOS; i++) begin
-      if (gpios_mask[i]) cfg.chip_vif.mios_if.pins_pd[GpiosIfPad[i]] = 1'b0;
+      if (gpios_mask[i]) begin
+        cfg.chip_vif.mios_if.pins_pd[GpiosIfPad[i]] = 1'b0;
+        cfg.chip_vif.mios_if.pins_pu[GpiosIfPad[i]] = 1'b0;
+      end
     end
 
     // Run the GPIO output tests.
