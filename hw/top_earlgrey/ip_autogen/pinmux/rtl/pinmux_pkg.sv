@@ -56,7 +56,6 @@ package pinmux_pkg;
   // Legal MIO_PERIPH_INSEL values for each MIO peripheral input. LSB corresponds to lowest index.
   // Includes static options.
   parameter logic [NMioPeriphIn-1:0][NMioPads+1:0] MioPeriphInselLegal = {
-    49'h1ffffffffffff, // usbdev_sense
     49'h1ffffffffffff, // sysrst_ctrl_lid_open
     49'h1ffffffffffff, // sysrst_ctrl_pwrb_in
     49'h1ffffffffffff, // sysrst_ctrl_key2_in
@@ -75,6 +74,7 @@ package pinmux_pkg;
     49'h1ffffffffffff, // uart2_rx
     49'h1ffffffffffff, // uart1_rx
     49'h1ffffffffffff, // uart0_rx
+    49'h1ffffffffffff, // usbdev_sense
     49'h1ffffffffffff, // spi_host1_sd[3]
     49'h1ffffffffffff, // spi_host1_sd[2]
     49'h1ffffffffffff, // spi_host1_sd[1]
