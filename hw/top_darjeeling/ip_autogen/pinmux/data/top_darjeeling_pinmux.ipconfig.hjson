@@ -29,6 +29,13 @@
         16383
       ]
     ]
+    mio_insel_resvals:
+    [
+      0
+      0
+      0
+      0
+    ]
     mio_outsel_legal:
     [
       [
@@ -79,6 +86,21 @@
         MIO11
         255
       ]
+    ]
+    mio_outsel_resvals:
+    [
+      2
+      2
+      2
+      2
+      2
+      2
+      2
+      2
+      2
+      2
+      2
+      2
     ]
     n_dio_pads: 73
     n_dio_periph_in: 58

@@ -8,6 +8,8 @@
 ##  - n_mio_periph_in:     Number of muxed peripheral inputs
 ##  - n_mio_periph_out:    Number of muxed peripheral outputs
 ##  - n_mio_pads:          Number of muxed IO pads
+##  - mio_insel_resvals:   A list of integer reset values for each of the MIO_PERIPH_INSEL CSRs.
+##  - mio_outsel_resvals:  A list of integer reset values for each of the MIO_PERIPH_OUTSEL CSRs.
 ##  - n_dio_periph_in:     Number of dedicated peripheral inputs
 ##  - n_dio_periph_out:    Number of dedicated peripheral outputs
 ##  - n_dio_pads:          Number of dedicated IO pads
@@ -496,7 +498,7 @@
                       Selecting a pad that is not legal for this peripheral input ties it
                       constantly to zero.
                       '''
-                      resval: 0,
+                      resval: "${mio_insel_resvals}[multireg_idx]",
                     }
                   ]
                 }
@@ -543,7 +545,7 @@
                       Selecting a peripheral output that is not legal for this pad puts the pad
                       into high-Z.
                       '''
-                      resval: 2,
+                      resval: "${mio_outsel_resvals}[multireg_idx]",
                     }
                   ]
                   // Random writes to this field may result in pad drive conflicts,
