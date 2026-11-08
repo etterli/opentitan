@@ -260,6 +260,9 @@ fpga_cw340(
 # This exec_env targets running software at the ROM_EXT stage on silicon.
 silicon(
     name = "silicon_creator",
+    # The teacup board is wired for the EG1 pinout, which the sparse EG2 pinmux
+    # does not support. Disabled until there is an EG2 board.
+    target_compatible_with = ["@platforms//:incompatible"],
     args = [
         "--rcfile=",
         "--logging=info",
@@ -298,6 +301,9 @@ silicon(
 
 silicon(
     name = "silicon_owner_sival_rom_ext",
+    # The teacup board is wired for the EG1 pinout, which the sparse EG2 pinmux
+    # does not support. Disabled until there is an EG2 board.
+    target_compatible_with = ["@platforms//:incompatible"],
     testonly = True,
     args = [
         "--rcfile=",
