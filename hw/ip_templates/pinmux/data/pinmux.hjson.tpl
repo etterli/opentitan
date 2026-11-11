@@ -8,8 +8,10 @@
 ##  - n_mio_periph_in:      Number of muxed peripheral inputs
 ##  - n_mio_periph_out:     Number of muxed peripheral outputs
 ##  - n_mio_pads:           Number of muxed IO pads
-##  - mio_insel_resvals:    A list of integer reset values for each of the MIO_PERIPH_INSEL CSRs.
-##  - mio_outsel_resvals:   A list of integer reset values for each of the MIO_PERIPH_OUTSEL CSRs.
+##  - mio_periph_ins:       A list of {name, pads} dicts for each muxed peripheral input with an
+##                          optional default_pad or default_const for the MIO_PERIPH_INSEL reset.
+##  - mio_periph_outs:      A list of {name, pads} dicts for each muxed peripheral output with an
+##                          optional default_pad for the MIO_OUTSEL reset.
 ##  - mio_pad_attr_resvals: A list of (name, attrs) tuples for each MIO pad. attrs can map
 ##                          MIO_PAD_ATTR fields to non-default reset values.
 ##  - n_dio_periph_in:      Number of dedicated peripheral inputs
@@ -29,6 +31,10 @@
 <%
   pkg.module.check_pad_attrs("mio_pad_attr_resvals", n_mio_pads, mio_pad_attr_resvals)
   pkg.module.check_pad_attrs("dio_pad_attr_resvals", n_dio_pads, dio_pad_attr_resvals)
+  pkg.module.check_mio_periphs([name for name, _ in mio_pad_attr_resvals], n_mio_periph_in,
+                               n_mio_periph_out, mio_periph_ins, mio_periph_outs)
+  mio_insel_resvals = pkg.module.mio_insel_resvals(mio_periph_ins)
+  mio_outsel_resvals = pkg.module.mio_outsel_resvals(n_mio_pads, mio_periph_outs)
 %>\
 {
   name:               "pinmux",

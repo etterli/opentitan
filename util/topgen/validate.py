@@ -858,29 +858,13 @@ def check_pinmux(top: ConfigT, prefix: str) -> int:
                                 'refers to unknown muxed pad {}'.format(
                                     sig['instance'], sig['port'], padname))
                     error += 1
-            if len(set(pads)) != len(pads):
-                log.warning('Muxed connection of instance {} port {} '
-                            'has duplicate pads'.format(
-                                sig['instance'], sig['port']))
+            # A default pad must be a known muxed pad. The pinmux template checks the pads and
+            # default values themselves. Defaults are ignored for other connection types.
+            default = sig.get('default')
+            if isinstance(default, str) and default not in known_muxed_pads:
+                log.warning(f"Muxed connection of instance {sig['instance']} port "
+                            f"{sig['port']} has default {default} which is not a known muxed pad")
                 error += 1
-            # Check the default value if given. Ignored for other connection
-            # types.
-            if 'default' in sig:
-                prefix = (f"Muxed connection of instance {sig['instance']} "
-                          f"port {sig['port']} has default: {sig['default']}")
-
-                if isinstance(sig['default'], str):
-                    if sig['default'] not in pads:
-                        log.warning(f"{prefix} which is not a known pad name")
-                        error += 1
-                elif isinstance(sig['default'], int):
-                    if not 0 <= sig['default'] <= 1:
-                        log.warning(f"{prefix} but only 0 or 1 are valid "
-                                    "constants")
-                        error += 1
-                else:
-                    log.warning(f"{prefix} which is not a pad name nor an int")
-                    error += 1
         elif sig['connection'] == 'manual':
             # This pad attr key is only allowed in the manual case,
             # as there is no way to infer the pad type automatically.
