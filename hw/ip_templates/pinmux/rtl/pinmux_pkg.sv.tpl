@@ -170,6 +170,14 @@ package pinmux_pkg;
     mio_scan_role:     {NMioPads{NoScan}}
   };
 
+  // Widths of the dense mux vectors aligned to power of two to avoid Xes. Input has two constant
+  // options (0, 1) and output has 3 (0, 1, high-Z).
+  parameter int AlignedMioInMuxSize  = (NMioPads + 2 > NDioPads) ? 2**$clog2(NMioPads + 2) :
+                                                                  2**$clog2(NDioPads);
+  parameter int AlignedMioOutMuxSize = 2**$clog2(NMioPeriphOut + 3);
+
+## TODO: add MioPeriphInIsInPrimary array here.
+
 <%
   check_pad_attrs("mio_pad_attr_resvals", n_mio_pads, mio_pad_attr_resvals)
   check_pad_attrs("dio_pad_attr_resvals", n_dio_pads, dio_pad_attr_resvals)
@@ -233,5 +241,18 @@ package pinmux_pkg;
     RvTapSel  = 2'b10,
     DftTapSel = 2'b11
   } tap_strap_t;
+
+  // Intra-IP connections
+  typedef struct packed {
+    logic [NMioPads-1:0] mio_in;
+    pinmux_reg2hw_t reg2hw;
+  } p2s_t;
+
+  typedef struct packed {
+    logic [NMioPeriphOut-1:0] periph_data;
+    logic [NMioPeriphOut-1:0] periph_oe;
+    logic [NMioPads-1:0] pad_data;
+    logic [NMioPads-1:0] pad_oe;
+  } s2p_t;
 
 endpackage : pinmux_pkg
