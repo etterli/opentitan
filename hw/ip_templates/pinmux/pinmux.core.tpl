@@ -35,7 +35,8 @@ filesets:
     % if enable_strap_sampling:
       - rtl/pinmux_strap_sampling.sv
     % endif
-      - rtl/pinmux.sv
+      - rtl/pinmux_part_primary.sv
+      - rtl/pinmux_part_secondary.sv
     file_type: systemVerilogSource
 
   files_verilator_waiver:
@@ -81,7 +82,7 @@ targets:
       - tool_veriblelint ? (files_veriblelint_waiver)
       - tool_slang       ? (files_slang_waiver)
       - files_rtl
-    toplevel: pinmux
+    toplevel: pinmux_part_primary
 
   lint:
     <<: *default_target

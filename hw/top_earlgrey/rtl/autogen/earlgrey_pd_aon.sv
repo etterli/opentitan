@@ -598,12 +598,12 @@ module earlgrey_pd_aon #(
     .tl_o(adc_ctrl_tl_rsp_o)
   );
 
-  pinmux #(
+  pinmux_part_primary #(
     .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[31]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .SecVolatileRawUnlockEn(SecPinmuxVolatileRawUnlockEn),
     .TargetCfg(PinmuxTargetCfg)
-  ) u_pinmux (
+  ) u_pinmux_part_primary (
     // Clock and reset connections
     .clk_i(clkmgr_clocks.clk_io_div4_powerup),
     .clk_aon_i(clkmgr_clocks.clk_aon_powerup),

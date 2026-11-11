@@ -293,6 +293,14 @@ module englishbreakfast_pd_aon #(
     .tl_o(clkmgr_tl_rsp_o)
   );
 
+  pinmux_part_secondary u_pinmux_part_secondary (
+    // Clock and reset connections
+    .clk_i(clkmgr_clocks.clk_io_div4_powerup),
+    .rst_ni(rstmgr_resets.rst_lc_io_div4_n[rstmgr_pkg::DomainAonSel])
+
+
+  );
+
   aon_timer #(
     .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[13]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles)

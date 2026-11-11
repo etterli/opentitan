@@ -2319,14 +2319,33 @@
         }
       }
       domain: Main
+      domain_secondary: Aon
       attr: ipgen
       outgoing_alert: englishbreakfast
+      clock_srcs_secondary:
+      {
+        clk_i: io_div4
+      }
+      clock_group_secondary: powerup
+      reset_connections_secondary:
+      {
+        rst_ni:
+        {
+          name: lc_io_div4
+          domain: Aon
+        }
+      }
       clock_connections:
       {
         clk_i: clkmgr_clocks_i.clk_io_div4_powerup
         clk_aon_i: clkmgr_clocks_i.clk_aon_powerup
       }
+      clock_connections_secondary:
+      {
+        clk_i: clkmgr_clocks.clk_io_div4_powerup
+      }
       param_decl: {}
+      is_split_ip: true
       memory: {}
       param_list:
       [
@@ -4936,8 +4955,8 @@
       ]
       pwrmgr.wakeups:
       [
-        pinmux.pin_wkup_req
-        pinmux.usb_wkup_req
+        pinmux.pin_wkup_req.primary
+        pinmux.usb_wkup_req.primary
         aon_timer.wkup_req
       ]
       pwrmgr.rstreqs:
