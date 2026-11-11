@@ -188,7 +188,7 @@
              // one-hot security countermeasure.
              {
                name: pinmux_sec_cm
-               dut: pinmux
+               dut: pinmux_part_primary
                fusesoc_core: lowrisc:earlgrey_ip:pinmux
                import_cfgs: ["{proj_root}/hw/formal/tools/dvsim/common_fpv_cfg.hjson"]
                rel_path: "hw/top_earlgrey/ip_autogen/pinmux/{sub_flow}/{tool}/sec_cm"

@@ -41,13 +41,13 @@ waive -rules {RESET_USE} -location {chip_darjeeling_asic.sv} \
       -comment "This is a valid reset signal."
 
 # External clock
-waive -rules {CLOCK_DRIVER} -location {pinmux.sv}  -regexp {'(attr_padring_o|mio_attr)\[11\].pull_select' driven in here} \
+waive -rules {CLOCK_DRIVER} -location {pinmux_part_primary.sv}  -regexp {'(attr_padring_o|mio_attr)\[11\].pull_select' driven in here} \
       -comment "MioPadMio11 at index 11 may serve as an external clock input, hence the warnings"
 
-waive -rules {CLOCK_USE} -location {pinmux.sv}  -msg {'hw2reg.mio_pad_attr[11].pull_select.d' is connected to 'pinmux_reg_top'} \
+waive -rules {CLOCK_USE} -location {pinmux_part_primary.sv}  -msg {'hw2reg.mio_pad_attr[11].pull_select.d' is connected to 'pinmux_reg_top'} \
       -comment "MioPadMio11 at index 11 may serve as an external clock input, hence the warnings"
 
-waive -rules {CLOCK_USE} -location {pinmux.sv}  -regexp {'dio_wkup_mux\[(42|43)\]' is used for some other purpose, and as clock} \
+waive -rules {CLOCK_USE} -location {pinmux_part_primary.sv}  -regexp {'dio_wkup_mux\[(42|43)\]' is used for some other purpose, and as clock} \
       -comment "DioSpiDeviceSck and DioSpiDeviceCsb at indices 42 and 43 both can act as clocks"
 
 waive -rules {CLOCK_USE} -location {chip_darjeeling_asic.sv} -msg {'sck_monitor' is connected to 'ast' port 'sns_spi_ext_clk_i', and used as a clock 'clk_src_i' at prim_pulse_sync} \

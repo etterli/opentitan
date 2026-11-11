@@ -410,23 +410,35 @@
     { name: "pinmux",
       type: "pinmux",
       template_type: "pinmux",
-      clock_srcs: {clk_i: "io_div4", clk_aon_i: "aon"},
-      clock_group: "powerup",
+      clock_srcs: {
+        primary: {clk_i: "io_div4", clk_aon_i: "aon"},
+        secondary: {clk_i: "io_div4"},
+      },
+      clock_group: {primary: "powerup", secondary: "powerup"},
       reset_connections: {
-        rst_ni: {
-          name: "lc_io_div4",
-          domain: "Aon",
+        primary: {
+          rst_ni: {
+            name: "lc_io_div4",
+            domain: "Aon",
+          },
+          rst_aon_ni: {
+            name: "sys_aon",
+            domain: "Aon"
+          },
+          rst_sys_ni: {
+            name: "sys_io_div4",
+            domain: "Aon",
+          },
         },
-        rst_aon_ni: {
-          name: "sys_aon",
-          domain: "Aon"
-        },
-        rst_sys_ni: {
-          name: "sys_io_div4",
-          domain: "Aon",
+        secondary: {
+          rst_ni: {
+            name: "lc_io_div4",
+            domain: "Aon",
+          },
         },
       }
       domain: "Main",
+      domain_secondary: "Aon",
       base_addr: {
         hart: "0x40460000",
       },

@@ -204,7 +204,7 @@ proc sdc_summary {tag} {
 #                index may be `-` for an output-only or an input-only
 #                peripheral signal
 #
-# Mux encodings (pinmux.sv):
+# Mux encodings (pinmux_part_primary.sv):
 #   mio_mux         = {mio_in, 1'b1, 1'b0}        -> insel  = pad_idx + 2
 #   periph_data_mux = {periph_to_mio_i, 0, 1, 0}  -> outsel = periph_out + 3
 proc sdc_pinmux_case_analysis {pinmux assignments} {

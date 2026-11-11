@@ -2,12 +2,12 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
-// Pinmux toplevel.
+// Pinmux toplevel, primary partition of the split IP.
 //
 
 `include "prim_assert.sv"
 
-module pinmux
+module pinmux_part_primary
   import pinmux_pkg::*;
   import pinmux_reg_pkg::*;
   import prim_pad_wrapper_pkg::*;
@@ -752,4 +752,4 @@ module pinmux
   `ASSUME(PwrMgrStrapSampleOnce1_A, $fell(strap_en_i) |-> always !strap_en_i)
 % endif
 
-endmodule : pinmux
+endmodule : pinmux_part_primary

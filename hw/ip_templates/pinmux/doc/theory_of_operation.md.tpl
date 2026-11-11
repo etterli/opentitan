@@ -5,7 +5,9 @@ ${"##"} Block Diagram and Overview
 The `pinmux` peripheral is a programmable module designed to wire arbitrary peripheral inputs and outputs to arbitrary multiplexable chip bidirectional pins.
 It gives much flexibility at the top level of the device, allowing most data pins to be flexibly wired and controlled by many peripherals.
 Even though the `pinmux` is referred to as one IP, it is logically split into two modules that are instantiated on the top-level and the chip-level, respectively, as can be seen in the block diagram below.
-The top-level module `pinmux` contains the CSRs accessible via the TL-UL interface, the main muxing matrix, retention registers, a set of programmable wakeup detectors, and the HW strap sampling and TAP / JTAG muxing logic.
+The top-level part is a split IP with a primary and a secondary partition, which can be placed in different power domains.
+The primary partition `pinmux_part_primary` contains the CSRs accessible via the TL-UL interface, the main muxing matrix, retention registers, a set of programmable wakeup detectors, and the HW strap sampling and TAP / JTAG muxing logic.
+The secondary partition `pinmux_part_secondary` does not contain any logic yet.
 The chip-level module `padring` instantiates the bidirectional pads and connects the physical pad attributes.
 
 ![Pinmux Block Diagram](../doc/pinmux_overview_block_diagram.svg)

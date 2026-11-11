@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 {
   // Top level dut name (sv module).
-  name: pinmux
+  name: pinmux_part_primary
 
   // Fusesoc core file used for building the file list.
   fusesoc_core: lowrisc:englishbreakfast_ip:pinmux:0.1

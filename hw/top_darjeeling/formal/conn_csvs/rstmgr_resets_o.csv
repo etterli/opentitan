@@ -40,8 +40,8 @@ CONNECTION, RSTMGR_POR_IO_AON_CLKMGR_RST_ROOT_IO_NI, top_darjeeling.darjeeling_p
 CONNECTION, RSTMGR_POR_IO_AON_CLKMGR_RST_ROOT_IO_NI, top_darjeeling.darjeeling_pd_aon.u_rstmgr, resets_o.rst_por_io_n[0], top_darjeeling.darjeeling_pd_aon.u_clkmgr, rst_root_io_ni
 CONNECTION, RSTMGR_POR_IO_AON_CLKMGR_RST_ROOT_IO_NI, top_darjeeling.darjeeling_pd_aon.u_rstmgr, resets_o.rst_por_io_n[0], top_darjeeling.darjeeling_pd_aon.u_clkmgr, rst_root_io_ni
 CONNECTION, RSTMGR_POR_AON_CLKMGR_RST_ROOT_MAIN_NI, top_darjeeling.darjeeling_pd_aon.u_rstmgr, resets_o.rst_por_n[0], top_darjeeling.darjeeling_pd_aon.u_clkmgr, rst_root_main_ni
-CONNECTION, RSTMGR_LC_IO_AON_PINMUX_RST_NI, top_darjeeling.darjeeling_pd_aon.u_rstmgr, resets_o.rst_lc_io_n[0], top_darjeeling.darjeeling_pd_main.u_pinmux, rst_ni
-CONNECTION, RSTMGR_LC_AON_AON_PINMUX_RST_AON_NI, top_darjeeling.darjeeling_pd_aon.u_rstmgr, resets_o.rst_lc_aon_n[0], top_darjeeling.darjeeling_pd_main.u_pinmux, rst_aon_ni
+CONNECTION, RSTMGR_LC_IO_AON_PINMUX_RST_NI, top_darjeeling.darjeeling_pd_aon.u_rstmgr, resets_o.rst_lc_io_n[0], top_darjeeling.darjeeling_pd_main.u_pinmux_part_primary, rst_ni
+CONNECTION, RSTMGR_LC_AON_AON_PINMUX_RST_AON_NI, top_darjeeling.darjeeling_pd_aon.u_rstmgr, resets_o.rst_lc_aon_n[0], top_darjeeling.darjeeling_pd_main.u_pinmux_part_primary, rst_aon_ni
 CONNECTION, RSTMGR_LC_IO_AON_AON_TIMER_RST_NI, top_darjeeling.darjeeling_pd_aon.u_rstmgr, resets_o.rst_lc_io_n[0], top_darjeeling.darjeeling_pd_aon.u_aon_timer, rst_ni
 CONNECTION, RSTMGR_LC_AON_AON_AON_TIMER_RST_AON_NI, top_darjeeling.darjeeling_pd_aon.u_rstmgr, resets_o.rst_lc_aon_n[0], top_darjeeling.darjeeling_pd_aon.u_aon_timer, rst_aon_ni
 CONNECTION, RSTMGR_LC_IO_AON_SENSOR_CTRL_RST_NI, top_darjeeling.darjeeling_pd_aon.u_rstmgr, resets_o.rst_lc_io_n[0], top_darjeeling.darjeeling_pd_main.u_sensor_ctrl, rst_ni
