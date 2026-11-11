@@ -53,7 +53,11 @@ has_cio_outputs = len(outputs + inouts) > 0
 ## The inter-module signal loop normally emits the comma-less last port. A split IP's secondary
 ## partition may have neither, so find the earlier section that holds the last port and drop its
 ## trailing comma. last_section is None for every non-split instance, so their output is unchanged.
-emits_terminator = bool(inter_signals) or m.get("template_type") in ["rv_plic", "pinmux", "alert_handler"]
+## Some templated IPs append their own ports after the inter-module signals, the pinmux only in
+## its primary partition.
+has_trailing_ports = (m.get("template_type") in ["rv_plic", "alert_handler"] or
+                      (m.get("template_type") == "pinmux" and partition == lib.PART_PRIMARY))
+emits_terminator = bool(inter_signals) or has_trailing_ports
 if emits_terminator:
   last_section = None
 elif has_cio_outputs:
@@ -162,7 +166,7 @@ else:
     // Inter-module signals
   % for sig in inter_signals:
 <%
-if m.get("template_type") in ["rv_plic", "pinmux", "alert_handler"]:
+if has_trailing_ports:
   term = ","
 elif loop.last:
   term = ""
@@ -186,7 +190,7 @@ else:
 
     // Interrupt source vector
     .intr_src_i(${prefix}intr_vector)
-% elif m.get("template_type") == "pinmux":
+% elif m.get("template_type") == "pinmux" and partition == lib.PART_PRIMARY:
 
     .periph_to_mio_i   (mio_d2p   ),
     .periph_to_mio_oe_i(mio_en_d2p),
