@@ -6,7 +6,7 @@
 module pinmux_bind_fpv;
 
 
-  bind pinmux pinmux_assert_fpv #(
+  bind pinmux_part_primary pinmux_assert_fpv #(
     .TargetCfg(TargetCfg),
     .AlertAsyncOn(AlertAsyncOn),
     .SecVolatileRawUnlockEn(SecVolatileRawUnlockEn)
@@ -79,7 +79,7 @@ module pinmux_bind_fpv;
   );
 
 
-  bind pinmux tlul_assert #(
+  bind pinmux_part_primary tlul_assert #(
     .EndpointType("Device")
   ) i_tlul_assert_device (
     .clk_i,
@@ -89,7 +89,7 @@ module pinmux_bind_fpv;
     .*
   );
 
-  bind pinmux pinmux_csr_assert_fpv i_pinmux_csr_assert_fpv (
+  bind pinmux_part_primary pinmux_csr_assert_fpv i_pinmux_csr_assert_fpv (
     .clk_i,
     .rst_ni,
     .h2d    (tl_i),

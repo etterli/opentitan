@@ -5545,16 +5545,35 @@
         }
       }
       domain: Aon
+      domain_secondary: Main
       attr: ipgen
       param_decl:
       {
         SecVolatileRawUnlockEn: top_pkg::SecVolatileRawUnlockEn
+      }
+      clock_srcs_secondary:
+      {
+        clk_i: io_div4
+      }
+      clock_group_secondary: secure
+      reset_connections_secondary:
+      {
+        rst_ni:
+        {
+          name: lc_io_div4
+          domain: Main
+        }
       }
       clock_connections:
       {
         clk_i: clkmgr_clocks.clk_io_div4_powerup
         clk_aon_i: clkmgr_clocks.clk_aon_powerup
       }
+      clock_connections_secondary:
+      {
+        clk_i: clkmgr_clocks_i.clk_io_div4_secure
+      }
+      is_split_ip: true
       memory: {}
       param_list:
       [
@@ -13239,8 +13258,8 @@
         i3c1.rstdet_wkup_req.secondary
         sysrst_ctrl.wkup_req
         adc_ctrl.wkup_req
-        pinmux.pin_wkup_req
-        pinmux.usb_wkup_req
+        pinmux.pin_wkup_req.primary
+        pinmux.usb_wkup_req.primary
         aon_timer.wkup_req
         sensor_ctrl.wkup_req
       ]

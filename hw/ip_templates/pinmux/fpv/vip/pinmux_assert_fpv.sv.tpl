@@ -113,7 +113,7 @@ module pinmux_assert_fpv
 
   // ------ Input mux assertions ------
   pinmux_reg_pkg::pinmux_reg2hw_mio_periph_insel_mreg_t periph_insel;
-  assign periph_insel = pinmux.reg2hw.mio_periph_insel[periph_sel_i];
+  assign periph_insel = pinmux_part_primary.reg2hw.mio_periph_insel[periph_sel_i];
 
   // Out of range selections are illegal as well.
   logic [2**$bits(periph_insel.q)-1:0] periph_insel_legal_vec;
@@ -133,19 +133,21 @@ module pinmux_assert_fpv
   `ASSERT(MioToPeriph0Backward_A, mio_to_periph_o[periph_sel_i] == 0 |->
           (periph_insel.q == 0) ||
           ((periph_insel.q > 1 && periph_insel_legal &&
-           (pinmux.u_pinmux_strap_sampling.jtag_en || mio_in_i[periph_insel.q - 2] == 0)) ||
+           (pinmux_part_primary.u_pinmux_strap_sampling.jtag_en ||
+            mio_in_i[periph_insel.q - 2] == 0)) ||
            !periph_insel_legal))
 
   `ASSERT(MioToPeriph1Backward_A, mio_to_periph_o[periph_sel_i] == 1 |->
           (periph_insel.q == 1) ||
           (periph_insel.q > 1 && periph_insel_legal &&
-          (mio_in_i[periph_insel.q - 2] == 1 || pinmux.u_pinmux_strap_sampling.jtag_en)))
+          (mio_in_i[periph_insel.q - 2] == 1 ||
+           pinmux_part_primary.u_pinmux_strap_sampling.jtag_en)))
 
   `ASSERT(DioInSelN_A, dio_to_periph_o == dio_in_i)
 
   // ------ Output mux assertions ------
   pinmux_reg_pkg::pinmux_reg2hw_mio_outsel_mreg_t mio_outsel;
-  assign mio_outsel = pinmux.reg2hw.mio_outsel[mio_sel_i];
+  assign mio_outsel = pinmux_part_primary.reg2hw.mio_outsel[mio_sel_i];
 
   // Out of range selections are illegal as well.
   logic [2**$bits(mio_outsel.q)-1:0] mio_outsel_legal_vec;
@@ -154,7 +156,7 @@ module pinmux_assert_fpv
   assign mio_outsel_legal = mio_outsel_legal_vec[mio_outsel.q];
 
   pinmux_reg_pkg::pinmux_reg2hw_mio_pad_sleep_status_mreg_t mio_pad_sleep_status;
-  assign mio_pad_sleep_status = pinmux.reg2hw.mio_pad_sleep_status[mio_sel_i];
+  assign mio_pad_sleep_status = pinmux_part_primary.reg2hw.mio_pad_sleep_status[mio_sel_i];
 
 
   `ASSERT(OutSel0_A, mio_outsel.q == 0 && !mio_pad_sleep_status.q |-> mio_out_o[mio_sel_i] == 1'b0)
@@ -204,9 +206,9 @@ module pinmux_assert_fpv
 
   // ------ Mio sleep behavior assertions ------
   pinmux_reg_pkg::pinmux_reg2hw_mio_pad_sleep_en_mreg_t mio_pad_sleep_en;
-  assign mio_pad_sleep_en = pinmux.reg2hw.mio_pad_sleep_en[mio_sel_i];
+  assign mio_pad_sleep_en = pinmux_part_primary.reg2hw.mio_pad_sleep_en[mio_sel_i];
   pinmux_reg_pkg::pinmux_reg2hw_mio_pad_sleep_mode_mreg_t mio_pad_sleep_mode;
-  assign mio_pad_sleep_mode = pinmux.reg2hw.mio_pad_sleep_mode[mio_sel_i];
+  assign mio_pad_sleep_mode = pinmux_part_primary.reg2hw.mio_pad_sleep_mode[mio_sel_i];
 
   `ASSERT(MioSleepMode0_A, ${"##"}1 mio_pad_sleep_mode.q == 0 && mio_pad_sleep_en.q == 1 &&
           $rose(sleep_en_i)
@@ -305,7 +307,7 @@ module pinmux_assert_fpv
 
   // ------ Mio_attr_o ------
   pad_attr_t mio_pad_attr;
-  assign mio_pad_attr = pinmux.mio_pad_attr_q[mio_sel_i];
+  assign mio_pad_attr = pinmux_part_primary.mio_pad_attr_q[mio_sel_i];
 
   pad_attr_t mio_pad_attr_mask;
   pad_type_e bid_pad_types[5];
@@ -328,7 +330,7 @@ module pinmux_assert_fpv
   // When JTAG is enabled, the mio pad addributes should mostly be tied to zero. The only exception
   // is for the tck and trst signals, which should be configured to enable Schmitt triggering.
   `ASSERT(MioJtagAttrO_A,
-          pinmux.u_pinmux_strap_sampling.jtag_en |->
+          pinmux_part_primary.u_pinmux_strap_sampling.jtag_en |->
           mio_attr_o[TargetCfg.tck_idx]  == '{schmitt_en: 1'b1, default: '0} &&
           mio_attr_o[TargetCfg.tms_idx]  == '0 &&
           mio_attr_o[TargetCfg.trst_idx] == '{schmitt_en: 1'b1, default: '0} &&
@@ -337,7 +339,7 @@ module pinmux_assert_fpv
 
   // ------ Dio_attr_o ------
   pinmux_reg_pkg::pinmux_reg2hw_dio_pad_attr_mreg_t dio_pad_attr;
-  assign dio_pad_attr = pinmux.dio_pad_attr_q[dio_sel_i];
+  assign dio_pad_attr = pinmux_part_primary.dio_pad_attr_q[dio_sel_i];
 
   pad_attr_t dio_pad_attr_mask;
   assign dio_pad_attr_mask.invert = TargetCfg.dio_pad_type[dio_sel_i] != AnalogIn0;
@@ -357,7 +359,7 @@ module pinmux_assert_fpv
 
   // ------ Output dedicated output assertions ------
   pinmux_reg_pkg::pinmux_reg2hw_dio_pad_sleep_status_mreg_t dio_pad_sleep_status;
-  assign dio_pad_sleep_status = pinmux.reg2hw.dio_pad_sleep_status[dio_sel_i];
+  assign dio_pad_sleep_status = pinmux_part_primary.reg2hw.dio_pad_sleep_status[dio_sel_i];
 
   `ASSERT(DOutSelN_A, !dio_pad_sleep_status.q |->
           dio_out_o[dio_sel_i] == periph_to_dio_i[dio_sel_i])
@@ -367,9 +369,9 @@ module pinmux_assert_fpv
 
   // ------ Dio sleep behavior assertions ------
   pinmux_reg_pkg::pinmux_reg2hw_dio_pad_sleep_en_mreg_t dio_pad_sleep_en;
-  assign dio_pad_sleep_en = pinmux.reg2hw.dio_pad_sleep_en[dio_sel_i];
+  assign dio_pad_sleep_en = pinmux_part_primary.reg2hw.dio_pad_sleep_en[dio_sel_i];
   pinmux_reg_pkg::pinmux_reg2hw_dio_pad_sleep_mode_mreg_t dio_pad_sleep_mode;
-  assign dio_pad_sleep_mode = pinmux.reg2hw.dio_pad_sleep_mode[dio_sel_i];
+  assign dio_pad_sleep_mode = pinmux_part_primary.reg2hw.dio_pad_sleep_mode[dio_sel_i];
 
   `ASSERT(DioSleepMode0_A, ${"##"}1 dio_pad_sleep_mode.q == 0 && dio_pad_sleep_en.q == 1 &&
           $rose(sleep_en_i)
@@ -472,22 +474,22 @@ module pinmux_assert_fpv
 
   // ------ Wakeup assertions ------
   pinmux_reg2hw_wkup_detector_en_mreg_t wkup_detector_en;
-  assign wkup_detector_en = pinmux.reg2hw.wkup_detector_en[wkup_sel_i];
+  assign wkup_detector_en = pinmux_part_primary.reg2hw.wkup_detector_en[wkup_sel_i];
   pinmux_reg2hw_wkup_detector_mreg_t wkup_detector;
-  assign wkup_detector = pinmux.reg2hw.wkup_detector[wkup_sel_i];
+  assign wkup_detector = pinmux_part_primary.reg2hw.wkup_detector[wkup_sel_i];
   pinmux_reg2hw_wkup_detector_cnt_th_mreg_t wkup_detector_cnt_th;
-  assign wkup_detector_cnt_th = pinmux.reg2hw.wkup_detector_cnt_th[wkup_sel_i];
+  assign wkup_detector_cnt_th = pinmux_part_primary.reg2hw.wkup_detector_cnt_th[wkup_sel_i];
   pinmux_reg2hw_wkup_detector_padsel_mreg_t wkup_detector_padsel;
-  assign wkup_detector_padsel = pinmux.reg2hw.wkup_detector_padsel[wkup_sel_i];
+  assign wkup_detector_padsel = pinmux_part_primary.reg2hw.wkup_detector_padsel[wkup_sel_i];
   pinmux_hw2reg_wkup_cause_mreg_t wkup_cause;
-  assign wkup_cause = pinmux.hw2reg.wkup_cause[wkup_sel_i];
+  assign wkup_cause = pinmux_part_primary.hw2reg.wkup_cause[wkup_sel_i];
   pinmux_reg2hw_wkup_cause_mreg_t wkup_cause_reg2hw;
 
   // Variable to gether all wkup causes.
-  assign wkup_cause_reg2hw = pinmux.reg2hw.wkup_cause[wkup_sel_i];
+  assign wkup_cause_reg2hw = pinmux_part_primary.reg2hw.wkup_cause[wkup_sel_i];
   logic[pinmux_reg_pkg::NWkupDetect-1:0]  wkup_cause_q;
   for (genvar i = 0; i < pinmux_reg_pkg::NWkupDetect; i++) begin : gen_wkup_cause_q
-    assign wkup_cause_q[i] = pinmux.reg2hw.wkup_cause[i].q;
+    assign wkup_cause_q[i] = pinmux_part_primary.reg2hw.wkup_cause[i].q;
   end
 
   // Retrieve pin value based on Mio and Dio selection.
@@ -804,11 +806,12 @@ module pinmux_assert_fpv
 
   // Fatal alert related assertions
   `ASSUME(TriggerAfterAlertInit_S, $stable(rst_ni) == 0 |->
-          pinmux.u_reg.intg_err_o == 0 [*10])
-  `ASSERT(TlIntgFatalAlert_A, pinmux.u_reg.intg_err_o |-> (${"##"}[0:7] (alert_tx_o[0].alert_p)) [*2])
+          pinmux_part_primary.u_reg.intg_err_o == 0 [*10])
+  `ASSERT(TlIntgFatalAlert_A, pinmux_part_primary.u_reg.intg_err_o |->
+          (${"##"}[0:7] (alert_tx_o[0].alert_p)) [*2])
 
   // Since the USB wake module is blackboxed, we have to add an assumption here since the
-  // ASSERT_KNOWN assertions embedded in pinmux.sv would fail otherwise.
+  // ASSERT_KNOWN assertions embedded in pinmux_part_primary.sv would fail otherwise.
   `ASSUME_FPV(UsbWkupReqKnownO_M,
               !$isunknown(u_usbdev_aon_wake.wake_req_aon_o), clk_aon_i, !rst_aon_ni)
   `ASSUME_FPV(UsbWakeDetectActiveKnownO_M,

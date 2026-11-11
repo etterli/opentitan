@@ -7,7 +7,7 @@ set clkgen          clkgen/pll
 set u_ast_primary   top_*/*_pd_main/u_ast_part_primary
 set u_ast_secondary top_*/*_pd_aon/u_ast_part_secondary
 set u_clkmgr        top_*/*_pd_aon/u_clkmgr
-set u_pinmux        top_*/*_pd_aon/u_pinmux
+set u_pinmux_part_primary        top_*/*_pd_aon/u_pinmux_part_primary
 set u_spi_device    top_*/*_pd_main/u_spi_device
 
 ## Clock Signal
@@ -83,11 +83,11 @@ set all_muxed_ports "${ioa_muxed_ports} ${iob_muxed_ports} ${ioc_muxed_ports} ${
 # Create clocks for the various TAPs.
 create_clock -add -name jtag_tck -period 100.00 -waveform {0 50} [get_ports IOA5]
 create_generated_clock -name lc_jtag_tck -source [get_ports IOA5] -divide_by 1 \
-    [get_pins ${u_pinmux}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_lc/prim_clock_buf_tck/gen_fpga_buf.bufg_i/O]
+    [get_pins ${u_pinmux_part_primary}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_lc/prim_clock_buf_tck/gen_fpga_buf.bufg_i/O]
 create_generated_clock -name rv_jtag_tck -source [get_ports IOA5] -divide_by 1 \
-    [get_pins ${u_pinmux}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_rv/prim_clock_buf_tck/gen_fpga_buf.bufg_i/O]
+    [get_pins ${u_pinmux_part_primary}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_rv/prim_clock_buf_tck/gen_fpga_buf.bufg_i/O]
 create_generated_clock -name rram_jtag_tck -source [get_ports IOA5] -divide_by 1 \
-    [get_pins ${u_pinmux}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_rram/prim_clock_buf_tck/gen_fpga_buf.bufg_i/O]
+    [get_pins ${u_pinmux_part_primary}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_rram/prim_clock_buf_tck/gen_fpga_buf.bufg_i/O]
 
 # Assign input and output delays.
 set_output_delay -add_delay -clock jtag_tck -max 10.0 [get_ports IOA1]
@@ -334,10 +334,10 @@ set_false_path -from [get_clocks clk_usb_48] -to [get_pins ${u_ast_primary}/u_us
 # software may still select others.
 #   I3C0: SCL = IOB11 (insel 34), SDA = IOB12 (insel 35)
 #   I3C1: SCL = IOB9  (insel 32), SDA = IOB10 (insel 33)
-set i3c0_scl_insel ${u_pinmux}/u_reg/u_mio_periph_insel_82/q_reg
-set i3c0_sda_insel ${u_pinmux}/u_reg/u_mio_periph_insel_83/q_reg
-set i3c1_scl_insel ${u_pinmux}/u_reg/u_mio_periph_insel_84/q_reg
-set i3c1_sda_insel ${u_pinmux}/u_reg/u_mio_periph_insel_85/q_reg
+set i3c0_scl_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_82/q_reg
+set i3c0_sda_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_83/q_reg
+set i3c1_scl_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_84/q_reg
+set i3c1_sda_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_85/q_reg
 
 # insel 34 = 6'b100010
 set_case_analysis 1 [get_pins [list ${i3c0_scl_insel}\[1\]/Q ${i3c0_scl_insel}\[5\]/Q]]
@@ -359,10 +359,10 @@ set_case_analysis 0 [get_pins [list ${i3c1_sda_insel}\[1\]/Q ${i3c1_sda_insel}\[
 
 # The Target Reset Detectors are clocked by SCL and SDA too, through their own
 # pinmux inputs. Pin these to the same pads as the inputs of their I3C instance.
-set i3c0_rstdet_scl_insel ${u_pinmux}/u_reg/u_mio_periph_insel_96/q_reg
-set i3c0_rstdet_sda_insel ${u_pinmux}/u_reg/u_mio_periph_insel_97/q_reg
-set i3c1_rstdet_scl_insel ${u_pinmux}/u_reg/u_mio_periph_insel_98/q_reg
-set i3c1_rstdet_sda_insel ${u_pinmux}/u_reg/u_mio_periph_insel_99/q_reg
+set i3c0_rstdet_scl_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_96/q_reg
+set i3c0_rstdet_sda_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_97/q_reg
+set i3c1_rstdet_scl_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_98/q_reg
+set i3c1_rstdet_sda_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_99/q_reg
 
 # insel 34 = 6'b100010
 set_case_analysis 1 [get_pins [list ${i3c0_rstdet_scl_insel}\[1\]/Q \
@@ -389,10 +389,10 @@ set_case_analysis 0 [get_pins [list ${i3c1_rstdet_sda_insel}\[1\]/Q ${i3c1_rstde
 # Otherwise, the XOR in the pad wrapper is non-unate, potentially leading Vivado to
 # propagating each clock with both polarities.
 set_case_analysis 0 [get_pins [list \
-    ${u_pinmux}/mio_pad_attr_q_reg\[30\]\[invert\]/Q \
-    ${u_pinmux}/mio_pad_attr_q_reg\[31\]\[invert\]/Q \
-    ${u_pinmux}/mio_pad_attr_q_reg\[32\]\[invert\]/Q \
-    ${u_pinmux}/mio_pad_attr_q_reg\[33\]\[invert\]/Q]]
+    ${u_pinmux_part_primary}/mio_pad_attr_q_reg\[30\]\[invert\]/Q \
+    ${u_pinmux_part_primary}/mio_pad_attr_q_reg\[31\]\[invert\]/Q \
+    ${u_pinmux_part_primary}/mio_pad_attr_q_reg\[32\]\[invert\]/Q \
+    ${u_pinmux_part_primary}/mio_pad_attr_q_reg\[33\]\[invert\]/Q]]
 
 # SCL runs at up to 12.5 MHz. SDA changes at most once per SCL half period
 # (HDR-DDR), so the same period bounds it. The inverted clock trees derive from

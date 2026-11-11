@@ -19,11 +19,11 @@ waive -rules RESET_MUX -location {rstmgr.sv} -msg {Asynchronous reset 'scan_rst_
 waive -rules RESET_USE -location {top_darjeeling.sv darjeeling_pd_main.sv darjeeling_pd_aon.sv} -regexp {'scan_rst_ni' is connected to .* port 'scan_rst_ni', and used as an asynchronous reset or set 'rst_.*ni' at} \
       -comment "Scan reset is a legal asynchronous reset"
 
-waive -rules {HIER_BRANCH_NOT_READ} -location {pinmux.sv} \
-      -msg {Net 'scanmode_i' is not read from in module 'pinmux'} \
+waive -rules {HIER_BRANCH_NOT_READ} -location {pinmux_part_primary.sv} \
+      -msg {Net 'scanmode_i' is not read from in module 'pinmux_part_primary'} \
       -comment "scanmode_i is not used in the Darjeeling pad configuration"
 
-waive -rules INPUT_NOT_READ -location {pinmux.sv} -regexp {Input port 'scanmode_i' is not read from} \
+waive -rules INPUT_NOT_READ -location {pinmux_part_primary.sv} -regexp {Input port 'scanmode_i' is not read from} \
       -comment "scanmode_i is not used in the Darjeeling pad configuration"
 
 waive -rules CLOCK_MUX -location {darjeeling_pd_main.sv} -regexp {Clock 'spi_device_passthrough_req.sck' reaches a multiplexer here, used as a clock} \

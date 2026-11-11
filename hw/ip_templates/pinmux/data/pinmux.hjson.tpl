@@ -65,13 +65,21 @@
       },
   ]
   notes:              "Use FPV to perform block level verification.",
-  clocking: [
-    {clock: "clk_i", reset: "rst_ni", primary: true},
-    {clock: "clk_aon_i", reset: "rst_aon_ni"},
-  % if enable_strap_sampling:
-    {reset: "rst_sys_ni"}
-  % endif
-  ]
+  // The pinmux is split into a primary and a secondary partition, which can be placed in different
+  // power domains. The secondary partition does not contain any logic yet.
+  is_split_ip: true,
+  clocking: {
+    primary: [
+      {clock: "clk_i", reset: "rst_ni", primary: true},
+      {clock: "clk_aon_i", reset: "rst_aon_ni"},
+    % if enable_strap_sampling:
+      {reset: "rst_sys_ni"}
+    % endif
+    ]
+    secondary: [
+      {clock: "clk_i", reset: "rst_ni", primary: true}
+    ]
+  }
   bus_interfaces: [
     { protocol: "tlul", direction: "device" }
   ],

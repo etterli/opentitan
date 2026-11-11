@@ -100,7 +100,7 @@ module pinmux_tb
     mio_scan_role:     {NMioPads{NoScan}}
   };
 
-  pinmux #(
+  pinmux_part_primary #(
     .TargetCfg(PinmuxTargetCfg),
     .AlertAsyncOn(AlertAsyncOn),
     .SecVolatileRawUnlockEn(SecVolatileRawUnlockEn)

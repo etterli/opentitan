@@ -7,7 +7,7 @@ set clkgen          clkgen/pll
 set u_ast_primary   top_*/*_pd_main/u_ast_part_primary
 set u_ast_secondary top_*/*_pd_aon/u_ast_part_secondary
 set u_clkmgr        top_*/*_pd_aon/u_clkmgr
-set u_pinmux        top_*/*_pd_aon/u_pinmux
+set u_pinmux_part_primary        top_*/*_pd_aon/u_pinmux_part_primary
 set u_spi_device    top_*/*_pd_main/u_spi_device
 
 ## Clock Signal
@@ -61,17 +61,17 @@ set all_muxed_ports "${ioa_muxed_ports} ${iob_muxed_ports} ${ioc_muxed_ports} ${
 ## JTAG clocks and I/O delays
 # Create clocks for the various TAPs.
 create_clock -add -name jtag_tck -period 100.00 -waveform {0 50} [get_ports IOR3]
-create_generated_clock -name lc_jtag_tck -source [get_ports IOR3] -divide_by 1 [get_pins ${u_pinmux}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_lc/prim_clock_buf_tck/gen_fpga_buf.gen_bufg.bufg_i/O]
-create_generated_clock -name rv_jtag_tck -source [get_ports IOR3] -divide_by 1 [get_pins ${u_pinmux}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_rv/prim_clock_buf_tck/gen_fpga_buf.gen_bufg.bufg_i/O]
+create_generated_clock -name lc_jtag_tck -source [get_ports IOR3] -divide_by 1 [get_pins ${u_pinmux_part_primary}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_lc/prim_clock_buf_tck/gen_fpga_buf.gen_bufg.bufg_i/O]
+create_generated_clock -name rv_jtag_tck -source [get_ports IOR3] -divide_by 1 [get_pins ${u_pinmux_part_primary}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_rv/prim_clock_buf_tck/gen_fpga_buf.gen_bufg.bufg_i/O]
 
 set lc_jtag_tck_inv_pin  \
   [get_pins -filter {DIRECTION == OUT && IS_LEAF} -of_objects \
     [get_nets -segments -of_objects \
-      [get_pins ${u_pinmux}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_lc/prim_clock_buf_tck/gen_fpga_buf.gen_bufg.bufg_i/I]]]
+      [get_pins ${u_pinmux_part_primary}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_lc/prim_clock_buf_tck/gen_fpga_buf.gen_bufg.bufg_i/I]]]
 set rv_jtag_tck_inv_pin  \
   [get_pins -filter {DIRECTION == OUT && IS_LEAF} -of_objects \
     [get_nets -segments -of_objects \
-      [get_pins ${u_pinmux}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_rv/prim_clock_buf_tck/gen_fpga_buf.gen_bufg.bufg_i/I]]]
+      [get_pins ${u_pinmux_part_primary}/u_pinmux_strap_sampling/u_pinmux_jtag_buf_rv/prim_clock_buf_tck/gen_fpga_buf.gen_bufg.bufg_i/I]]]
 
 set_clock_sense -negative ${lc_jtag_tck_inv_pin}
 set_clock_sense -negative ${rv_jtag_tck_inv_pin}

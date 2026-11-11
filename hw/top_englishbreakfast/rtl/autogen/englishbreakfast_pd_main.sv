@@ -748,12 +748,12 @@ module englishbreakfast_pd_main #(
     .tl_o(usbdev_tl_rsp)
   );
 
-  pinmux #(
+  pinmux_part_primary #(
     .AlertAsyncOn(AsyncOnOutgoingAlertEnglishbreakfast[12]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .SecVolatileRawUnlockEn(SecPinmuxVolatileRawUnlockEn),
     .TargetCfg(PinmuxTargetCfg)
-  ) u_pinmux (
+  ) u_pinmux_part_primary (
     // Clock and reset connections
     .clk_i(clkmgr_clocks_i.clk_io_div4_powerup),
     .clk_aon_i(clkmgr_clocks_i.clk_aon_powerup),

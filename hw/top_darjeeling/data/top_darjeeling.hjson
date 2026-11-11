@@ -507,9 +507,13 @@
     { name: "pinmux",
       type: "pinmux",
       template_type: "pinmux",
-      clock_srcs: {clk_i: "io", clk_aon_i: "aon"},
-      clock_group: "powerup",
+      clock_srcs: {
+        primary: {clk_i: "io", clk_aon_i: "aon"},
+        secondary: {clk_i: "io"},
+      },
+      clock_group: {primary: "powerup", secondary: "powerup"},
       reset_connections: {
+        primary: {
           rst_ni: {
             name: "lc_io",
             domain: "Aon"
@@ -519,7 +523,15 @@
             domain: "Aon"
           },
         },
+        secondary: {
+          rst_ni: {
+            name: "lc_io",
+            domain: "Aon"
+          },
+        },
+      },
       domain: "Main",
+      domain_secondary: "Aon",
       base_addr: {
         hart: "0x30460000",
       },

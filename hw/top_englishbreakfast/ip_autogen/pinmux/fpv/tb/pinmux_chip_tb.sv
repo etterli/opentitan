@@ -233,7 +233,7 @@ module pinmux_chip_tb
     }
   };
 
-  pinmux #(
+  pinmux_part_primary #(
     .TargetCfg(PinmuxTargetCfg),
     .AlertAsyncOn(AlertAsyncOn),
     .SecVolatileRawUnlockEn(SecVolatileRawUnlockEn)
