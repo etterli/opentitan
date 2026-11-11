@@ -179,6 +179,13 @@ class IpTemplateRendererBase:
         }
         try:
             return template.render(**tpl_args)
+        except AssertionError as e:
+            # Templates use assertions to check their parameter values. Only report the message
+            # and the failing template line instead of the full traceback and template variables.
+            filename, lineno, _, _ = mako_exceptions.RichTraceback().traceback[-1]
+            location = os.path.relpath(filename, self.ip_template.template_path.parent)
+            raise TemplateRenderError(
+                f"Invalid template parameter value ({location}:{lineno}): {e}") from None
         except Exception:
             raise TemplateRenderError(
                 "Unable to render template: " +
