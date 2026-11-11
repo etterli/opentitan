@@ -46,16 +46,23 @@
       default: "8"
     }
     {
-      name: "mio_insel_legal"
+      name: "mio_periph_ins"
       desc: '''
-            List of (name, mask) tuples with the legal MIO_PERIPH_INSEL values for each MIO
-            peripheral input, ordered ascending by the peripheral input index.
+            List of {name, pads} dicts, one per MIO peripheral input, ordered ascending by the
+            peripheral input index. pads lists the indices of the MIO pads the input can be muxed
+            to.
             '''
       type: "object"
       // The default is a full muxing for the default n_mio_pads and n_mio_periph_in.
       default: [
-        ["periph_in_0", 1023], ["periph_in_1", 1023], ["periph_in_2", 1023], ["periph_in_3", 1023],
-        ["periph_in_4", 1023], ["periph_in_5", 1023], ["periph_in_6", 1023], ["periph_in_7", 1023]
+        {name: "periph_in_0", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_in_1", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_in_2", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_in_3", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_in_4", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_in_5", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_in_6", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_in_7", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
       ]
     }
     {
@@ -69,16 +76,23 @@
       default: [0, 0, 0, 0, 0, 0, 0, 0]
     }
     {
-      name: "mio_outsel_legal"
+      name: "mio_periph_outs"
       desc: '''
-            List of (name, mask) tuples with the legal MIO_OUTSEL values for each MIO pad,
-            ordered ascending by the MIO pad index.
+            List of {name, pads} dicts, one per MIO peripheral output, ordered ascending by the
+            peripheral output index. pads lists the indices of the MIO pads the output can be
+            muxed to.
             '''
       type: "object"
       // The default is a full muxing for the default n_mio_pads and n_mio_periph_out.
       default: [
-        ["mio_pad_0", 2047], ["mio_pad_1", 2047], ["mio_pad_2", 2047], ["mio_pad_3", 2047],
-        ["mio_pad_4", 2047], ["mio_pad_5", 2047], ["mio_pad_6", 2047], ["mio_pad_7", 2047]
+        {name: "periph_out_0", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_out_1", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_out_2", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_out_3", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_out_4", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_out_5", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_out_6", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_out_7", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
       ]
     }
     {

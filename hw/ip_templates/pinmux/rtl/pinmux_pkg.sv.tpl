@@ -30,6 +30,34 @@
         assert type(value) is int and 0 <= value <= max_value, (
             f"pad attrs of {name} has {field}: {value!r}. Expected an int in [0, {max_value}]")
 
+  # Constant selections preceding the pads/peripheral outputs: INSEL 0, 1 and OUTSEL 0, 1, high-Z.
+  INSEL_NUM_CONST = 2
+  OUTSEL_NUM_CONST = 3
+
+  def check_mio_periphs(param, n_mio_pads, n_periphs, periphs):
+    """Check a list of {name, pads} dicts with one entry per MIO peripheral input or output."""
+    assert len(periphs) == n_periphs, f"{param} needs {n_periphs} entries, got {len(periphs)}"
+    for periph in periphs:
+      assert set(periph) == {"name", "pads"}, f"{param} entry {periph} needs exactly name and pads"
+      name, pads = periph["name"], periph["pads"]
+      assert len(set(pads)) == len(pads), f"{param} entry {name} has duplicate pads"
+      for pad in pads:
+        assert type(pad) is int and 0 <= pad < n_mio_pads, (
+            f"{param} entry {name} has pad {pad!r}. Expected an int in [0, {n_mio_pads - 1}]")
+
+  def mio_insel_legal(mio_periph_ins):
+    """Legal MIO_PERIPH_INSEL values as bitmask, one per peripheral input."""
+    return [sum(1 << (pad + INSEL_NUM_CONST) for pad in periph["pads"]) |
+            ((1 << INSEL_NUM_CONST) - 1) for periph in mio_periph_ins]
+
+  def mio_outsel_legal(n_mio_pads, mio_periph_outs):
+    """Legal MIO_OUTSEL values as bitmask, one per MIO pad."""
+    masks = [(1 << OUTSEL_NUM_CONST) - 1] * n_mio_pads
+    for idx, periph in enumerate(mio_periph_outs):
+      for pad in periph["pads"]:
+        masks[pad] |= 1 << (idx + OUTSEL_NUM_CONST)
+    return masks
+
   def pad_attr_sv(attrs):
     """Render the attrs of a pad as pad_attr_t constant."""
     members = [f"{PAD_ATTR_FIELDS[field][0]}: {PAD_ATTR_FIELDS[field][1]}'h{value:x}"
@@ -96,23 +124,21 @@ package pinmux_pkg;
   };
 
 <%
-  insel_w = n_mio_pads + 2
-  outsel_w = n_mio_periph_out + 3
-  assert len(mio_insel_legal) == n_mio_periph_in, \
-      f"mio_insel_legal needs {n_mio_periph_in} entries, got {len(mio_insel_legal)}"
-  assert len(mio_outsel_legal) == n_mio_pads, \
-      f"mio_outsel_legal needs {n_mio_pads} entries, got {len(mio_outsel_legal)}"
-  for name, mask in mio_insel_legal:
-      assert mask & 0b11 == 0b11 and mask >> insel_w == 0, f"invalid INSEL mask for {name}"
-  for name, mask in mio_outsel_legal:
-      assert mask & 0b111 == 0b111 and mask >> outsel_w == 0, f"invalid OUTSEL mask for {name}"
+  check_mio_periphs("mio_periph_ins", n_mio_pads, n_mio_periph_in, mio_periph_ins)
+  check_mio_periphs("mio_periph_outs", n_mio_pads, n_mio_periph_out, mio_periph_outs)
   check_pad_attrs("mio_pad_attr_resvals", n_mio_pads, mio_pad_attr_resvals)
   check_pad_attrs("dio_pad_attr_resvals", n_dio_pads, dio_pad_attr_resvals)
+  insel_w = n_mio_pads + INSEL_NUM_CONST
+  outsel_w = n_mio_periph_out + OUTSEL_NUM_CONST
+  insel_legal = list(zip([p["name"] for p in mio_periph_ins], mio_insel_legal(mio_periph_ins)))
+  # The pad names for the comments are taken from the pad attrs list (one entry per MIO pad).
+  outsel_legal = list(zip([name for name, _ in mio_pad_attr_resvals],
+                          mio_outsel_legal(n_mio_pads, mio_periph_outs)))
 %>\
   // Legal MIO_PERIPH_INSEL values for each MIO peripheral input. LSB corresponds to lowest index.
   // Includes static options.
   parameter logic [NMioPeriphIn-1:0][NMioPads+1:0] MioPeriphInselLegal = {
-% for name, mask in mio_insel_legal[::-1]:
+% for name, mask in insel_legal[::-1]:
     ${insel_w}'h${"{:0{}x}".format(mask, (insel_w + 3) // 4)}${f"  // {name}" if loop.last else f", // {name}"}
 % endfor
   };
@@ -120,7 +146,7 @@ package pinmux_pkg;
   // Legal MIO_OUTSEL values for each MIO pad. LSB corresponds to lowest index. Includes static
   // options.
   parameter logic [NMioPads-1:0][NMioPeriphOut+2:0] MioOutselLegal = {
-% for name, mask in mio_outsel_legal[::-1]:
+% for name, mask in outsel_legal[::-1]:
     ${outsel_w}'h${"{:0{}x}".format(mask, (outsel_w + 3) // 4)}${f"  // {name}" if loop.last else f", // {name}"}
 % endfor
   };
