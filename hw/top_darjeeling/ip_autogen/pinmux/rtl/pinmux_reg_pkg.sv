@@ -14,6 +14,8 @@ package pinmux_reg_pkg;
   parameter int NWkupDetect = 8;
   parameter int WkupCntWidth = 8;
   parameter int NumAlerts = 1;
+  parameter int NumAlertsPrimary = 1;
+  parameter int NumAlertsSecondary = 0;
 
   // Address widths within the block
   parameter int BlockAw = 11;

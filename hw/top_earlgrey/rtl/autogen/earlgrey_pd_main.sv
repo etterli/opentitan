@@ -2011,6 +2011,14 @@ module earlgrey_pd_main #(
     .tl_o(usbdev_tl_rsp)
   );
 
+  pinmux_part_secondary u_pinmux_part_secondary (
+    // Clock and reset connections
+    .clk_i(clkmgr_clocks_i.clk_io_div4_secure),
+    .rst_ni(rstmgr_resets_i.rst_lc_io_div4_n[rstmgr_pkg::DomainMainSel])
+
+
+  );
+
   ast_part_primary #(
     .EntropyStreams(AstEntropyStreams)
   ) u_ast_part_primary (

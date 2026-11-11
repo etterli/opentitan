@@ -2,12 +2,12 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
-// Pinmux toplevel.
+// Pinmux toplevel, primary partition of the split IP.
 //
 
 `include "prim_assert.sv"
 
-module pinmux
+module pinmux_part_primary
   import pinmux_pkg::*;
   import pinmux_reg_pkg::*;
   import prim_pad_wrapper_pkg::*;
@@ -15,14 +15,18 @@ module pinmux
   // Taget-specific pinmux configuration passed down from the
   // target-specific top-level.
   parameter target_cfg_t TargetCfg = DefaultTargetCfg,
+% if enable_strap_sampling:
   parameter bit SecVolatileRawUnlockEn = 0,
+% endif
   parameter logic [NumAlerts-1:0] AlertAsyncOn = {NumAlerts{1'b1}},
   // Number of cycles a differential skew is tolerated on the alert signal
   parameter int unsigned AlertSkewCycles = 1
 ) (
   input                            clk_i,
   input                            rst_ni,
+% if enable_strap_sampling:
   input                            rst_sys_ni,
+% endif
   // Scan enable
   input  prim_mubi_pkg::mubi4_t    scanmode_i,
   // Slow always-on clock
@@ -30,10 +34,13 @@ module pinmux
   input                            rst_aon_ni,
   // Wakeup request, running on clk_aon_i
   output logic                     pin_wkup_req_o,
+% if enable_usb_wakeup:
   output logic                     usb_wkup_req_o,
+% endif
   // Sleep enable and strap sample enable
   // from pwrmgr, running on clk_i
   input                            sleep_en_i,
+% if enable_strap_sampling:
   input                            strap_en_i,
   // ---------- VOLATILE_TEST_UNLOCKED CODE SECTION START ----------
   // NOTE THAT THIS IS A FEATURE FOR TEST CHIPS ONLY TO MITIGATE
@@ -58,8 +65,10 @@ module pinmux
   input  lc_ctrl_pkg::lc_tx_t      lc_check_byp_en_i,
   // SEC_CM: LC_ESCALATE_EN.INTERSIG.MUBI
   input  lc_ctrl_pkg::lc_tx_t      lc_escalate_en_i,
+% if enable_rram_tap:
   // SEC_CM: LC_NVM_DEBUG_EN.INTERSIG.MUBI
   input  lc_ctrl_pkg::lc_tx_t      lc_nvm_debug_en_i,
+% endif
   // SEC_CM: PINMUX_HW_DEBUG_EN.INTERSIG.MUBI
   output lc_ctrl_pkg::lc_tx_t      pinmux_hw_debug_en_o,
   // Sampled values for DFT straps
@@ -73,8 +82,12 @@ module pinmux
   input  jtag_pkg::jtag_rsp_t      rv_jtag_i,
   output jtag_pkg::jtag_req_t      dft_jtag_o,
   input  jtag_pkg::jtag_rsp_t      dft_jtag_i,
+% if enable_rram_tap:
   output jtag_pkg::jtag_req_t      rram_jtag_o,
   input  jtag_pkg::jtag_rsp_t      rram_jtag_i,
+% endif
+% endif
+% if enable_usb_wakeup:
   // Direct USB connection
   input                            usbdev_dppullup_en_i,
   input                            usbdev_dnpullup_en_i,
@@ -86,6 +99,7 @@ module pinmux
   output                           usbdev_bus_reset_o,
   output                           usbdev_sense_lost_o,
   output                           usbdev_wake_detect_active_o,
+% endif
   // Bus Interface (device)
   input  tlul_pkg::tl_h2d_t        tl_i,
   output tlul_pkg::tl_d2h_t        tl_o,
@@ -295,6 +309,7 @@ module pinmux
   logic [NMioPads-1:0] mio_out, mio_oe, mio_in;
   logic [NDioPads-1:0] dio_out, dio_oe, dio_in;
 
+% if enable_strap_sampling:
 
   //////////////////////////
   // Strap Sampling Logic //
@@ -367,8 +382,10 @@ module pinmux
     .lc_hw_debug_en_i,
     .lc_escalate_en_i,
     .lc_check_byp_en_i,
+% if enable_rram_tap:
     .lc_nvm_debug_en_i,
     .rram_jtag_sel_i ( prim_mubi_pkg::mubi4_t'(reg2hw.rram_jtag_sel.q) ),
+% endif
     // This is the latched version of lc_hw_debug_en_i. We use it exclusively to gate the JTAG
     // signals and TAP side of the RV_DM so that RV_DM can remain live during an NDM reset cycle.
     .pinmux_hw_debug_en_o,
@@ -379,10 +396,22 @@ module pinmux
     .rv_jtag_o,
     .rv_jtag_i,
     .dft_jtag_o,
+% if enable_rram_tap:
     .dft_jtag_i,
     .rram_jtag_o,
     .rram_jtag_i
+% else:
+    .dft_jtag_i
+% endif
   );
+% else:
+  // Just pass through these signals.
+  assign { dio_out_o,  mio_out_o  }  = { dio_out,  mio_out  };
+  assign { dio_oe_o ,  mio_oe_o   }  = { dio_oe,   mio_oe   };
+  assign { dio_in,     mio_in     }  = { dio_in_i, mio_in_i };
+  assign { dio_attr_o, mio_attr_o }  = { dio_attr, mio_attr };
+% endif
+% if enable_usb_wakeup:
 
   ///////////////////////////////////////
   // USB wake detect module connection //
@@ -415,6 +444,7 @@ module pinmux
     .sense_lost_aon_o(usbdev_sense_lost_o),
     .wake_detect_active_aon_o(usbdev_wake_detect_active_o)
   );
+% endif
 
   /////////////////////////
   // Retention Registers //
@@ -481,6 +511,14 @@ module pinmux
     assign mio_to_periph_o[k] = mio_mux_legal[reg2hw.mio_periph_insel[k].q];
   end
 
+% if n_dio_pads > n_mio_pads + 2:
+  // For configurations with NMioPads + 2 < NDioPads, mio_in is zero-extended to NDioPads bits for
+  // convenience. However, mio_periph_insel is sized to select the lowest NMioPads + 2 bits. Most
+  // of the zero bits cannot actually be selected. Tie them off to avoid lint warnings.
+  logic unused_mio_mux;
+  assign unused_mio_mux = ^{mio_mux[(AlignedMuxSize - 1):(NMioPads + 2)]};
+
+% endif
   //////////////////////
   // MIO Output Muxes //
   //////////////////////
@@ -649,6 +687,7 @@ module pinmux
 
   `ASSERT_KNOWN(MioKnownO_A, mio_attr_o)
   `ASSERT_KNOWN(DioKnownO_A, dio_attr_o)
+% if enable_strap_sampling:
 
   `ASSERT_KNOWN(LcJtagTckKnown_A, lc_jtag_o.tck)
   `ASSERT_KNOWN(LcJtagTrstKnown_A, lc_jtag_o.trst_n)
@@ -661,17 +700,22 @@ module pinmux
   `ASSERT_KNOWN(DftJtagTckKnown_A, dft_jtag_o.tck)
   `ASSERT_KNOWN(DftJtagTrstKnown_A, dft_jtag_o.trst_n)
   `ASSERT_KNOWN(DftJtagTmsKnown_A, dft_jtag_o.tms)
+% if enable_rram_tap:
 
   `ASSERT_KNOWN(RramJtagTckKnown_A, rram_jtag_o.tck)
   `ASSERT_KNOWN(RramJtagTrstKnown_A, rram_jtag_o.trst_n)
   `ASSERT_KNOWN(RramJtagTmsKnown_A, rram_jtag_o.tms)
+% endif
 
   `ASSERT_KNOWN(DftStrapsKnown_A, dft_strap_test_o)
+% endif
 
   // running on slow AON clock
   `ASSERT_KNOWN(AonWkupReqKnownO_A, pin_wkup_req_o, clk_aon_i, !rst_aon_ni)
+% if enable_usb_wakeup:
   `ASSERT_KNOWN(UsbWkupReqKnownO_A, usb_wkup_req_o, clk_aon_i, !rst_aon_ni)
   `ASSERT_KNOWN(UsbWakeDetectActiveKnownO_A, usbdev_wake_detect_active_o, clk_aon_i, !rst_aon_ni)
+% endif
 
   // The wakeup signal is not latched in the pwrmgr so must be held until acked by software
   `ASSUME(PinmuxWkupStable_A, pin_wkup_req_o |=> pin_wkup_req_o ||
@@ -699,9 +743,11 @@ module pinmux
 
   // Alert assertions for reg_we onehot check
   `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])
+% if enable_strap_sampling:
 
   // The strap sampling enable input shall be pulsed high for exactly one cycle after cold boot.
   `ASSUME(PwrMgrStrapSampleOnce0_A, strap_en_i |=> !strap_en_i)
   `ASSUME(PwrMgrStrapSampleOnce1_A, $fell(strap_en_i) |-> always !strap_en_i)
+% endif
 
-endmodule : pinmux
+endmodule : pinmux_part_primary

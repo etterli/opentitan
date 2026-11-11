@@ -1404,11 +1404,11 @@ module darjeeling_pd_main #(
     .tl_o(spi_host0_tl_rsp)
   );
 
-  pinmux #(
+  pinmux_part_primary #(
     .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[19]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .TargetCfg(PinmuxTargetCfg)
-  ) u_pinmux (
+  ) u_pinmux_part_primary (
     // Clock and reset connections
     .clk_i(clkmgr_clocks_i.clk_io_powerup),
     .clk_aon_i(clkmgr_clocks_i.clk_aon_powerup),

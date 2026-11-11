@@ -30,7 +30,7 @@ CONNECTION, LC_CPU_EN_RV_CORE_IBEX, top_darjeeling.darjeeling_pd_main.u_lc_ctrl,
 # Verify that lc_ctrl's lc_hw_debug_en_o signal is correctly connected to IPs.
 CONNECTION, LC_HW_DEBUG_EN_PWRMGR,         top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_hw_debug_en_o, top_darjeeling.darjeeling_pd_aon.u_pwrmgr,        lc_hw_debug_en_i
 CONNECTION, LC_HW_DEBUG_EN_CLKMGR,         top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_hw_debug_en_o, top_darjeeling.darjeeling_pd_aon.u_clkmgr,        lc_hw_debug_en_i
-CONNECTION, LC_HW_DEBUG_EN_PINMUX,         top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_hw_debug_en_o, top_darjeeling.darjeeling_pd_main.u_pinmux,        lc_hw_debug_en_i
+CONNECTION, LC_HW_DEBUG_EN_PINMUX,         top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_hw_debug_en_o, top_darjeeling.darjeeling_pd_main.u_pinmux_part_primary,        lc_hw_debug_en_i
 CONNECTION, LC_HW_DEBUG_EN_SRAM_CTRL_MAIN, top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_hw_debug_en_o, top_darjeeling.darjeeling_pd_main.u_sram_ctrl_main,    lc_hw_debug_en_i
 CONNECTION, LC_HW_DEBUG_EN_RV_DM,          top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_hw_debug_en_o, top_darjeeling.darjeeling_pd_main.u_rv_dm,             lc_hw_debug_en_i
 CONNECTION, LC_HW_DEBUG_EN_CSRNG,          top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_hw_debug_en_o, top_darjeeling.darjeeling_pd_main.u_csrng,             lc_hw_debug_en_i
@@ -38,7 +38,7 @@ CONNECTION, LC_HW_DEBUG_EN_CSRNG,          top_darjeeling.darjeeling_pd_main.u_l
 # Verify that lc_ctrl's lc_dft_en_o signal is correctly connected to IPs.
 CONNECTION, LC_DFT_EN_OTP,    top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_dft_en_o, top_darjeeling.darjeeling_pd_main.u_otp_ctrl,   lc_dft_en_i
 CONNECTION, LC_DFT_EN_PWRMGR, top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_dft_en_o, top_darjeeling.darjeeling_pd_aon.u_pwrmgr, lc_dft_en_i
-CONNECTION, LC_DFT_EN_PINMUX, top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_dft_en_o, top_darjeeling.darjeeling_pd_main.u_pinmux, lc_dft_en_i
+CONNECTION, LC_DFT_EN_PINMUX, top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_dft_en_o, top_darjeeling.darjeeling_pd_main.u_pinmux_part_primary, lc_dft_en_i
 CONNECTION, LC_DFT_EN_AST,    top_darjeeling.darjeeling_pd_main.u_lc_ctrl, lc_dft_en_o, u_ast,                     lc_dft_en_i
 
 # Verify lc_ctrl's RMA request connections.
