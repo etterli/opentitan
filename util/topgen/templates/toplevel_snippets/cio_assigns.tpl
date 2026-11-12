@@ -10,6 +10,7 @@
   % for sig in top["pinmux"]["ios"]:
     % if sig["connection"] == "muxed" and sig["type"] in ["inout", "input"]:
 <% literal = lib.get_io_enum_literal(sig, 'mio_in') %>\
+## TODO: skip if pinmux is split and signal not in current domain.
 <% suffix = "_o" if sig["domain"] != domain else "" %>\
   assign cio_${sig["name"]}_p2d${suffix}${"[" + str(sig["idx"]) +"]" if sig["idx"] !=-1  else ""} = mio_p2d[${literal}];
     % endif
