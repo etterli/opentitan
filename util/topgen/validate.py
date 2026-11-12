@@ -132,6 +132,7 @@ pinmux_sig_required = {
 }
 pinmux_sig_optional = {
     'port': ['s', 'Port name of module'],
+    'default': ['s', 'Default signal or/and pad connection'],
     'desc': ['s', 'Signal description'],
     'attr': ['s', 'Pad type for generating the correct attribute CSR']
 }
@@ -865,6 +866,13 @@ def check_pinmux(top: ConfigT, prefix: str) -> int:
                                 'refers to unknown muxed pad {}'.format(
                                     sig['instance'], sig['port'], padname))
                     error += 1
+            # A default pad must be a known muxed pad. The pinmux template checks the pads and
+            # default values themselves. Defaults are ignored for other connection types.
+            default = sig.get('default')
+            if isinstance(default, str) and default not in known_muxed_pads:
+                log.warning(f"Muxed connection of instance {sig['instance']} port "
+                            f"{sig['port']} has default {default} which is not a known muxed pad")
+                error += 1
         elif sig['connection'] == 'manual':
             # This pad attr key is only allowed in the manual case,
             # as there is no way to infer the pad type automatically.
