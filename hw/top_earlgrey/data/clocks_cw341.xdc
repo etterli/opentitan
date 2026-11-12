@@ -76,7 +76,7 @@ set_output_delay -max -clock usb_embed_out_clk 14 [get_ports {IO_USB_DP_TX IO_US
 set ioa_muxed_ports [get_ports IOA*]
 set iob_muxed_ports [get_ports IOB*]
 set ioc_muxed_ports [get_ports IOC*]
-set ior_muxed_ports [get_ports -filter {NAME != IOR8 && NAME != IOR9} IOR*]
+set ior_muxed_ports [get_ports IOR*]
 set all_muxed_ports "${ioa_muxed_ports} ${iob_muxed_ports} ${ioc_muxed_ports} ${ior_muxed_ports}"
 
 ## JTAG clocks and I/O delays
@@ -358,10 +358,10 @@ set_case_analysis 0 [get_pins [list ${i3c1_sda_insel}\[1\]/Q ${i3c1_sda_insel}\[
 
 # The Target Reset Detectors are clocked by SCL and SDA too, through their own
 # pinmux inputs. Pin these to the same pads as the inputs of their I3C instance.
-set i3c0_rstdet_scl_insel ${u_pinmux}/u_reg/u_mio_periph_insel_83/q_reg
-set i3c0_rstdet_sda_insel ${u_pinmux}/u_reg/u_mio_periph_insel_84/q_reg
-set i3c1_rstdet_scl_insel ${u_pinmux}/u_reg/u_mio_periph_insel_85/q_reg
-set i3c1_rstdet_sda_insel ${u_pinmux}/u_reg/u_mio_periph_insel_86/q_reg
+set i3c0_rstdet_scl_insel ${u_pinmux}/u_reg/u_mio_periph_insel_85/q_reg
+set i3c0_rstdet_sda_insel ${u_pinmux}/u_reg/u_mio_periph_insel_86/q_reg
+set i3c1_rstdet_scl_insel ${u_pinmux}/u_reg/u_mio_periph_insel_87/q_reg
+set i3c1_rstdet_sda_insel ${u_pinmux}/u_reg/u_mio_periph_insel_88/q_reg
 
 # insel 22 = 6'b010110
 set_case_analysis 1 [get_pins [list ${i3c0_rstdet_scl_insel}\[1\]/Q \
