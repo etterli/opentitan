@@ -15,30 +15,18 @@
       "mode": "OpenDrain",
       "level": true,
       "pull_mode": "PullUp",
-      "alias_of": "IOR4"
-    },
-    {
-      "name": "DFT_STRAP0",
-      "mode": "Alternate",
-      "alias_of": "IOC3"
-    },
-    {
-      "name": "DFT_STRAP1",
-      "mode": "Alternate",
-      "alias_of": "IOC4"
+      "alias_of": "IOA6"
     },
     {
       "name": "IOA0",
-      "alias_of": "CN8_6"
+      "alias_of": "CN7_7"
     },
     {
       "name": "IOA1",
-      "alias_of": "CN8_8"
+      "alias_of": "CN7_5"
     },
     {
       "name": "IOA2",
-      "mode": "PushPull",
-      "level": false,
       "alias_of": "CN9_29"
     },
     {
@@ -47,15 +35,15 @@
     },
     {
       "name": "IOA4",
-      "alias_of": "CN8_10"
+      "alias_of": "CN7_3"
     },
     {
       "name": "IOA5",
-      "alias_of": "CN8_12"
+      "alias_of": "CN7_1"
     },
     {
       "name": "IOA6",
-      "alias_of": "CN7_20"
+      "alias_of": "CN7_16"
     },
     {
       "name": "IOA7",
@@ -78,20 +66,8 @@
       "alias_of": "CN9_10"
     },
     {
-      "name": "IOB3",
-      "alias_of": "CN9_27"
-    },
-    {
-      "name": "IOB4",
-      "alias_of": "CN10_14"
-    },
-    {
       "name": "IOB5",
       "alias_of": "CN10_16"
-    },
-    {
-      "name": "IOB6",
-      "alias_of": "CN9_5"
     },
     {
       "name": "IOB7",
@@ -143,7 +119,7 @@
     },
     {
       "name": "IOC6",
-      "alias_of": "CN10_7"
+      "alias_of": "CN9_27"
     },
     {
       "name": "IOC7",
@@ -159,11 +135,11 @@
     },
     {
       "name": "IOC10",
-      "alias_of": "CN10_33"
+      "alias_of": "CN10_14"
     },
     {
       "name": "IOC11",
-      "alias_of": "CN10_2"
+      "alias_of": "CN9_5"
     },
     {
       "name": "IOC12",
@@ -171,31 +147,31 @@
     },
     {
       "name": "IOR0",
-      "alias_of": "CN7_7"
+      "alias_of": "CN7_20"
     },
     {
       "name": "IOR1",
-      "alias_of": "CN7_5"
-    },
-    {
-      "name": "IOR2",
-      "alias_of": "CN7_3"
-    },
-    {
-      "name": "IOR3",
-      "alias_of": "CN7_1"
-    },
-    {
-      "name": "IOR4",
-      "alias_of": "CN7_16"
-    },
-    {
-      "name": "IOR5",
       "alias_of": "CN9_14"
     },
     {
-      "name": "IOR6",
+      "name": "IOR2",
       "alias_of": "CN9_16"
+    },
+    {
+      "name": "IOR3",
+      "alias_of": "CN8_10"
+    },
+    {
+      "name": "IOR4",
+      "alias_of": "CN8_12"
+    },
+    {
+      "name": "IOR5",
+      "alias_of": "CN8_6"
+    },
+    {
+      "name": "IOR6",
+      "alias_of": "CN8_8"
     },
     {
       "name": "IOR7",
@@ -252,6 +228,18 @@
       "bits_per_sec": 100000,
       "address": 0x50,
       "alias_of": "I2C1"
+    },
+    {
+      "name": "ot_i2c0",
+      "alias_of": "I2C1"
+    },
+    {
+      "name": "ot_i2c1",
+      "alias_of": "I2C2"
+    },
+    {
+      "name": "ot_i2c2",
+      "alias_of": "I2C1"
     }
   ],
   "uarts": [
@@ -265,21 +253,6 @@
     }
   ],
   "strappings": [
-    {
-      "name": "PRERESET_DFT_DISABLE",
-      "pins": [
-        {
-          "name": "DFT_STRAP0",
-          "mode": "PushPull",
-          "level": false
-        },
-        {
-          "name": "DFT_STRAP1",
-          "mode": "PushPull",
-          "level": false
-        }
-      ]
-    },
     {
       "name": "TRST",
       "pins": [
