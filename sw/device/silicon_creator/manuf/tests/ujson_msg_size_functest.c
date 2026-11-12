@@ -23,8 +23,8 @@ static dif_pinmux_t pinmux;
 /**
  * ATE Indicator GPIOs.
  */
-static const dif_gpio_pin_t kGpioPinSpiConsoleTxReady = 0;
-static const dif_gpio_pin_t kGpioPinSpiConsoleRxReady = 1;
+static const dif_gpio_pin_t kGpioPinSpiConsoleTxReady = 25;
+static const dif_gpio_pin_t kGpioPinSpiConsoleRxReady = 26;
 
 /**
  * UJSON payloads.
@@ -39,12 +39,12 @@ OTTF_DEFINE_TEST_CONFIG(
         .console.base_addr = TOP_EARLGREY_SPI_DEVICE_BASE_ADDR,
         .console.test_may_clobber = false, .console.putbuf_buffered = true,
         .silence_console_prints = true, .console_tx_indicator.enable = true,
-        .console_tx_indicator.spi_console_tx_ready_mio = kDtPadIoa5,
+        .console_tx_indicator.spi_console_tx_ready_mio = kDtPadIor10,
         .console_tx_indicator.spi_console_tx_ready_gpio =
-            kGpioPinSpiConsoleTxReady);
+            kDifGpioNumPins + kGpioPinSpiConsoleTxReady);
 
 static status_t peripheral_handles_init(void) {
-  TRY(dif_gpio_init(mmio_region_from_addr(TOP_EARLGREY_GPIO0_BASE_ADDR),
+  TRY(dif_gpio_init(mmio_region_from_addr(TOP_EARLGREY_GPIO1_BASE_ADDR),
                     &gpio));
   TRY(dif_pinmux_init(mmio_region_from_addr(TOP_EARLGREY_PINMUX_BASE_ADDR),
                       &pinmux));
@@ -52,16 +52,18 @@ static status_t peripheral_handles_init(void) {
 }
 
 static status_t configure_ate_gpio_indicators(void) {
-  // IOA6 / gpio0 pin 1 is for SPI console RX ready signal.
+  // IOR11 / gpio1 pin 26 is for SPI console RX ready signal.
   TRY(dif_pinmux_output_select(
-      &pinmux, kTopEarlgreyPinmuxMioOutIoa6,
-      kTopEarlgreyPinmuxOutselGpio0Gpio0 + kGpioPinSpiConsoleRxReady));
-  // IOA5 / gpio0 pin 0 is for SPI console TX ready signal.
+      &pinmux, kTopEarlgreyPinmuxMioOutIor11,
+      kTopEarlgreyPinmuxOutselGpio1Gpio0 + kGpioPinSpiConsoleRxReady));
+  // IOR10 / gpio1 pin 25 is for SPI console TX ready signal.
   TRY(dif_pinmux_output_select(
-      &pinmux, kTopEarlgreyPinmuxMioOutIoa5,
-      kTopEarlgreyPinmuxOutselGpio0Gpio0 + kGpioPinSpiConsoleTxReady));
-  TRY(dif_gpio_output_set_enabled_all(&gpio, 0x3));  // Enable first 2 GPIOs.
-  TRY(dif_gpio_write_all(&gpio, /*write_val=*/0));   // Intialize all to 0.
+      &pinmux, kTopEarlgreyPinmuxMioOutIor10,
+      kTopEarlgreyPinmuxOutselGpio1Gpio0 + kGpioPinSpiConsoleTxReady));
+  TRY(dif_gpio_output_set_enabled_all(
+      &gpio,
+      (1u << kGpioPinSpiConsoleTxReady) | (1u << kGpioPinSpiConsoleRxReady)));
+  TRY(dif_gpio_write_all(&gpio, /*write_val=*/0));  // Intialize all to 0.
   return OK_STATUS();
 }
 
