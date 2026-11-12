@@ -139,6 +139,10 @@ interface chip_if;
     end else begin
       dios_if.disconnect();
     end
+    cfg_default_weak_pulls_on_mios(enable);
+  endfunction
+
+  function automatic void cfg_default_weak_pulls_on_mios(bit enable);
     // Weak pull downs on the muxed pads. Most GPIO inputs select their pad by default, so an
     // undriven pad would read as X in GPIO DATA_IN. Skipped are the pads on which the software
     // enables internal pulls, which a testbench pull of equal strength would turn into X: the
@@ -1002,11 +1006,7 @@ interface chip_if;
     `uvm_info(MsgId, "Disconnecting all interfaces from the chip IOs", UVM_LOW)
     if (disconnect_default_pulls) dios_if.disconnect();
     mios_if.disconnect();
-    // Keep the default pulls of the muxed ec_rst_l and flash_wp_l pads.
-    if (!disconnect_default_pulls) begin
-      mios_if.pins_pu[top_earlgrey_pkg::MioPadIor8] = 1;
-      mios_if.pins_pu[top_earlgrey_pkg::MioPadIor9] = 1;
-    end
+    if (!disconnect_default_pulls) cfg_default_weak_pulls_on_mios(1);
     cc_if.disconnect();
     ec_rst_l_if.disconnect();
     flash_wp_l_if.disconnect();
