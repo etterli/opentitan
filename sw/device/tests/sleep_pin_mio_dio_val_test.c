@@ -36,11 +36,13 @@ OTTF_DEFINE_TEST_CONFIG();
 
 #if defined(OPENTITAN_IS_EARLGREY)
 static const dt_pad_t kOptOut[] = {
-    kDtPadSpiDeviceSck,
-    kDtPadSpiDeviceCsb,
+    kDtPadSpiDevClk,
+    kDtPadSpiDevCsL,
     // Virtual open drain by default
-    kDtPadSysrstCtrlEcRstL,
-    kDtPadSysrstCtrlFlashWpL,
+    kDtPadIor8,
+    kDtPadIor9,
+    // I3C test board UART TX on the CW340, driven permanently by the board
+    kDtPadIob7,
 };
 #elif defined(OPENTITAN_IS_DARJEELING)
 static const dt_pad_t kOptOut[] = {};
