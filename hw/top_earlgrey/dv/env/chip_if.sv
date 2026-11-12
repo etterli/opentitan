@@ -126,12 +126,12 @@ interface chip_if;
         dios_if.pins_pu[top_earlgrey_pkg::DioPadPoraN] = 1;
       end
       dios_if.pins_pu[top_earlgrey_pkg::DioPadUsbP] = 1;
-
-      // No need of pulls for the SPI host peripheral.
-      dios_if.pins_pd[top_earlgrey_pkg::DioPadSpiHostCsL:top_earlgrey_pkg::DioPadSpiHostD0] = '0;
     end else begin
       dios_if.disconnect();
     end
+    // The SPI device pads are muxed but keep their weak pull downs. The SPI host pads need none.
+    mios_if.pins_pd[top_earlgrey_pkg::MioPadSpiDevCsL:top_earlgrey_pkg::MioPadSpiDevD0] =
+        {6{enable}};
     // The sysrst_ctrl ec_rst_l and flash_wp_l open drain pads are muxed, but they are active low
     // and default to sysrst_ctrl, so they get the same pull ups.
     mios_if.pins_pu[top_earlgrey_pkg::MioPadIor8] = enable;
@@ -212,16 +212,16 @@ interface chip_if;
     return (pad === 1'bz) ? 1'b1 : pad;
   endfunction
 
-  // Functional (dedicated) interface: SPI host interface (drives traffic into the chip).
+  // Functional (muxed) interface: SPI host interface (drives traffic into the chip).
   bit enable_spi_host = 1;
   bit enable_spi_tpm;
   spi_if spi_host_if(
     .rst_n(`SPI_DEVICE_HIER.rst_ni),
-    .sio  (dios[top_earlgrey_pkg::DioPadSpiDevD3:top_earlgrey_pkg::DioPadSpiDevD0])
+    .sio  (mios[top_earlgrey_pkg::MioPadSpiDevD3:top_earlgrey_pkg::MioPadSpiDevD0])
   );
-  assign dios[top_earlgrey_pkg::DioPadSpiDevClk] = enable_spi_host | enable_spi_tpm ?
+  assign mios[top_earlgrey_pkg::MioPadSpiDevClk] = enable_spi_host | enable_spi_tpm ?
       spi_host_if.sck : 1'bz;
-  assign dios[top_earlgrey_pkg::DioPadSpiDevCsL] = enable_spi_host ? spi_host_if.csb[0] : 1'bz;
+  assign mios[top_earlgrey_pkg::MioPadSpiDevCsL] = enable_spi_host ? spi_host_if.csb[0] : 1'bz;
   assign mios[top_earlgrey_pkg::MioPadIoa7] = enable_spi_tpm ? spi_host_if.csb[1] : 1'bz;
   initial begin
     uvm_config_db#(virtual spi_if)::set(null, "*.env.m_spi_host_agent*", "vif", spi_host_if);
@@ -231,24 +231,24 @@ interface chip_if;
     end while (1);
   end
 
-  // Functional (dedicated) interface: SPI device 0 interface (receives traffic from the chip).
+  // Functional (muxed) interface: SPI device 0 interface (receives traffic from the chip).
   // TODO: Update spi_if to emit all signals as inout ports and internal drivers on all ports.
   bit [NUM_SPI_HOSTS-1:0] __enable_spi_device;
 
   spi_if spi_device0_if(
     .rst_n(`SPI_HOST_HIER(0).rst_ni),
-    .sio  (dios[top_earlgrey_pkg::DioPadSpiHostD3:
-                top_earlgrey_pkg::DioPadSpiHostD0])
+    .sio  (mios[top_earlgrey_pkg::MioPadSpiHostD3:
+                top_earlgrey_pkg::MioPadSpiHostD0])
   );
 
   assign spi_device0_if.sck = __enable_spi_device[0] ?
-      dios[top_earlgrey_pkg::DioPadSpiHostClk] : 1'bz;
+      mios[top_earlgrey_pkg::MioPadSpiHostClk] : 1'bz;
 
-  // CSB[0] is on a dedicated pad, CSB[1] and CSB[2] are muxed.  Undriven pads are inactive.
+  // CSB[0] is on SPI_HOST_CS_L, CSB[1] and CSB[2] on IOA pads. Undriven pads are inactive.
   assign spi_device0_if.csb = __enable_spi_device[0] ?
       {{(spi_agent_pkg::CSB_WIDTH-3){1'b1}}, pulled_up(mios[top_earlgrey_pkg::MioPadIoa6]),
        pulled_up(mios[top_earlgrey_pkg::MioPadIoa3]),
-       dios[top_earlgrey_pkg::DioPadSpiHostCsL]} : '1;
+       mios[top_earlgrey_pkg::MioPadSpiHostCsL]} : '1;
 
   initial begin
     uvm_config_db#(virtual spi_if)::set(null, "*.env.m_spi_device_agents0*", "vif", spi_device0_if);
