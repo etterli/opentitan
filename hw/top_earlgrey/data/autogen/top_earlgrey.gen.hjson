@@ -16127,7 +16127,7 @@
       }
       {
         name: IOA6
-        type: BidirOd
+        type: BidirStd
         bank: VIOA
         connection: muxed
         desc: Muxed IO pad
@@ -16136,7 +16136,7 @@
       }
       {
         name: IOA7
-        type: BidirOd
+        type: BidirStd
         bank: VIOA
         connection: muxed
         desc: Muxed IO pad
@@ -16145,7 +16145,7 @@
       }
       {
         name: IOA8
-        type: BidirOd
+        type: BidirStd
         bank: VIOA
         connection: muxed
         desc: Muxed IO pad
@@ -16235,7 +16235,7 @@
       }
       {
         name: IOB9
-        type: BidirOd
+        type: BidirStd
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16244,7 +16244,7 @@
       }
       {
         name: IOB10
-        type: BidirOd
+        type: BidirStd
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16253,7 +16253,7 @@
       }
       {
         name: IOB11
-        type: BidirOd
+        type: BidirStd
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16262,7 +16262,7 @@
       }
       {
         name: IOB12
-        type: BidirOd
+        type: BidirStd
         bank: VIOB
         connection: muxed
         desc: Muxed IO pad
@@ -16365,7 +16365,7 @@
       }
       {
         name: IOC10
-        type: BidirOd
+        type: BidirStd
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
@@ -16374,7 +16374,7 @@
       }
       {
         name: IOC11
-        type: BidirOd
+        type: BidirStd
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
@@ -16383,7 +16383,7 @@
       }
       {
         name: IOC12
-        type: BidirOd
+        type: BidirStd
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
@@ -16464,25 +16464,33 @@
       }
       {
         name: IOR8
-        type: BidirOd
+        type: BidirStd
         bank: VCC
         connection: direct
         desc: Dedicated sysrst_ctrl output (ec_rst_l)
+        attrs:
+        {
+          virtual_od_en: 1
+        }
         idx: 19
         port_type: inout
       }
       {
         name: IOR9
-        type: BidirOd
+        type: BidirStd
         bank: VCC
         connection: direct
         desc: Dedicated sysrst_ctrl output (flash_wp_l))
+        attrs:
+        {
+          virtual_od_en: 1
+        }
         idx: 20
         port_type: inout
       }
       {
         name: IOR10
-        type: BidirOd
+        type: BidirStd
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
@@ -16491,7 +16499,7 @@
       }
       {
         name: IOR11
-        type: BidirOd
+        type: BidirStd
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
@@ -16500,7 +16508,7 @@
       }
       {
         name: IOR12
-        type: BidirOd
+        type: BidirStd
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
@@ -16509,7 +16517,7 @@
       }
       {
         name: IOR13
-        type: BidirOd
+        type: BidirStd
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
@@ -16855,7 +16863,7 @@
           IOR8
         ]
         desc: ""
-        attr: BidirOd
+        attr: BidirStd
       }
       {
         instance: sysrst_ctrl
@@ -16866,7 +16874,7 @@
           IOR9
         ]
         desc: ""
-        attr: BidirOd
+        attr: BidirStd
       }
       {
         instance: sysrst_ctrl
@@ -18021,7 +18029,7 @@
         [
           IOR8
         ]
-        attr: BidirOd
+        attr: BidirStd
         connection: direct
         desc: ""
         domain: Aon
@@ -18036,7 +18044,7 @@
         [
           IOR9
         ]
-        attr: BidirOd
+        attr: BidirStd
         connection: direct
         desc: ""
         domain: Aon
