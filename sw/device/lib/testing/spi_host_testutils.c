@@ -4,6 +4,7 @@
 
 #include "sw/device/lib/testing/spi_host_testutils.h"
 
+#include "sw/device/lib/base/macros.h"
 #include "sw/device/lib/dif/dif_pinmux.h"
 #include "sw/device/lib/testing/pinmux_testutils.h"
 #include "sw/device/lib/testing/test_framework/check.h"
@@ -19,6 +20,15 @@ status_t spi_host_testutils_configure_host0_pad_attrs(dif_pinmux_t *pinmux) {
       .flags = kDifPinmuxPadAttrPullResistorEnable |
                kDifPinmuxPadAttrPullResistorUp};
   dif_result_t res;
+#if defined(OPENTITAN_IS_EARLGREY)
+  // Earlgrey has muxed SPI host0 pads, each signal can only reach its own pad.
+  static const dt_pad_t kSpiHost0Pads[] = {
+      kDtPadSpiHostD0, kDtPadSpiHostD1,  kDtPadSpiHostD2,
+      kDtPadSpiHostD3, kDtPadSpiHostClk, kDtPadSpiHostCsL,
+  };
+  for (uint32_t i = 0; i < ARRAYSIZE(kSpiHost0Pads); ++i) {
+    dt_pad_t pad = kSpiHost0Pads[i];
+#else
   for (uint32_t i = 0; i < kDtSpiHostPeriphIoCount; ++i) {
     dt_periph_io_t periph_io =
         dt_spi_host_periph_io(kDtSpiHost0, (dt_spi_host_periph_io_t)i);
@@ -27,6 +37,7 @@ status_t spi_host_testutils_configure_host0_pad_attrs(dif_pinmux_t *pinmux) {
       continue;
     }
     dt_pad_t pad = dt_periph_io_dio_pad(periph_io);
+#endif
     res = dif_pinmux_pad_write_attrs_dt(pinmux, pad, in_attr, &out_attr);
     if (res == kDifError) {
       // Some target platforms may not support the specified value for slew rate
