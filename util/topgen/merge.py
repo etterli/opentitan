@@ -1912,6 +1912,14 @@ def get_index_and_incr(ctrs: Dict, connection: str, io_dir: str) -> Dict:
     return result
 
 
+def get_pinmux_sig_pads(sig: Dict) -> Tuple[str, ...]:
+    '''Get the pads of a pinmux signal, an invalid list is reported by validate'''
+    pads = sig.get('pads')
+    if isinstance(pads, list) and all(isinstance(pad, str) for pad in pads):
+        return tuple(pads)
+    return ()
+
+
 def amend_pinmux_io(top: ConfigT,
                     name_to_block: IpBlocksT,
                     allow_missing_blocks=False):
@@ -2070,7 +2078,7 @@ def amend_pinmux_io(top: ConfigT,
             # Augment this signal instance with additional information.
             sig_inst.update({
                 'idx': idx,
-                'pad': sig['pad'],
+                'pads': get_pinmux_sig_pads(sig),
                 'attr': sig_attr,
                 'connection': sig['connection'],
                 'desc': sig['desc']
@@ -2096,7 +2104,7 @@ def amend_pinmux_io(top: ConfigT,
                         sig_inst_copy = deepcopy(sig_inst)
                         sig_inst_copy.update({
                             'idx': idx,
-                            'pad': sig['pad'],
+                            'pads': get_pinmux_sig_pads(sig),
                             'attr': sig_attr,
                             'connection': sig['connection'],
                             'desc': sig['desc']
@@ -2108,7 +2116,7 @@ def amend_pinmux_io(top: ConfigT,
                 else:
                     sig_inst.update({
                         'idx': -1,
-                        'pad': sig['pad'],
+                        'pads': get_pinmux_sig_pads(sig),
                         'attr': sig_attr,
                         'connection': sig['connection'],
                         'desc': sig['desc']
@@ -2172,13 +2180,15 @@ def amend_pinmux_io(top: ConfigT,
 
     known_mapped_dio_pads = {}
     for sig in pinmux['ios']:
-        if sig['connection'] in ['muxed', 'manual']:
+        # An invalid pads list of a direct signal is reported by validate.
+        if sig['connection'] != 'direct' or len(sig['pads']) != 1:
             continue
-        if sig['pad'] in known_mapped_dio_pads:
+        padname = sig['pads'][0]
+        if padname in known_mapped_dio_pads:
             raise SystemExit(
                 'Cannot have multiple IOs mapped to the same DIO pad {}'.
-                format(sig['pad']))
-        known_mapped_dio_pads[sig['pad']] = sig
+                format(padname))
+        known_mapped_dio_pads[padname] = sig
 
     for target in targets:
         for entry in target['pinmux']['special_signals']:
