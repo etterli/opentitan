@@ -29,6 +29,32 @@ package pinmux_pkg;
     mio_scan_role:     {NMioPads{NoScan}}
   };
 
+  // Legal MIO_PERIPH_INSEL values for each MIO peripheral input. LSB corresponds to lowest index.
+  // Includes static options.
+  parameter logic [NMioPeriphIn-1:0][NMioPads+1:0] MioPeriphInselLegal = {
+    14'h3fff, // soc_proxy_soc_gpi[15]
+    14'h3fff, // soc_proxy_soc_gpi[14]
+    14'h3fff, // soc_proxy_soc_gpi[13]
+    14'h3fff  // soc_proxy_soc_gpi[12]
+  };
+
+  // Legal MIO_OUTSEL values for each MIO pad. LSB corresponds to lowest index. Includes static
+  // options.
+  parameter logic [NMioPads-1:0][NMioPeriphOut+2:0] MioOutselLegal = {
+    8'hff, // MIO11
+    8'hff, // MIO10
+    8'hff, // MIO9
+    8'hff, // MIO8
+    8'hff, // MIO7
+    8'hff, // MIO6
+    8'hff, // MIO5
+    8'hff, // MIO4
+    8'hff, // MIO3
+    8'hff, // MIO2
+    8'hff, // MIO1
+    8'hff  // MIO0
+  };
+
   // Reset values of the MIO_PAD_ATTR CSRs defined by the top. LSB corresponds to lowest index.
   parameter pad_attr_t [NMioPads-1:0] MioPadAttrResval = {
     pad_attr_t'{default: '0}, // MIO11
