@@ -71,14 +71,19 @@ static void test_gpio_instance(dt_gpio_t gpio_dt, uint32_t gpio_mask) {
   LOG_INFO("Testing gpio instance %d", gpio_dt);
   // Assign GPIOs in the pinmux.
   for (size_t i = 0; i < kDifGpioNumPins; ++i) {
+    // Assume that the I/Os in dt_gpio_periph_io_t are numbered 0, 1, and so
+    // on.
+    dt_periph_io_t periph_io =
+        dt_gpio_periph_io(gpio_dt, kDtGpioPeriphIoGpio0 + i);
     if (gpio_mask & (1u << i)) {
-      // Assume that the I/Os in dt_gpio_periph_io_t are numbered 0, 1, and so
-      // on.
-      dt_periph_io_t periph_io =
-          dt_gpio_periph_io(gpio_dt, kDtGpioPeriphIoGpio0 + i);
-      dt_pad_t pad = kPinmuxTestutilsGpioPads[i];
+      dt_pad_t pad = kPinmuxTestutilsGpioPads[gpio_dt][i];
       CHECK_STATUS_OK(pinmux_testutils_connect(&pinmux, periph_io,
                                                kDtPeriphIoDirInout, pad));
+    } else {
+      // Most pins select their pad by default. Keep floating pads out of the
+      // DATA_IN reads.
+      CHECK_STATUS_OK(pinmux_testutils_connect(
+          &pinmux, periph_io, kDtPeriphIoDirIn, kDtPadConstantZero));
     }
   }
   CHECK_DIF_OK(dif_gpio_init_from_dt(gpio_dt, &gpio));
@@ -99,12 +104,12 @@ static void test_gpio_instance(dt_gpio_t gpio_dt, uint32_t gpio_mask) {
 }
 
 bool test_main(void) {
-  uint32_t gpio_mask = pinmux_testutils_get_testable_gpios_mask();
   CHECK_DIF_OK(dif_pinmux_init_from_dt(kPinmuxDt, &pinmux));
 
   // Iterate over all available gpio ports
   for (dt_gpio_t gpio_dt = 0; gpio_dt < kDtGpioCount; ++gpio_dt) {
-    test_gpio_instance(gpio_dt, gpio_mask);
+    test_gpio_instance(gpio_dt,
+                       pinmux_testutils_get_testable_gpios_mask(gpio_dt));
   }
 
   return true;

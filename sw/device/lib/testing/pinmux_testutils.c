@@ -159,17 +159,41 @@ status_t pinmux_testutils_connect(const dif_pinmux_t *pinmux,
 //
 // The pinout spreadsheet allocates fewer pins to GPIOs than what the GPIO IP
 // supports. This oversubscription is intentional to maximize testing.
-#if defined(OPENTITAN_IS_EARLGREY) || defined(OPENTITAN_IS_ENGLISHBREAKFAST)
-const dt_pad_t kPinmuxTestutilsGpioPads[kDifGpioNumPins] = {
-    kDtPadIoa0,  kDtPadIoa1, kDtPadIoa2,  kDtPadIoa3,  kDtPadIoa4,
-    kDtPadIoa5,  kDtPadIoa6, kDtPadIoa7,  kDtPadIoa8,  kDtPadIob6,
-    kDtPadIob7,  kDtPadIob8, kDtPadIob9,  kDtPadIob10, kDtPadIob11,
-    kDtPadIob12, kDtPadIoc9, kDtPadIoc10, kDtPadIoc11, kDtPadIoc12,
-    kDtPadIor0,  kDtPadIor1, kDtPadIor2,  kDtPadIor3,  kDtPadIor4,
-    kDtPadIor5,  kDtPadIor6, kDtPadIor7,  kDtPadIor10, kDtPadIor11,
-    kDtPadIor12, kDtPadIor13};
+#if defined(OPENTITAN_IS_EARLGREY)
+// Each GPIO pin can only reach its own pad. gpio1 pins 29-31 share the pads of
+// pins 25-27 and are left out of the testable masks.
+const dt_pad_t kPinmuxTestutilsGpioPads[kDtGpioCount][kDifGpioNumPins] = {
+    {
+        kDtPadSpiHostD0,  kDtPadSpiHostD1,  kDtPadSpiHostD2, kDtPadSpiHostD3,
+        kDtPadSpiHostClk, kDtPadSpiHostCsL, kDtPadSpiDevD0,  kDtPadSpiDevD1,
+        kDtPadSpiDevD2,   kDtPadSpiDevD3,   kDtPadSpiDevClk, kDtPadSpiDevCsL,
+        kDtPadIoa0,       kDtPadIoa1,       kDtPadIoa2,      kDtPadIoa3,
+        kDtPadIoa4,       kDtPadIoa5,       kDtPadIoa6,      kDtPadIoa7,
+        kDtPadIoa8,       kDtPadIob0,       kDtPadIob1,      kDtPadIob2,
+        kDtPadIob3,       kDtPadIob4,       kDtPadIob5,      kDtPadIob6,
+        kDtPadIob7,       kDtPadIob8,       kDtPadIob9,      kDtPadIob10,
+    },
+    {
+        kDtPadIob11, kDtPadIob12, kDtPadIoc0,  kDtPadIoc1,  kDtPadIoc2,
+        kDtPadIoc3,  kDtPadIoc4,  kDtPadIoc5,  kDtPadIoc6,  kDtPadIoc7,
+        kDtPadIoc8,  kDtPadIoc9,  kDtPadIoc10, kDtPadIoc11, kDtPadIoc12,
+        kDtPadIor0,  kDtPadIor1,  kDtPadIor2,  kDtPadIor3,  kDtPadIor4,
+        kDtPadIor5,  kDtPadIor6,  kDtPadIor7,  kDtPadIor8,  kDtPadIor9,
+        kDtPadIor10, kDtPadIor11, kDtPadIor12, kDtPadIor13, kDtPadIor10,
+        kDtPadIor11, kDtPadIor12,
+    },
+};
+#elif defined(OPENTITAN_IS_ENGLISHBREAKFAST)
+const dt_pad_t kPinmuxTestutilsGpioPads[kDtGpioCount][kDifGpioNumPins] = {
+    {kDtPadIoa0,  kDtPadIoa1, kDtPadIoa2,  kDtPadIoa3,  kDtPadIoa4,
+     kDtPadIoa5,  kDtPadIoa6, kDtPadIoa7,  kDtPadIoa8,  kDtPadIob6,
+     kDtPadIob7,  kDtPadIob8, kDtPadIob9,  kDtPadIob10, kDtPadIob11,
+     kDtPadIob12, kDtPadIoc9, kDtPadIoc10, kDtPadIoc11, kDtPadIoc12,
+     kDtPadIor0,  kDtPadIor1, kDtPadIor2,  kDtPadIor3,  kDtPadIor4,
+     kDtPadIor5,  kDtPadIor6, kDtPadIor7,  kDtPadIor10, kDtPadIor11,
+     kDtPadIor12, kDtPadIor13}};
 #elif defined(OPENTITAN_IS_DARJEELING)
-const dt_pad_t kPinmuxTestutilsGpioPads[kDifGpioNumPins] = {
+const dt_pad_t kPinmuxTestutilsGpioPads[kDtGpioCount][kDifGpioNumPins] = {{
     kDtPadGpio0Gpio0,  kDtPadGpio0Gpio1,  kDtPadGpio0Gpio2,  kDtPadGpio0Gpio3,
     kDtPadGpio0Gpio4,  kDtPadGpio0Gpio5,  kDtPadGpio0Gpio6,  kDtPadGpio0Gpio7,
     kDtPadGpio0Gpio8,  kDtPadGpio0Gpio9,  kDtPadGpio0Gpio10, kDtPadGpio0Gpio11,
@@ -178,12 +202,33 @@ const dt_pad_t kPinmuxTestutilsGpioPads[kDifGpioNumPins] = {
     kDtPadGpio0Gpio20, kDtPadGpio0Gpio21, kDtPadGpio0Gpio22, kDtPadGpio0Gpio23,
     kDtPadGpio0Gpio24, kDtPadGpio0Gpio25, kDtPadGpio0Gpio26, kDtPadGpio0Gpio27,
     kDtPadGpio0Gpio28, kDtPadGpio0Gpio29, kDtPadGpio0Gpio30, kDtPadGpio0Gpio31,
-};
+}};
 #else /* OPENTITAN_IS_* */
 #error Unsupported top
 #endif /* OPENTITAN_IS_* */
 
-uint32_t pinmux_testutils_get_testable_gpios_mask(void) {
+uint32_t pinmux_testutils_get_testable_gpios_mask(dt_gpio_t gpio) {
+#if defined(OPENTITAN_IS_EARLGREY)
+  // The same pads as before the sparse matrix, through the pin that owns each.
+  bool gpio0 = gpio == kDtGpio0;
+  switch (kDeviceType) {
+    case kDeviceSimDV:
+    case kDeviceSimVerilator:
+      // gpio0: IOA0-8, IOB6-10. gpio1: IOB11-12, IOC9-12, IOR0-7, IOR10-13.
+      return gpio0 ? 0xf81ff000 : 0x1e7ff803;
+    case kDeviceFpgaCw310:
+    case kDeviceFpgaCw340:
+      // Only IOR6, IOR7, and IOR10 to IOR13 are available for use as GPIOs.
+      return gpio0 ? 0 : 0x1e600000;
+    case kDeviceSilicon:
+      // IOA3/6, IOB6, IOC9-12, IOR5-7 and IOR10-13.
+      return gpio0 ? 0x08048000 : 0x1e707800;
+    default:
+      CHECK(false);
+      return 0;
+  }
+#else
+  (void)gpio;
   switch (kDeviceType) {
     case kDeviceSimDV:
     case kDeviceSimVerilator:
@@ -200,6 +245,7 @@ uint32_t pinmux_testutils_get_testable_gpios_mask(void) {
       CHECK(false);
       return 0;
   }
+#endif
 }
 
 uint32_t pinmux_testutils_read_strap_pin(dif_pinmux_t *pinmux, dif_gpio_t *gpio,
