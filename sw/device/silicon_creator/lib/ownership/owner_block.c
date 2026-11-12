@@ -570,9 +570,14 @@ rom_error_t owner_block_rescue_apply(const owner_rescue_config_t *rescue) {
   switch (detect) {
     case kRescueDetectGpio:
       if (index <= kTopEarlgreyMuxedPadsLast) {
-        // Set the pad for input as Gpio0.  On earlgrey, the pad index is two
-        // less than the peripheral input select.
-        pinmux_configure_input(0, index + 2);
+        // Read the pad with the GPIO pin that owns it: gpio0 pin i owns MIO
+        // pad i, gpio1 pin i owns MIO pad 32 + i. On earlgrey, the pad index
+        // is two less than the peripheral input select.
+        uint32_t periph =
+            index < 32
+                ? kTopEarlgreyPinmuxPeripheralInGpio0Gpio0 + index
+                : kTopEarlgreyPinmuxPeripheralInGpio1Gpio0 + (index - 32);
+        pinmux_configure_input(periph, index + 2);
         // If configured, enable the pull resistor in the opposite direction of
         // the detection value.
         pinmux_enable_pull(index, pull_en, !gpio_value);
