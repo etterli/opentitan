@@ -66,12 +66,24 @@
       "alias_of": "CN9_10"
     },
     {
+      "name": "IOB3",
+      "alias_of": "CN9_27"
+    },
+    {
+      "name": "IOB4",
+      "alias_of": "CN10_14"
+    },
+    {
       "name": "IOB5",
       "alias_of": "CN10_16"
     },
     {
+      "name": "IOB6",
+      "alias_of": "CN9_5"
+    },
+    {
       "name": "IOB7",
-      "alias_of": "CN8_4"
+      "alias_of": "CN10_33"
     },
     {
       "name": "IOB8",
@@ -119,7 +131,7 @@
     },
     {
       "name": "IOC6",
-      "alias_of": "CN9_27"
+      "alias_of": "CN10_7"
     },
     {
       "name": "IOC7",
@@ -135,11 +147,11 @@
     },
     {
       "name": "IOC10",
-      "alias_of": "CN10_14"
+      "alias_of": "CN8_4"
     },
     {
       "name": "IOC11",
-      "alias_of": "CN9_5"
+      "alias_of": "CN10_2"
     },
     {
       "name": "IOC12",

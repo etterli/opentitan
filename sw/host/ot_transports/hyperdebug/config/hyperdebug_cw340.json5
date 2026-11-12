@@ -73,7 +73,7 @@
   "strappings": [
     // The I3C test board on PMOD1/PMOD2 shares the OT_IOB nets with HyperDebug
     // (SW8/SW9 closed). UART3 TX (CN10_14) sits on the OT_IOB4 net, which the
-    // board uses as SPI_DECODE2 driven by IOC10. While this is applied,
+    // board uses as flash data line D2 driven by IOB4. While this is applied,
     // ot_uart2 and the HyperDebug I2C2/I2C3 ports must not be used.
     {
       "name": "I3C_BOARD",
