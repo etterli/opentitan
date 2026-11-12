@@ -75,7 +75,8 @@ module prim_pad_wrapper
   end else if (PadType == BidirTol ||
                PadType == DualBidirTol ||
                PadType == BidirOd ||
-               PadType == BidirStd) begin : gen_bidir
+               PadType == BidirStd ||
+               PadType == BidirStr) begin : gen_bidir
 
     assign in_raw_o = ie ? inout_io : 1'bz;
     // input inversion
