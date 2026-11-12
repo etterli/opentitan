@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::HashMap;
-use std::iter;
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -174,18 +173,23 @@ fn read_all_verify(
 }
 
 fn get_config(transport: &TransportWrapper, instance: u8) -> Config {
-    let gpio_pins = transport.gpios();
-    let pinmux_insels = gpio_pins
-        .iter()
-        .map(|pin| PinmuxInsel::from_str(pin).unwrap());
-    let pinmux_mio_outs = gpio_pins
-        .iter()
-        .map(|pin| PinmuxMioOut::from_str(pin).unwrap());
-    let gpio_inputs = (0..GPIO_PINS).map(|i| peripheral_in(instance, i));
-    let gpio_outputs = (0..GPIO_PINS).map(|i| outsel(instance, i));
-
-    let input: HashMap<_, _> = iter::zip(gpio_inputs, pinmux_insels).collect();
-    let output: HashMap<_, _> = iter::zip(pinmux_mio_outs, gpio_outputs).collect();
+    // In the sparse pinmux every GPIO pin can only reach its own pad: pin i of
+    // gpio0 owns MIO pad i, pin i of gpio1 owns MIO pad 32 + i. Use the pads of
+    // the transport that the instance owns.
+    let mut input = HashMap::new();
+    let mut output = HashMap::new();
+    for pin in transport.gpios().iter() {
+        let pad = PinmuxMioOut::from_str(pin).unwrap();
+        let mio = u32::from(pad);
+        if mio / GPIO_PINS != u32::from(instance) {
+            continue;
+        }
+        input.insert(
+            peripheral_in(instance, mio % GPIO_PINS),
+            PinmuxInsel::from_str(pin).unwrap(),
+        );
+        output.insert(pad, outsel(instance, mio % GPIO_PINS));
+    }
 
     Config {
         instance,
