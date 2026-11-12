@@ -101,6 +101,10 @@ interface chip_if;
     top_earlgrey_pkg::MioPadIoa2, top_earlgrey_pkg::MioPadIoa3, top_earlgrey_pkg::MioPadIob0,
     top_earlgrey_pkg::MioPadIob5, top_earlgrey_pkg::MioPadIob7
   };
+  localparam top_earlgrey_pkg::mio_pad_e SpiHost1SckSdPads[5] = '{
+    top_earlgrey_pkg::MioPadIob1, top_earlgrey_pkg::MioPadIob2, top_earlgrey_pkg::MioPadIob3,
+    top_earlgrey_pkg::MioPadIob4, top_earlgrey_pkg::MioPadIob6
+  };
 
   //Allow pull up from testbench on POR and PORA pads
   bit por_external_pu = 1;
@@ -138,19 +142,18 @@ interface chip_if;
     // Weak pull downs on the muxed pads. Most GPIO inputs select their pad by default, so an
     // undriven pad would read as X in GPIO DATA_IN. Skipped are the pads on which the software
     // enables internal pulls, which a testbench pull of equal strength would turn into X: the
-    // SPI host pads of spi_host0, the sck and data pads of spi_host1, the SW straps and UART0 RX.
+    // SPI host pads of spi_host0, the SW straps and UART0 RX.
     for (int i = top_earlgrey_pkg::MioPadSpiDevD0; i < top_earlgrey_pkg::MioPadCount; i++) begin
-      if (!(i inside {top_earlgrey_pkg::MioPadIob1, top_earlgrey_pkg::MioPadIob2,
-                      top_earlgrey_pkg::MioPadIob3, top_earlgrey_pkg::MioPadIob4,
-                      top_earlgrey_pkg::MioPadIob6, top_earlgrey_pkg::MioPadIoc0,
-                      top_earlgrey_pkg::MioPadIoc1, top_earlgrey_pkg::MioPadIoc2,
-                      top_earlgrey_pkg::MioPadIoc3})) begin
+      if (!(i inside {top_earlgrey_pkg::MioPadIoc0, top_earlgrey_pkg::MioPadIoc1,
+                      top_earlgrey_pkg::MioPadIoc2, top_earlgrey_pkg::MioPadIoc3})) begin
         mios_if.pins_pd[i] = enable;
       end
     end
     // The chip select pads of the SPI device agents are active low, an undriven pad must read as
-    // inactive.
+    // inactive. The software pulls up the sck and data pads of spi_host1, pull them up as well.
+    // A pull up has priority over the pull down.
     foreach (SpiAgentCsbPads[i]) mios_if.pins_pu[SpiAgentCsbPads[i]] = enable;
+    foreach (SpiHost1SckSdPads[i]) mios_if.pins_pu[SpiHost1SckSdPads[i]] = enable;
     // The sysrst_ctrl ec_rst_l and flash_wp_l open drain pads are muxed, but they are active low
     // and default to sysrst_ctrl, so they get the same pull ups.
     mios_if.pins_pu[top_earlgrey_pkg::MioPadIor8] = enable;
