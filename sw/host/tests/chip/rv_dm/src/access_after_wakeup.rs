@@ -39,9 +39,10 @@ fn test_access_after_wakeup(
     transport.pin_strapping("PINMUX_TAP_RISCV")?.apply()?;
     transport.reset(UartRx::Clear)?;
 
-    let power_button = transport.gpio_pin("Ior13")?;
-    power_button.set_mode(PinMode::PushPull)?;
-    power_button.write(true)?;
+    // TODO: Revert key2 on IOR5 to the power button (pwrb_in on IOR0), JTAG moved to the IOA pads.
+    let key2_button = transport.gpio_pin("Ior5")?;
+    key2_button.set_mode(PinMode::PushPull)?;
+    key2_button.write(true)?;
 
     // Enable console and wait for the message.
     let uart = &*transport.uart("console")?;
@@ -76,15 +77,15 @@ fn test_access_after_wakeup(
     // Wait for the software to fall asleep.
     UartConsole::wait_for(uart, r"Entering normal sleep.", opts.timeout)?;
 
-    // Press the power button to wake up the device.
-    log::info!("Pushing power button.");
-    power_button.write(false)?; // pressing power button
+    // Press the key2 button to wake up the device.
+    log::info!("Pushing key2 button.");
+    key2_button.write(false)?;
 
     // Wait for the software to wake up.
     UartConsole::wait_for(uart, r"Waking up from normal sleep.", opts.timeout)?;
 
-    log::info!("Releasing power button.");
-    power_button.write(true)?; // releasing power button
+    log::info!("Releasing key2 button.");
+    key2_button.write(true)?;
 
     // Check the program bufffer retained the expected value after a normal sleep.
     let readback = u32::from_str_radix(
@@ -106,15 +107,15 @@ fn test_access_after_wakeup(
     // Wait for the software to fall asleep.
     UartConsole::wait_for(uart, r"Entering deep sleep.", opts.timeout)?;
 
-    // Press the power button to wake up the device.
-    log::info!("Pushing power button.");
-    power_button.write(false)?; // pressing power button
+    // Press the key2 button to wake up the device.
+    log::info!("Pushing key2 button.");
+    key2_button.write(false)?;
 
     // Wait for the software to wake up.
     UartConsole::wait_for(uart, r"Waking up from deep sleep.", opts.timeout)?;
 
-    log::info!("Releasing power button.");
-    power_button.write(true)?; // releasing power button
+    log::info!("Releasing key2 button.");
+    key2_button.write(true)?;
 
     let mut jtag = opts
         .init

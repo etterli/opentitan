@@ -123,17 +123,19 @@ bool test_main(void) {
       CHECK_DIF_OK(dif_pwrmgr_irq_set_enabled(&pwrmgr, kDifPwrmgrIrqWakeup,
                                               kDifToggleEnabled));
 
-      // Set up power button as wake up source.
+      // Set up the key2 input as wake up source.
+      // TODO: Revert key2 on IOR5 to the power button input (pwrb_in on IOR0),
+      // the JTAG pads moved to the IOA pads.
       dif_sysrst_ctrl_input_change_config_t config = {
-          .input_changes = kDifSysrstCtrlInputPowerButtonH2L,
+          .input_changes = kDifSysrstCtrlInputKey2H2L,
           .debounce_time_threshold = 1,  // 5us
       };
       CHECK_DIF_OK(
           dif_sysrst_ctrl_input_change_detect_configure(&sysrst_ctrl, config));
       CHECK_DIF_OK(dif_pinmux_mio_select_input(
           &pinmux,
-          dt_sysrst_ctrl_periph_io(kSysrstCtrlDt, kDtSysrstCtrlPeriphIoPwrbIn),
-          kDtPadIor13));
+          dt_sysrst_ctrl_periph_io(kSysrstCtrlDt, kDtSysrstCtrlPeriphIoKey2In),
+          kDtPadIor5));
 
       // Put the device in a normal sleep.
       put_to_sleep(&pwrmgr, /*deep_sleep=*/false);
