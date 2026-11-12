@@ -9,9 +9,9 @@ package scan_role_pkg;
 
   import prim_pad_wrapper_pkg::*;
 
-  parameter scan_role_e DioPadAstMiscScanRole         = NoScan;
   parameter scan_role_e DioPadPorNScanRole            = NoScan;
   parameter scan_role_e DioPadPoraNScanRole           = NoScan;
+  // Englishbreakfast keeps the SPI pads as DIOs.
   parameter scan_role_e DioPadSpiHostD0ScanRole       = NoScan;
   parameter scan_role_e DioPadSpiHostD1ScanRole       = NoScan;
   parameter scan_role_e DioPadSpiHostD2ScanRole       = NoScan;
@@ -29,6 +29,18 @@ package scan_role_pkg;
   parameter scan_role_e DioPadCc1ScanRole             = NoScan;
   parameter scan_role_e DioPadCc2ScanRole             = NoScan;
   parameter scan_role_e DioPadRramAnalogScanRole      = NoScan;
+  parameter scan_role_e MioPadSpiHostD0ScanRole       = NoScan;
+  parameter scan_role_e MioPadSpiHostD1ScanRole       = NoScan;
+  parameter scan_role_e MioPadSpiHostD2ScanRole       = NoScan;
+  parameter scan_role_e MioPadSpiHostD3ScanRole       = NoScan;
+  parameter scan_role_e MioPadSpiHostClkScanRole      = NoScan;
+  parameter scan_role_e MioPadSpiHostCsLScanRole      = NoScan;
+  parameter scan_role_e MioPadSpiDevD0ScanRole        = NoScan;
+  parameter scan_role_e MioPadSpiDevD1ScanRole        = NoScan;
+  parameter scan_role_e MioPadSpiDevD2ScanRole        = NoScan;
+  parameter scan_role_e MioPadSpiDevD3ScanRole        = NoScan;
+  parameter scan_role_e MioPadSpiDevClkScanRole       = ScanClock;
+  parameter scan_role_e MioPadSpiDevCsLScanRole       = NoScan;
   parameter scan_role_e MioPadIoa0ScanRole            = NoScan;
   parameter scan_role_e MioPadIoa1ScanRole            = NoScan;
   parameter scan_role_e MioPadIoa2ScanRole            = NoScan;
