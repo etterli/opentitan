@@ -129,6 +129,10 @@ interface chip_if;
     end else begin
       dios_if.disconnect();
     end
+    cfg_default_weak_pulls_on_mios(enable);
+  endfunction
+
+  function automatic void cfg_default_weak_pulls_on_mios(bit enable);
     // The SPI device pads are muxed but keep their weak pull downs. The SPI host pads need none.
     mios_if.pins_pd[top_earlgrey_pkg::MioPadSpiDevCsL:top_earlgrey_pkg::MioPadSpiDevD0] =
         {6{enable}};
@@ -979,11 +983,8 @@ interface chip_if;
     `uvm_info(MsgId, "Disconnecting all interfaces from the chip IOs", UVM_LOW)
     if (disconnect_default_pulls) dios_if.disconnect();
     mios_if.disconnect();
-    // Keep the default pulls of the muxed ec_rst_l and flash_wp_l pads.
-    if (!disconnect_default_pulls) begin
-      mios_if.pins_pu[top_earlgrey_pkg::MioPadIor8] = 1;
-      mios_if.pins_pu[top_earlgrey_pkg::MioPadIor9] = 1;
-    end
+    // Keep the default MIO pulls as well.
+    if (!disconnect_default_pulls) cfg_default_weak_pulls_on_mios(1);
     cc_if.disconnect();
     ec_rst_l_if.disconnect();
     flash_wp_l_if.disconnect();
