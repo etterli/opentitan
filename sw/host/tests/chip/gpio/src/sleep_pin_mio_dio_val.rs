@@ -66,10 +66,12 @@ const MIO_PADS: &[Pad] = &[
     Pad { name: "IOR5",  valid_cw310: false, valid_silicon: true },   // MIO Pad 40
     Pad { name: "IOR6",  valid_cw310: true,  valid_silicon: true },   // MIO Pad 41
     Pad { name: "IOR7",  valid_cw310: true,  valid_silicon: true },   // MIO Pad 42
-    Pad { name: "IOR10", valid_cw310: true,  valid_silicon: true },   // MIO Pad 43
-    Pad { name: "IOR11", valid_cw310: true,  valid_silicon: true },   // MIO Pad 44
-    Pad { name: "IOR12", valid_cw310: true,  valid_silicon: true },   // MIO Pad 45
-    Pad { name: "IOR13", valid_cw310: true,  valid_silicon: true },   // MIO Pad 46
+    Pad { name: "IOR8",  valid_cw310: false, valid_silicon: false },  // MIO Pad 43
+    Pad { name: "IOR9",  valid_cw310: false, valid_silicon: false },  // MIO Pad 44
+    Pad { name: "IOR10", valid_cw310: true,  valid_silicon: true },   // MIO Pad 45
+    Pad { name: "IOR11", valid_cw310: true,  valid_silicon: true },   // MIO Pad 46
+    Pad { name: "IOR12", valid_cw310: true,  valid_silicon: true },   // MIO Pad 47
+    Pad { name: "IOR13", valid_cw310: true,  valid_silicon: true },   // MIO Pad 48
 ];
 
 #[derive(Debug, Parser)]
@@ -95,7 +97,7 @@ fn sleep_pin_mio_dio_test(opts: &Opts, transport: &TransportWrapper) -> Result<(
     let uart = transport.uart("console")?;
     log::info!("Starting host side");
 
-    let mut expected_pin_values: [u8; 47] = [0; 47];
+    let mut expected_pin_values = [0u8; MIO_PADS.len()];
     for _ in 0..MIO_PADS.len() {
         let msg = UartConsole::wait_for(&*uart, r"MIO \[(\d+)\]: (\d+)", opts.timeout)?;
         let index: usize = msg[1].parse()?;

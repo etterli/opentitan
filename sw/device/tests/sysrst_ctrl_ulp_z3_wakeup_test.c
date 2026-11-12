@@ -68,28 +68,19 @@ static const dt_sysrst_ctrl_periph_io_t kPeripheralInputs[] = {
     kDtSysrstCtrlPeriphIoLidOpen,
 };
 
-static const dt_pad_t kInputPadsDV[] = {
-    kDtPadIor13,
-    kDtPadIoc7,
-    kDtPadIoc9,
-};
-
-static const dt_pad_t kInputPadsReal[] = {
-    kDtPadIor10,
+// Each sysrst_ctrl input and output can only be muxed to a single pad.
+static const dt_pad_t kInputPads[] = {
+    kDtPadIor0,
+    kDtPadIor2,
     kDtPadIor11,
-    kDtPadIor12,
 };
 
 static const dt_sysrst_ctrl_periph_io_t kPeripheralOutputs[] = {
     kDtSysrstCtrlPeriphIoZ3Wakeup,
 };
 
-static const dt_pad_t kOutputPadsDV[] = {
-    kDtPadIob7,
-};
-
-static const dt_pad_t kOutputPadsReal[] = {
-    kDtPadIor5,
+static const dt_pad_t kOutputPads[] = {
+    kDtPadIor4,
 };
 
 // Mask of the GPIOs used on the real device to read the test phase.
@@ -100,16 +91,12 @@ static const uint32_t kGpioMask = 0x7;
  * peripheral as required.
  */
 static void pinmux_setup(void) {
-  const dt_pad_t *kInputPads =
-      kDeviceType == kDeviceSimDV ? kInputPadsDV : kInputPadsReal;
   for (int i = 0; i < kNumMioInPads; ++i) {
     CHECK_DIF_OK(dif_pinmux_mio_select_input(
         &pinmux, dt_sysrst_ctrl_periph_io(kSysrstCtrlDt, kPeripheralInputs[i]),
         kInputPads[i]));
   }
 
-  const dt_pad_t *kOutputPads =
-      kDeviceType == kDeviceSimDV ? kOutputPadsDV : kOutputPadsReal;
   for (int i = 0; i < kNumMioOutPads; ++i) {
     CHECK_DIF_OK(dif_pinmux_mio_select_output(
         &pinmux, kOutputPads[i],
