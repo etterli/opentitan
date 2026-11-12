@@ -9,8 +9,8 @@ class chip_sw_rv_dm_access_after_wakeup_vseq extends chip_sw_base_vseq;
 
   virtual task pre_start();
     super.pre_start();
-    // Release power button.
-    cfg.chip_vif.pwrb_in_if.drive(1'b1);
+    // Release the key2 button. The power button cannot be used as its pad is the JTAG TMS pad.
+    cfg.chip_vif.sysrst_ctrl_if.drive_pin(SysrstCtrlPadKey2, 1'b1);
   endtask : pre_start
 
   task activate_jtag_dmi();
@@ -56,16 +56,16 @@ class chip_sw_rv_dm_access_after_wakeup_vseq extends chip_sw_base_vseq;
     `DV_SPINWAIT(wait(cfg.sw_logger_vif.printed_log == "Entering normal sleep.");,
                  "Timed out waiting for device to enter normal sleep.", timeout_short)
 
-    // Press the power button to wake up the device.
-    `uvm_info(`gfn, "Pushing power button.", UVM_LOW)
-    cfg.chip_vif.pwrb_in_if.drive(1'b0); // pressing power button
+    // Press the key2 button to wake up the device.
+    `uvm_info(`gfn, "Pushing key2 button.", UVM_LOW)
+    cfg.chip_vif.sysrst_ctrl_if.drive_pin(SysrstCtrlPadKey2, 1'b0);
 
     // Wait for the software to wake up.
     `DV_SPINWAIT(wait(cfg.sw_logger_vif.printed_log == "Waking up from normal sleep.");,
                  "Timed out waiting for device to wakeup from normal sleep.", timeout_short)
 
-    `uvm_info(`gfn, "Releasing power button.", UVM_LOW)
-    cfg.chip_vif.pwrb_in_if.drive(1'b1); // releasing power button
+    `uvm_info(`gfn, "Releasing key2 button.", UVM_LOW)
+    cfg.chip_vif.sysrst_ctrl_if.drive_pin(SysrstCtrlPadKey2, 1'b1);
 
     // Check the program buffer retained the expected value after a normal
     // sleep.
@@ -85,16 +85,16 @@ class chip_sw_rv_dm_access_after_wakeup_vseq extends chip_sw_base_vseq;
     `DV_SPINWAIT(wait(cfg.sw_logger_vif.printed_log == "Entering deep sleep.");,
                  "Timed out waiting for device to enter deep sleep.", timeout_short)
 
-    // Press the power button to wake up the device.
-    `uvm_info(`gfn, "Pushing power button.", UVM_LOW)
-    cfg.chip_vif.pwrb_in_if.drive(1'b0); // pressing power button
+    // Press the key2 button to wake up the device.
+    `uvm_info(`gfn, "Pushing key2 button.", UVM_LOW)
+    cfg.chip_vif.sysrst_ctrl_if.drive_pin(SysrstCtrlPadKey2, 1'b0);
 
     // Wait for the software to wake up.
     `DV_SPINWAIT(wait(cfg.sw_logger_vif.printed_log == "Waking up from deep sleep.");,
                  "Timed out waiting for device to wakeup from deep sleep.", timeout_long)
 
-    `uvm_info(`gfn, "Releasing power button.", UVM_LOW)
-    cfg.chip_vif.pwrb_in_if.drive(1'b1); // releasing power button
+    `uvm_info(`gfn, "Releasing key2 button.", UVM_LOW)
+    cfg.chip_vif.sysrst_ctrl_if.drive_pin(SysrstCtrlPadKey2, 1'b1);
 
     // We must reset the agent side also to stay synchronized with the design
     cfg.m_jtag_riscv_agent_cfg.m_jtag_agent_cfg.vif.do_trst_n(2);

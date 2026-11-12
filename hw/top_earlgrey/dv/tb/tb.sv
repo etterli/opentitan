@@ -142,8 +142,6 @@ module tb;
     .SPI_DEV_D3(dut.chip_if.dios[top_earlgrey_pkg::DioPadSpiDevD3]),
     .SPI_DEV_CLK(dut.chip_if.dios[top_earlgrey_pkg::DioPadSpiDevClk]),
     .SPI_DEV_CS_L(dut.chip_if.dios[top_earlgrey_pkg::DioPadSpiDevCsL]),
-    .IOR8(dut.chip_if.dios[top_earlgrey_pkg::DioPadIor8]),
-    .IOR9(dut.chip_if.dios[top_earlgrey_pkg::DioPadIor9]),
 
     // Muxed Pads
     .IOA0(dut.chip_if.mios[top_earlgrey_pkg::MioPadIoa0]),
@@ -189,6 +187,8 @@ module tb;
     .IOR5(dut.chip_if.mios[top_earlgrey_pkg::MioPadIor5]),
     .IOR6(dut.chip_if.mios[top_earlgrey_pkg::MioPadIor6]),
     .IOR7(dut.chip_if.mios[top_earlgrey_pkg::MioPadIor7]),
+    .IOR8(dut.chip_if.mios[top_earlgrey_pkg::MioPadIor8]),
+    .IOR9(dut.chip_if.mios[top_earlgrey_pkg::MioPadIor9]),
     .IOR10(dut.chip_if.mios[top_earlgrey_pkg::MioPadIor10]),
     .IOR11(dut.chip_if.mios[top_earlgrey_pkg::MioPadIor11]),
     .IOR12(dut.chip_if.mios[top_earlgrey_pkg::MioPadIor12]),
