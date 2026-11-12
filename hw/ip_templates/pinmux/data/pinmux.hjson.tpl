@@ -8,8 +8,10 @@
 ##  - n_mio_periph_in:      Number of muxed peripheral inputs
 ##  - n_mio_periph_out:     Number of muxed peripheral outputs
 ##  - n_mio_pads:           Number of muxed IO pads
-##  - mio_periph_ins:       A list of {name, pads} dicts for each muxed peripheral input.
-##  - mio_periph_outs:      A list of {name, pads} dicts for each muxed peripheral output.
+##  - mio_periph_ins:       A list of {name, pads} dicts for each muxed peripheral input with an
+##                          optional default_pad or default_const for the MIO_PERIPH_INSEL reset.
+##  - mio_periph_outs:      A list of {name, pads} dicts for each muxed peripheral output with an
+##                          optional default_pad for the MIO_OUTSEL reset.
 ##  - mio_pad_attr_resvals: A list of (name, attrs) tuples for each MIO pad. attrs can map
 ##                          MIO_PAD_ATTR fields to non-default reset values.
 ##  - n_dio_periph_in:      Number of dedicated peripheral inputs
@@ -20,11 +22,15 @@
 ##  - n_wkup_detect:        Number of wakeup condition detectors
 ##  - wkup_cnt_width:       Width of wakeup counters
 <%!
-  from ipgen.pinmux_gen import check_params, render_attr_resval
+  from ipgen import pinmux_gen
+  from ipgen.pinmux_gen import render_attr_resval
 %>\
 <%
-  check_params(n_mio_pads, n_dio_pads, n_mio_periph_in, n_mio_periph_out, mio_periph_ins,
-               mio_periph_outs, mio_pad_attr_resvals, dio_pad_attr_resvals)
+  pinmux_gen.check_params(n_mio_pads, n_dio_pads, n_mio_periph_in, n_mio_periph_out,
+                          mio_periph_ins, mio_periph_outs, mio_pad_attr_resvals,
+                          dio_pad_attr_resvals)
+  mio_insel_resvals = pinmux_gen.mio_insel_resvals(mio_periph_ins)
+  mio_outsel_resvals = pinmux_gen.mio_outsel_resvals(n_mio_pads, mio_periph_outs)
 %>\
 {
   name:               "pinmux",
@@ -553,7 +559,7 @@
                       Selecting a pad that is not legal for this peripheral input ties it
                       constantly to zero.
                       '''
-                      resval: 0,
+                      resval: "${mio_insel_resvals}[multireg_idx]",
                     }
                   ]
                 }
@@ -600,7 +606,7 @@
                       Selecting a peripheral output that is not legal for this pad puts the pad
                       into high-Z.
                       '''
-                      resval: 2,
+                      resval: "${mio_outsel_resvals}[multireg_idx]",
                     }
                   ]
                   // Random writes to this field may result in pad drive conflicts,
