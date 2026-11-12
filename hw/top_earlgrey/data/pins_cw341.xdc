@@ -15,10 +15,11 @@ set_property -dict { PACKAGE_PIN E22 IOSTANDARD LVCMOS18 } [get_ports { IO_CLK }
 set_property -dict { PACKAGE_PIN  G26 IOSTANDARD LVCMOS18 PULLTYPE PULLUP } [get_ports { POR_N }]; # Main PORN, requires jumper to SW0
 
 ## MIOs
-# The sparse pinmux ties every peripheral signal to a few pads. To keep the fixed CW340 setup
-# working (HyperDebug JTAG on the J12-J13 cable, UART4/UART5 on the OT_IOA0/1/4/5 nets, the I3C
-# test board on PMOD1/PMOD2), some chip pads are placed on FPGA pins whose PCB net carries a
-# different name.
+# The sparse pinmux of EG2 ties every peripheral signal to a few pads. To keep the fixed EG1 based
+# CW340 setup working, some chip pads sit on FPGA pins whose PCB net carries a different name:
+# - JTAG pads IOA0/1/4/5/6 on the OT_IOR0-4 nets
+# - IOR0-6 on the OT_IOA0/1/4/5/6 nets
+# - IOB7 and IOC10 swapped.
 # IOC7 is connected to USRUSB_VBUS_DETECT on the CW341, not the OT_IOC7 net.
 
 ## IOA bank
@@ -33,19 +34,19 @@ set_property -dict { PACKAGE_PIN AN28 IOSTANDARD LVCMOS18 } [get_ports { IOA7 }]
 set_property -dict { PACKAGE_PIN AP30 IOSTANDARD LVCMOS18 } [get_ports { IOA8 }]; # EarlGrey:I2C0_SCL,I2C2_SCL,I3C0_SCL
 
 ## IOB bank
-set_property -dict { PACKAGE_PIN AP8  IOSTANDARD LVCMOS33 } [get_ports { IOB0  }]; # EarlGrey:GPIO,SPI_HOST1_CSB0
-set_property -dict { PACKAGE_PIN AN8  IOSTANDARD LVCMOS33 } [get_ports { IOB1  }]; # EarlGrey:GPIO,SPI_HOST1_SD0,I3C0_SDA_PU
-set_property -dict { PACKAGE_PIN AP9  IOSTANDARD LVCMOS33 } [get_ports { IOB2  }]; # EarlGrey:GPIO,SPI_HOST1_SD1
-set_property -dict { PACKAGE_PIN AN13 IOSTANDARD LVCMOS33 } [get_ports { IOB3  }]; # EarlGrey:GPIO,SPI_HOST1_SCK
-set_property -dict { PACKAGE_PIN AP13 IOSTANDARD LVCMOS33 } [get_ports { IOB4  }]; # EarlGrey:GPIO,SPI_HOST1_SD2,UART2_RX
-set_property -dict { PACKAGE_PIN AN9  IOSTANDARD LVCMOS33 } [get_ports { IOB5  }]; # EarlGrey:GPIO,UART2_TX,SPI_HOST1_CSB1,I3C0_SCL
-set_property -dict { PACKAGE_PIN AL13 IOSTANDARD LVCMOS33 } [get_ports { IOB6  }]; # EarlGrey:GPIO,SPI_HOST1_SD3
-set_property -dict { PACKAGE_PIN AP10 IOSTANDARD LVCMOS33 } [get_ports { IOB7  }]; # EarlGrey:GPIO,SPI_HOST1_CSB2,I3C0_SDA,I3C1_SDA_PU
-set_property -dict { PACKAGE_PIN AL9  IOSTANDARD LVCMOS33 } [get_ports { IOB8  }]; # EarlGrey:GPIO,SPI_HOST1_CSB2,I3C0_SDA_PU
-set_property -dict { PACKAGE_PIN AP11 IOSTANDARD LVCMOS33 } [get_ports { IOB9  }]; # EarlGrey:GPIO,I2C0_SCL,I2C2,I3C1_SCL,UART2_RX
-set_property -dict { PACKAGE_PIN AM12 IOSTANDARD LVCMOS33 } [get_ports { IOB10 }]; # EarlGrey:GPIO,I2C0_SDA,I2C2,I3C1_SDA,I3C1_SDA_PU,SPI_HOST1_SD0
-set_property -dict { PACKAGE_PIN AN11 IOSTANDARD LVCMOS33 } [get_ports { IOB11 }]; # EarlGrey:GPIO,I2C1,I3C0_SCL,UART2_TX
-set_property -dict { PACKAGE_PIN AN12 IOSTANDARD LVCMOS33 } [get_ports { IOB12 }]; # EarlGrey:GPIO,I2C1,I3C0_SDA,SPI_HOST1_SD1
+set_property -dict { PACKAGE_PIN AP8  IOSTANDARD LVCMOS18 } [get_ports { IOB0  }]; # EarlGrey:GPIO,SPI_HOST1_CSB0
+set_property -dict { PACKAGE_PIN AN8  IOSTANDARD LVCMOS18 } [get_ports { IOB1  }]; # EarlGrey:GPIO,SPI_HOST1_SD0
+set_property -dict { PACKAGE_PIN AP9  IOSTANDARD LVCMOS18 } [get_ports { IOB2  }]; # EarlGrey:GPIO,SPI_HOST1_SD1
+set_property -dict { PACKAGE_PIN AL8  IOSTANDARD LVCMOS18 } [get_ports { IOB3  }]; # EarlGrey:GPIO,SPI_HOST1_SCK
+set_property -dict { PACKAGE_PIN AL10 IOSTANDARD LVCMOS18 } [get_ports { IOB4  }]; # EarlGrey:GPIO,SPI_HOST1_SD2,UART2_RX
+set_property -dict { PACKAGE_PIN AN9  IOSTANDARD LVCMOS18 } [get_ports { IOB5  }]; # EarlGrey:GPIO,UART2_TX,SPI_HOST1_CSB1
+set_property -dict { PACKAGE_PIN AM10 IOSTANDARD LVCMOS18 } [get_ports { IOB6  }]; # EarlGrey:GPIO,SPI_HOST1_SD3
+set_property -dict { PACKAGE_PIN J26  IOSTANDARD LVCMOS18 } [get_ports { IOB7  }]; # EarlGrey:GPIO,SPI_HOST1_CSB2,I3C1_SDA_PU
+set_property -dict { PACKAGE_PIN AL9  IOSTANDARD LVCMOS18 } [get_ports { IOB8  }]; # EarlGrey:GPIO,SPI_HOST1_CSB2,I3C0_SDA_PU
+set_property -dict { PACKAGE_PIN AP11 IOSTANDARD LVCMOS18 } [get_ports { IOB9  }]; # EarlGrey:GPIO,I2C0_SCL,I2C2,I3C1_SCL
+set_property -dict { PACKAGE_PIN AM12 IOSTANDARD LVCMOS18 } [get_ports { IOB10 }]; # EarlGrey:GPIO,I2C0_SDA,I2C2,I3C1_SDA,I3C1_SDA_PU
+set_property -dict { PACKAGE_PIN AN11 IOSTANDARD LVCMOS18 } [get_ports { IOB11 }]; # EarlGrey:GPIO,I2C1,I3C0_SCL
+set_property -dict { PACKAGE_PIN AN12 IOSTANDARD LVCMOS18 } [get_ports { IOB12 }]; # EarlGrey:GPIO,I2C1,I3C0_SDA
 
 ## IOC bank
 set_property -dict { PACKAGE_PIN  T24  IOSTANDARD LVCMOS18 PULLTYPE PULLDOWN } [get_ports { IOC0 }]; # EarlGrey:SW_STRAP0
@@ -54,33 +55,29 @@ set_property -dict { PACKAGE_PIN  R27  IOSTANDARD LVCMOS18 PULLTYPE PULLDOWN } [
 set_property -dict { PACKAGE_PIN  P25  IOSTANDARD LVCMOS18 } [get_ports { IOC3 }]; # EarlGrey:UART0_RX
 set_property -dict { PACKAGE_PIN  N24  IOSTANDARD LVCMOS18 } [get_ports { IOC4 }]; # EarlGrey:UART0_TX
 set_property -dict { PACKAGE_PIN  M24  IOSTANDARD LVCMOS18 PULLTYPE PULLDOWN } [get_ports { IOC5 }]; # EarlGrey:TAP_STRAP1
-set_property -dict { PACKAGE_PIN AL8  IOSTANDARD LVCMOS33 } [get_ports { IOC6 }]; # EarlGrey:GPIO
+set_property -dict { PACKAGE_PIN  M27  IOSTANDARD LVCMOS18 } [get_ports { IOC6 }]; # EarlGrey:GPIO
 set_property -dict { PACKAGE_PIN  B29  IOSTANDARD LVCMOS18 } [get_ports { IOC7 }]; # EarlGrey:GPIO,USB_SENSE
 set_property -dict { PACKAGE_PIN  K23  IOSTANDARD LVCMOS18 PULLTYPE PULLDOWN } [get_ports { IOC8 }]; # EarlGrey:TAP_STRAP0
 set_property -dict { PACKAGE_PIN  K26  IOSTANDARD LVCMOS18 } [get_ports { IOC9  }]; # EarlGrey:GPIO,I2C2_SCL
-set_property -dict { PACKAGE_PIN AL10 IOSTANDARD LVCMOS33 } [get_ports { IOC10 }]; # EarlGrey:GPIO,UART2_RX
-set_property -dict { PACKAGE_PIN AM10 IOSTANDARD LVCMOS33 } [get_ports { IOC11 }]; # EarlGrey:GPIO,UART2_TX
+set_property -dict { PACKAGE_PIN AP10 IOSTANDARD LVCMOS18 } [get_ports { IOC10 }]; # EarlGrey:GPIO,UART2_RX
+set_property -dict { PACKAGE_PIN  H24  IOSTANDARD LVCMOS18 } [get_ports { IOC11 }]; # EarlGrey:GPIO,UART2_TX
 set_property -dict { PACKAGE_PIN  H26  IOSTANDARD LVCMOS18 } [get_ports { IOC12 }]; # EarlGrey:GPIO,USB_SENSE,I2C2_SDA
 
 ## IOR bank
 set_property -dict { PACKAGE_PIN AP29 IOSTANDARD LVCMOS18 } [get_ports { IOR0  }]; # EarlGrey:GPIO,SYSRST_PWRB_IN
 set_property -dict { PACKAGE_PIN AK30 IOSTANDARD LVCMOS18 } [get_ports { IOR1  }]; # EarlGrey:GPIO,SYSRST_KEY0_IN
-set_property -dict { PACKAGE_PIN AH32 DRIVE 8 IOSTANDARD LVCMOS18 } [get_ports { IOR2  }]; # EarlGrey:GPIO,SYSRST_AC_PRESENT,I3C1_SDA_PU
+set_property -dict { PACKAGE_PIN AH32 IOSTANDARD LVCMOS18 } [get_ports { IOR2  }]; # EarlGrey:GPIO,SYSRST_AC_PRESENT,I3C1_SDA_PU
 set_property -dict { PACKAGE_PIN AP28 IOSTANDARD LVCMOS18 } [get_ports { IOR3  }]; # EarlGrey:GPIO,UART3_RX,SYSRST_KEY1_IN
 set_property -dict { PACKAGE_PIN AM27 IOSTANDARD LVCMOS18 } [get_ports { IOR4  }]; # EarlGrey:GPIO,UART3_TX,SYSRST_Z3_WAKEUP
 set_property -dict { PACKAGE_PIN AN26 IOSTANDARD LVCMOS18 } [get_ports { IOR5  }]; # EarlGrey:GPIO,UART1_RX,SYSRST_KEY2_IN
 set_property -dict { PACKAGE_PIN AK26 IOSTANDARD LVCMOS18 } [get_ports { IOR6  }]; # EarlGrey:GPIO,UART1_TX,SYSRST_KEY0_OUT
-set_property -dict { PACKAGE_PIN AJ33 DRIVE 8 IOSTANDARD LVCMOS18 } [get_ports { IOR7  }]; # EarlGrey:GPIO,SYSRST_KEY2_OUT,I3C0_SDA_PU
-set_property -dict { PACKAGE_PIN AH34 DRIVE 8 IOSTANDARD LVCMOS18 } [get_ports { IOR8  }]; # EarlGrey:SYSRST_EC_RST_L,GPIO
-set_property -dict { PACKAGE_PIN AH31 DRIVE 8 IOSTANDARD LVCMOS18 } [get_ports { IOR9  }]; # EarlGrey:SYSRST_FLASH_WP_L,GPIO
-set_property -dict { PACKAGE_PIN AH27 DRIVE 8 IOSTANDARD LVCMOS18 } [get_ports { IOR10 }]; # EarlGrey:GPIO,SYSRST_PWRB_OUT,I2C1_SCL,I3C1_SCL
-set_property -dict { PACKAGE_PIN AH33 DRIVE 8 IOSTANDARD LVCMOS18 } [get_ports { IOR11 }]; # EarlGrey:GPIO,SYSRST_LID_OPEN,I2C1_SDA,I3C1_SDA,USB_SENSE
-set_property -dict { PACKAGE_PIN AH28 DRIVE 8 IOSTANDARD LVCMOS18 } [get_ports { IOR12 }]; # EarlGrey:GPIO,SYSRST_BAT_DISABLE,I2C0_SCL,I3C0_SCL
-set_property -dict { PACKAGE_PIN AH26 DRIVE 8 IOSTANDARD LVCMOS18 } [get_ports { IOR13 }]; # EarlGrey:GPIO,SYSRST_KEY1_OUT,I2C0_SDA,I3C0_SDA
-
-## DIOs
-# For DIOs, the port name maps directly to the function in Earl Grey, so
-# instead, the net names on the PCB are provided in comments.
+set_property -dict { PACKAGE_PIN AJ33 IOSTANDARD LVCMOS18 } [get_ports { IOR7  }]; # EarlGrey:GPIO,SYSRST_KEY2_OUT,I3C0_SDA_PU
+set_property -dict { PACKAGE_PIN AH34 IOSTANDARD LVCMOS18 } [get_ports { IOR8  }]; # EarlGrey:SYSRST_EC_RST_L,GPIO
+set_property -dict { PACKAGE_PIN AH31 IOSTANDARD LVCMOS18 } [get_ports { IOR9  }]; # EarlGrey:SYSRST_FLASH_WP_L,GPIO
+set_property -dict { PACKAGE_PIN AH27 IOSTANDARD LVCMOS18 } [get_ports { IOR10 }]; # EarlGrey:GPIO,SYSRST_PWRB_OUT,I2C1_SCL,I3C1_SCL
+set_property -dict { PACKAGE_PIN AH33 IOSTANDARD LVCMOS18 } [get_ports { IOR11 }]; # EarlGrey:GPIO,SYSRST_LID_OPEN,I2C1_SDA,I3C1_SDA,USB_SENSE
+set_property -dict { PACKAGE_PIN AH28 IOSTANDARD LVCMOS18 } [get_ports { IOR12 }]; # EarlGrey:GPIO,SYSRST_BAT_DISABLE,I2C0_SCL,I3C0_SCL
+set_property -dict { PACKAGE_PIN AH26 IOSTANDARD LVCMOS18 } [get_ports { IOR13 }]; # EarlGrey:GPIO,SYSRST_KEY1_OUT,I2C0_SDA,I3C0_SDA
 
 ## SPI device
 set_property -dict { PACKAGE_PIN AM30 IOSTANDARD LVCMOS18 } [get_ports { SPI_DEV_CLK  }]; # CW341:OT_SPI_DEVICE_CLK
@@ -99,8 +96,8 @@ set_property -dict { PACKAGE_PIN AN33 IOSTANDARD LVCMOS18 PULLTYPE PULLUP } [get
 set_property -dict { PACKAGE_PIN AL32 IOSTANDARD LVCMOS18 } [get_ports { SPI_HOST_CS_L }]; # CW341:OT_SPI_HOST_CS_L
 
 ## ChipWhisperer 20-Pin Connector (J14)
-set_property -dict { PACKAGE_PIN AM11 IOSTANDARD LVCMOS33 } [get_ports { IO_TRIGGER }]; # CW341:CWIO_IO4
-set_property -dict { PACKAGE_PIN AK12 IOSTANDARD LVCMOS33 } [get_ports { IO_CLKOUT }];  # CW341:CWIO_HS1
+set_property -dict { PACKAGE_PIN AM11 IOSTANDARD LVCMOS18 } [get_ports { IO_TRIGGER }]; # CW341:CWIO_IO4
+set_property -dict { PACKAGE_PIN AK12 IOSTANDARD LVCMOS18 } [get_ports { IO_CLKOUT }];  # CW341:CWIO_HS1
 
 ## TI TUSB1106 USB PHY usbdev testing
 set_property -dict { PACKAGE_PIN E28  IOSTANDARD LVCMOS18 } [get_ports { IO_USB_DP_TX   }]; # CW341:USRUSB_VPO
