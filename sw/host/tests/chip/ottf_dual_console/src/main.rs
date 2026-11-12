@@ -21,7 +21,7 @@ struct Opts {
     timeout: Duration,
 
     /// Name of the UART interface to connect to the debug OTTF console.
-    #[arg(long, default_value = "dut")]
+    #[arg(long, default_value = "ot_uart2")]
     debug_console: String,
 }
 
