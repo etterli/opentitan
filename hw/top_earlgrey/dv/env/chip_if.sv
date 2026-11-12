@@ -129,7 +129,6 @@ interface chip_if;
     end else begin
       dios_if.disconnect();
     end
-    cfg_default_weak_pulls_on_mios(enable);
   endfunction
 
   function automatic void cfg_default_weak_pulls_on_mios(bit enable);
@@ -144,6 +143,7 @@ interface chip_if;
 
   initial begin
     cfg_default_weak_pulls_on_dios(1);
+    cfg_default_weak_pulls_on_mios(1);
   end
 
   // X-check monitor on the muxed chip IOs.
