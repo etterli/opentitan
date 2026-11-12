@@ -24,7 +24,9 @@
   from ipgen.pinmux_gen import render_attr_resval
 %>\
 <%
-  pinmux_gen.check_params(n_mio_pads, n_dio_pads, mio_pad_attr_resvals, dio_pad_attr_resvals)
+  pinmux_gen.check_params(n_mio_pads, n_dio_pads, n_mio_periph_in, n_mio_periph_out,
+                          mio_periph_ins, mio_periph_outs, mio_pad_attr_resvals,
+                          dio_pad_attr_resvals)
 %>\
 {
   name:               "pinmux",

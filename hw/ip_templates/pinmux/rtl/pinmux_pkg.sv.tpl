@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 <%!
-  from ipgen.pinmux_gen import check_params, pad_attr_sv
+  from ipgen.pinmux_gen import (INSEL_NUM_CONST, OUTSEL_NUM_CONST, check_params,
+                                mio_insel_legal, mio_outsel_legal, pad_attr_sv)
 %>\
 package pinmux_pkg;
 
@@ -65,22 +66,17 @@ package pinmux_pkg;
   };
 
 <%
-  insel_w = n_mio_pads + 2
-  outsel_w = n_mio_periph_out + 3
-  assert len(mio_insel_legal) == n_mio_periph_in, \
-      f"mio_insel_legal needs {n_mio_periph_in} entries, got {len(mio_insel_legal)}"
-  assert len(mio_outsel_legal) == n_mio_pads, \
-      f"mio_outsel_legal needs {n_mio_pads} entries, got {len(mio_outsel_legal)}"
-  for name, mask in mio_insel_legal:
-      assert mask & 0b11 == 0b11 and mask >> insel_w == 0, f"invalid INSEL mask for {name}"
-  for name, mask in mio_outsel_legal:
-      assert mask & 0b111 == 0b111 and mask >> outsel_w == 0, f"invalid OUTSEL mask for {name}"
-  check_params(n_mio_pads, n_dio_pads, mio_pad_attr_resvals, dio_pad_attr_resvals)
+  check_params(n_mio_pads, n_dio_pads, n_mio_periph_in, n_mio_periph_out, mio_periph_ins,
+               mio_periph_outs, mio_pad_attr_resvals, dio_pad_attr_resvals)
+  # The pad attrs list has one entry per MIO pad, take the pad names from there.
+  mio_pad_names = [name for name, _ in mio_pad_attr_resvals]
+  insel_w = n_mio_pads + INSEL_NUM_CONST
+  outsel_w = n_mio_periph_out + OUTSEL_NUM_CONST
 %>\
   // Legal MIO_PERIPH_INSEL values for each MIO peripheral input. LSB corresponds to lowest index.
   // Includes static options.
   parameter logic [NMioPeriphIn-1:0][NMioPads+1:0] MioPeriphInselLegal = {
-% for name, mask in mio_insel_legal[::-1]:
+% for name, mask in mio_insel_legal(mio_periph_ins)[::-1]:
     ${insel_w}'h${"{:0{}x}".format(mask, (insel_w + 3) // 4)}${f"  // {name}" if loop.last else f", // {name}"}
 % endfor
   };
@@ -88,7 +84,7 @@ package pinmux_pkg;
   // Legal MIO_OUTSEL values for each MIO pad. LSB corresponds to lowest index. Includes static
   // options.
   parameter logic [NMioPads-1:0][NMioPeriphOut+2:0] MioOutselLegal = {
-% for name, mask in mio_outsel_legal[::-1]:
+% for name, mask in mio_outsel_legal(mio_pad_names, mio_periph_outs)[::-1]:
     ${outsel_w}'h${"{:0{}x}".format(mask, (outsel_w + 3) // 4)}${f"  // {name}" if loop.last else f", // {name}"}
 % endfor
   };

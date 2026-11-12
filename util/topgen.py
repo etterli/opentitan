@@ -459,63 +459,40 @@ def generate_regfile_from_path(hjson_path: Path,
         sys.exit(1)
 
 
-def _gen_legal_select_masks(top: ConfigT) -> Tuple[List[Tuple[str, int]], List[Tuple[str, int]]]:
-    """Determine legal select indices of the MIO muxes as bitmasks.
+def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
+    """Get the connectivity of the muxed peripheral inputs and outputs.
 
-    A 1 marks a legal muxing option where the mask's LSB corresponds to the lowest MIO index. The
-    constant selections (0, 1) are always legal. The returned data which is passed to ipgen is
-    augmented with the input/pad name to generate comments in generated sv code.
-
-    Returns two lists of tuples (name, mask) for the INSEL and OUTSEL registers each."""
+    Returns two lists of {name, pads} dicts, one entry per MIO peripheral input and output ordered
+    by its INSEL/OUTSEL index. pads lists the indices of the MIO pads the signal can be muxed to.
+    The pinmux template derives the legal select masks from them."""
 
     pinmux = top["pinmux"]
     n_mio_pads = pinmux["io_counts"]["muxed"]["pads"]
+    mio_pad_idx = {pad['name']: pad['idx'] for pad in top['pinout']['pads']
+                   if pad['connection'] == 'muxed'}
 
-    mio_pads = [pad for pad in top['pinout']['pads'] if pad['connection'] == 'muxed']
-    mio_pad_idx = {pad['name']: pad['idx'] for pad in mio_pads}
-    mio_inputs = [io for io in pinmux['ios']
-                  if io['connection'] == 'muxed' and io['type'] in ['input', 'inout']]
-
-    # Dicts containing the masks per input/pad. The masks contain the constant value selection
-    # options.
-    mio_insel_legal = {
-        io['glob_idx']: {'name': io['name'] + (f"[{io['idx']}]" if io['idx'] >= 0 else ''),
-                         'mask': 0b11}
-        for io in mio_inputs
-    }
-    mio_outsel_legal = {pad['idx']: {'name': pad['name'], 'mask': 0b111} for pad in mio_pads}
-
-    # For each pinmux signal
-    for io in pinmux['ios']:
-        # Only relevant for MIOs
+    mio_periph_ins = []
+    mio_periph_outs = []
+    for io in sorted(pinmux['ios'], key=lambda io: io['glob_idx']):
         if io['connection'] != 'muxed':
             continue
 
-        # Determine the legal indices
         if io['pads']:
             # Non-muxable pads are not supported. Such a misconfiguration is reported by validate,
             # skip them here.
-            pad_idxs = [mio_pad_idx[pad] for pad in io['pads'] if pad in mio_pad_idx]
+            pads = [mio_pad_idx[pad] for pad in io['pads'] if pad in mio_pad_idx]
         else:
             # An empty muxing list defines an any-to-any muxing
-            pad_idxs = range(n_mio_pads)
+            pads = list(range(n_mio_pads))
 
-        # For each connection create the masks
-        for pad_idx in pad_idxs:
-            # io type is view from peripheral (hjson).
-            if io['type'] in ['input', 'inout']:
-                # Add an entry for INSEL for inputs and bidir signals
-                mio_insel_legal[io['glob_idx']]['mask'] |= 1 << (pad_idx + 2)
-            if io['type'] in ['output', 'inout']:
-                # Add an entry for OUTSEL for outputs and bidir signals
-                mio_outsel_legal[pad_idx]['mask'] |= 1 << (io['glob_idx'] + 3)
+        name = io['name'] + (f"[{io['idx']}]" if io['idx'] >= 0 else '')
+        # io type is view from peripheral (hjson).
+        if io['type'] in ['input', 'inout']:
+            mio_periph_ins.append({'name': name, 'pads': pads})
+        if io['type'] in ['output', 'inout']:
+            mio_periph_outs.append({'name': name, 'pads': pads})
 
-    # Order the mask dicts by the indices and convert to a list of (name, mask) tuples for ipgen.
-    mio_insel_legal = [(e['name'], e['mask'])
-                       for _, e in sorted(mio_insel_legal.items())]
-    mio_outsel_legal = [(e['name'], e['mask']) for _, e in sorted(mio_outsel_legal.items())]
-
-    return mio_insel_legal, mio_outsel_legal
+    return mio_periph_ins, mio_periph_outs
 
 
 def _gen_muxing_resvals(top: ConfigT, n_mio_periph_in: int,
@@ -629,8 +606,8 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
     assert (n_mio_pads > 0)
     assert (n_dio_pads > 0)
 
-    # Determine the legal MIO muxing options
-    mio_insel_legal, mio_outsel_legal = _gen_legal_select_masks(top)
+    # Determine the MIO muxing connectivity
+    mio_periph_ins, mio_periph_outs = _gen_mio_periphs(top)
 
     # Determine the reset values for the CSRs defining the MIO muxing.
     mio_insel_resvals, mio_outsel_resvals = _gen_muxing_resvals(top, n_mio_periph_in, n_mio_pads)
@@ -657,9 +634,9 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
         "n_mio_pads": n_mio_pads,
         "n_mio_periph_in": n_mio_periph_in,
         "n_mio_periph_out": n_mio_periph_out,
-        "mio_insel_legal": mio_insel_legal,
+        "mio_periph_ins": mio_periph_ins,
         "mio_insel_resvals": mio_insel_resvals,
-        "mio_outsel_legal": mio_outsel_legal,
+        "mio_periph_outs": mio_periph_outs,
         "mio_outsel_resvals": mio_outsel_resvals,
         "mio_pad_attr_resvals": mio_pad_attr_resvals,
         "n_dio_pads": n_dio_pads,
