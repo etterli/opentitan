@@ -75,11 +75,10 @@ bool test_main(void) {
     kPageQuadProgramOpcode = 0x32,
   };
 
-  // Chip select pins for the different 256Mb GigaDevice SPI Flashes available
-  // via PMOD
+  // spi_host1 reaches the PMOD flashes only through csb[0] on IOB0, the board
+  // selects the device.
   dt_pad_t csb_pads[] = {
-      kDtPadIoc11,
-      kDtPadIoa6,
+      kDtPadIob0,
   };
 
   status_t result = OK_STATUS();
