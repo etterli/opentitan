@@ -91,41 +91,21 @@ typedef struct spi_host1_pinmux_pads {
 } spi_host1_pinmux_pads_t;
 
 /**
- * This table stores spi host 1 pin mappings of different platforms.
- * This is used to connect spi host 1 to mio pins based on the platform.
+ * spi host 1 reaches each signal on a single pad, the same on every platform.
  */
-static const spi_host1_pinmux_pads_t kSpiHost1PinmuxMap[] = {
-    [kSpiPinmuxPlatformIdCw310] =
-        {
-            .clk = kDtPadIoa3,
-            .sd0 = kDtPadIoa5,
-            .sd1 = kDtPadIoa4,
-            .sd2 = kDtPadIoa8,
-            .sd3 = kDtPadIoa7,
-        },
-    [kSpiPinmuxPlatformIdCw340] =
-        {
-            .clk = kDtPadIoa3,
-            .sd0 = kDtPadIoa5,
-            .sd1 = kDtPadIoa4,
-            .sd2 = kDtPadIoa8,
-            .sd3 = kDtPadIoa7,
-        },
-    [kSpiPinmuxPlatformIdTeacup] =
-        {
-            .clk = kDtPadIoa3,
-            .sd0 = kDtPadIoa4,
-            .sd1 = kDtPadIoa5,
-            .sd2 = kDtPadIoa8,
-            .sd3 = kDtPadIoa7,
-        },
+static const spi_host1_pinmux_pads_t kSpiHost1Pads = {
+    .clk = kDtPadIob3,
+    .sd0 = kDtPadIob1,
+    .sd1 = kDtPadIob2,
+    .sd2 = kDtPadIob4,
+    .sd3 = kDtPadIob6,
 };
 
 status_t spi_host1_pinmux_connect_to_bob(const dif_pinmux_t *pinmux,
                                          dt_pad_t csb_outsel,
                                          spi_pinmux_platform_id_t platform_id) {
   TRY_CHECK(platform_id < kSpiPinmuxPlatformIdCount);
-  const spi_host1_pinmux_pads_t *platform = &kSpiHost1PinmuxMap[platform_id];
+  const spi_host1_pinmux_pads_t *pads = &kSpiHost1Pads;
 
   // CSB.
   dt_periph_io_t csb =
@@ -134,27 +114,27 @@ status_t spi_host1_pinmux_connect_to_bob(const dif_pinmux_t *pinmux,
   // SCK.
   dt_periph_io_t sck =
       dt_spi_host_periph_io(kDtSpiHost1, kDtSpiHostPeriphIoSck);
-  TRY(dif_pinmux_mio_select_output(pinmux, platform->clk, sck));
+  TRY(dif_pinmux_mio_select_output(pinmux, pads->clk, sck));
   // SD0.
   dt_periph_io_t sd0 =
       dt_spi_host_periph_io(kDtSpiHost1, kDtSpiHostPeriphIoSd0);
-  TRY(dif_pinmux_mio_select_input(pinmux, sd0, platform->sd0));
-  TRY(dif_pinmux_mio_select_output(pinmux, platform->sd0, sd0));
+  TRY(dif_pinmux_mio_select_input(pinmux, sd0, pads->sd0));
+  TRY(dif_pinmux_mio_select_output(pinmux, pads->sd0, sd0));
   // SD1.
   dt_periph_io_t sd1 =
       dt_spi_host_periph_io(kDtSpiHost1, kDtSpiHostPeriphIoSd1);
-  TRY(dif_pinmux_mio_select_input(pinmux, sd1, platform->sd1));
-  TRY(dif_pinmux_mio_select_output(pinmux, platform->sd1, sd1));
+  TRY(dif_pinmux_mio_select_input(pinmux, sd1, pads->sd1));
+  TRY(dif_pinmux_mio_select_output(pinmux, pads->sd1, sd1));
   // SD2.
   dt_periph_io_t sd2 =
       dt_spi_host_periph_io(kDtSpiHost1, kDtSpiHostPeriphIoSd2);
-  TRY(dif_pinmux_mio_select_input(pinmux, sd2, platform->sd2));
-  TRY(dif_pinmux_mio_select_output(pinmux, platform->sd2, sd2));
+  TRY(dif_pinmux_mio_select_input(pinmux, sd2, pads->sd2));
+  TRY(dif_pinmux_mio_select_output(pinmux, pads->sd2, sd2));
   // SD3.
   dt_periph_io_t sd3 =
       dt_spi_host_periph_io(kDtSpiHost1, kDtSpiHostPeriphIoSd3);
-  TRY(dif_pinmux_mio_select_input(pinmux, sd3, platform->sd3));
-  TRY(dif_pinmux_mio_select_output(pinmux, platform->sd3, sd3));
+  TRY(dif_pinmux_mio_select_input(pinmux, sd3, pads->sd3));
+  TRY(dif_pinmux_mio_select_output(pinmux, pads->sd3, sd3));
   return OK_STATUS();
 }
 #elif defined(OPENTITAN_IS_DARJEELING)

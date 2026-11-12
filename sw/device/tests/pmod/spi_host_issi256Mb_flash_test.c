@@ -48,7 +48,7 @@ static void init_test(dif_spi_host_t *spi_host) {
       CHECK(false, "Device not supported: %u", kDeviceType);
       break;
   }
-  dt_pad_t csb_pad = kDtPadIoc12;
+  dt_pad_t csb_pad = kDtPadIob0;
   CHECK_STATUS_OK(
       spi_host1_pinmux_connect_to_bob(&pinmux, csb_pad, platform_id));
 
