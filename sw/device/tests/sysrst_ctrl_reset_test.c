@@ -71,6 +71,8 @@ static const dt_pad_t kInputPads[] = {
 static volatile const uint8_t kTestPhaseDV = 0;
 // Mask of the GPIOs used on the real device to read the test phase.
 static const uint32_t kGpioMask = 0x3;
+// The phase pads IOB0-IOB1 can only be read by gpio0 pins 21-22.
+static const uint32_t kPhaseGpioShift = 21;
 
 static void check_combo_reset(void) {
   CHECK_DIF_OK(dif_sysrst_ctrl_key_combo_detect_configure(
@@ -188,9 +190,11 @@ bool test_main(void) {
   if (kDeviceType != kDeviceSimDV) {
     sysrst_ctrl_testutils_setup_dio(&pinmux);
     CHECK_DIF_OK(dif_pinmux_mio_select_input(
-        &pinmux, dt_gpio_periph_io(kGpioDt, kDtGpioPeriphIoGpio0), kDtPadIob0));
+        &pinmux, dt_gpio_periph_io(kGpioDt, kDtGpioPeriphIoGpio21),
+        kDtPadIob0));
     CHECK_DIF_OK(dif_pinmux_mio_select_input(
-        &pinmux, dt_gpio_periph_io(kGpioDt, kDtGpioPeriphIoGpio1), kDtPadIob1));
+        &pinmux, dt_gpio_periph_io(kGpioDt, kDtGpioPeriphIoGpio22),
+        kDtPadIob1));
   }
 
   CHECK_DIF_OK(dif_sysrst_ctrl_output_pin_override_set_enabled(
@@ -202,7 +206,7 @@ bool test_main(void) {
   if (kDeviceType != kDeviceSimDV) {
     uint32_t gpio_state;
     CHECK_DIF_OK(dif_gpio_read_all(&gpio, &gpio_state));
-    kTestPhase = gpio_state & kGpioMask;
+    kTestPhase = (gpio_state >> kPhaseGpioShift) & kGpioMask;
   }
   LOG_INFO("test phase: %u", kTestPhase);
 
