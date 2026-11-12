@@ -96,6 +96,47 @@ package chip_common_pkg;
     JtagTapDft = 2'b11
   } chip_jtag_tap_e;
 
+  // The pads of chip_if.gpios_if, in position order, and the GPIO instance and pin that reach each
+  // of them. With the sparse pinmux every GPIO pin can only reach its own pad.
+  parameter top_earlgrey_pkg::mio_pad_e GpiosIfPad[NUM_GPIOS] = '{
+    top_earlgrey_pkg::MioPadIoa0, top_earlgrey_pkg::MioPadIoa1, top_earlgrey_pkg::MioPadIoa2,
+    top_earlgrey_pkg::MioPadIoa3, top_earlgrey_pkg::MioPadIoa4, top_earlgrey_pkg::MioPadIoa5,
+    top_earlgrey_pkg::MioPadIoa6, top_earlgrey_pkg::MioPadIoa7, top_earlgrey_pkg::MioPadIoa8,
+    top_earlgrey_pkg::MioPadIob6, top_earlgrey_pkg::MioPadIob7, top_earlgrey_pkg::MioPadIob8,
+    top_earlgrey_pkg::MioPadIob9, top_earlgrey_pkg::MioPadIob10, top_earlgrey_pkg::MioPadIob11,
+    top_earlgrey_pkg::MioPadIob12, top_earlgrey_pkg::MioPadIoc9, top_earlgrey_pkg::MioPadIoc10,
+    top_earlgrey_pkg::MioPadIoc11, top_earlgrey_pkg::MioPadIoc12, top_earlgrey_pkg::MioPadIor0,
+    top_earlgrey_pkg::MioPadIor1, top_earlgrey_pkg::MioPadIor2, top_earlgrey_pkg::MioPadIor3,
+    top_earlgrey_pkg::MioPadIor4, top_earlgrey_pkg::MioPadIor5, top_earlgrey_pkg::MioPadIor6,
+    top_earlgrey_pkg::MioPadIor7, top_earlgrey_pkg::MioPadIor10, top_earlgrey_pkg::MioPadIor11,
+    top_earlgrey_pkg::MioPadIor12, top_earlgrey_pkg::MioPadIor13
+  };
+  parameter int GpiosIfInst[NUM_GPIOS] = '{
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+  };
+  parameter int GpiosIfPin[NUM_GPIOS] = '{
+    12, 13, 14, 15, 16, 17, 18, 19, 20, 27, 28, 29, 30, 31, 0, 1,
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 28
+  };
+
+  // Returns the gpios_if positions reached by GPIO instance `inst`.
+  function automatic bit [NUM_GPIOS-1:0] get_gpios_if_mask(int inst);
+    bit [NUM_GPIOS-1:0] mask;
+    for (int i = 0; i < NUM_GPIOS; i++) mask[i] = (GpiosIfInst[i] == inst);
+    return mask;
+  endfunction
+
+  // Maps a value of the pins of GPIO instance `inst` to the gpios_if positions they reach. The
+  // other positions are 0.
+  function automatic logic [NUM_GPIOS-1:0] gpio_to_gpios_if(int inst, logic [NUM_GPIOS-1:0] val);
+    logic [NUM_GPIOS-1:0] pins = '0;
+    for (int i = 0; i < NUM_GPIOS; i++) begin
+      if (GpiosIfInst[i] == inst) pins[i] = val[GpiosIfPin[i]];
+    end
+    return pins;
+  endfunction
+
   // This maps the DIO on the pinmux / peripheral side to the DIO on the pad side, both of
   // which have different enum numbering in top_earlgrey_pkg.sv.
   parameter top_earlgrey_pkg::dio_pad_e DioToDioPadMap [top_earlgrey_pkg::DioCount] = '{
