@@ -13,7 +13,7 @@ use opentitanlib::app::TransportWrapper;
 use opentitanlib::io::gpio::PinMode;
 use opentitanlib::io::uart::Uart;
 use opentitanlib::test_utils::gpio::{
-    GPIO_INSTANCES, GpioGet, GpioSet, input_pin, output_pin, outsel, peripheral_in,
+    GPIO_INSTANCES, GPIO_PINS, GpioGet, GpioSet, input_pin, output_pin, outsel, peripheral_in,
 };
 use opentitanlib::test_utils::init::InitializeTest;
 use opentitanlib::test_utils::pinmux_config::PinmuxConfig;
@@ -41,78 +41,73 @@ struct Config {
 //  (a) Future interfaces may need different mappings
 //  (b) Hyperdebug firmware updates may enable more testing with differences
 //  (c) Testing for the presence of a known interface is useful anyway.
-static CONFIG: LazyLock<HashMap<&'static str, Config>> = LazyLock::new(|| {
+//
+// In the sparse pinmux every GPIO pin can only reach its own pad: pin i of
+// gpio0 owns MIO pad i, pin i of gpio1 owns MIO pad 32 + i. So the config is a
+// list of pads, and each instance tests the pads it owns.
+static CONFIG: LazyLock<HashMap<&'static str, Vec<PinmuxMioOut>>> = LazyLock::new(|| {
     // Common FPGA (CW310/340) pin configuration. Also applies for teacup.
     // See the `top_earlgrey/data/pins_{cw310_hyperdebug,cw341}.xdc` files.
-    let common_pin_config = Config {
-        // These items represent reserved or multi-function pins. When the
-        // hyperdebug firmware is updated to be able to set these multi-function
-        // pins into GPIO mode, these can be added back. Some other pins could
-        // be tested but require extra test logic reworks (e.g. UART0 TX/RX).
-        // - IOC0-2: SW Strap 0-2
-        // - IOC3-4: UART0 RX/TX (requires rework as test uses a UART console)
-        // - IOC5: TAP Strap 1
-        // - IOC6: PWM / EXT_CLK
-        // - IOC7: USB VBUS DETECT
-        // - IOC8: TAP Strap 0
-        // - IOC9: PMOD2 IO2
-        // - IOR0-4: reserved for JTAG
-        // - IOR8-9: sysrst_ctrl ec_rst_l and flash_wp_l
-        input: collection! {
-            PinmuxPeripheralIn::Gpio0Gpio17 => PinmuxInsel::Ioc10,
-            PinmuxPeripheralIn::Gpio0Gpio18 => PinmuxInsel::Ioc11,
-            PinmuxPeripheralIn::Gpio0Gpio19 => PinmuxInsel::Ioc12,
-
-            PinmuxPeripheralIn::Gpio0Gpio20 => PinmuxInsel::Ior5,
-            PinmuxPeripheralIn::Gpio0Gpio21 => PinmuxInsel::Ior6,
-            PinmuxPeripheralIn::Gpio0Gpio22 => PinmuxInsel::Ior7,
-
-            PinmuxPeripheralIn::Gpio0Gpio25 => PinmuxInsel::Ior10,
-            PinmuxPeripheralIn::Gpio0Gpio26 => PinmuxInsel::Ior11,
-            PinmuxPeripheralIn::Gpio0Gpio27 => PinmuxInsel::Ior12,
-            PinmuxPeripheralIn::Gpio0Gpio28 => PinmuxInsel::Ior13,
-        },
-        output: collection! {
-            PinmuxMioOut::Ioc10 => PinmuxOutsel::Gpio0Gpio17,
-            PinmuxMioOut::Ioc11 => PinmuxOutsel::Gpio0Gpio18,
-            PinmuxMioOut::Ioc12 => PinmuxOutsel::Gpio0Gpio19,
-
-
-            PinmuxMioOut::Ior5 => PinmuxOutsel::Gpio0Gpio20,
-            PinmuxMioOut::Ior6 => PinmuxOutsel::Gpio0Gpio21,
-            PinmuxMioOut::Ior7 => PinmuxOutsel::Gpio0Gpio22,
-
-            PinmuxMioOut::Ior10 => PinmuxOutsel::Gpio0Gpio25,
-            PinmuxMioOut::Ior11 => PinmuxOutsel::Gpio0Gpio26,
-            PinmuxMioOut::Ior12 => PinmuxOutsel::Gpio0Gpio27,
-            PinmuxMioOut::Ior13 => PinmuxOutsel::Gpio0Gpio28,
-        },
-    };
+    // Only pads with a plain HyperDebug GPIO behind them are used. Not used:
+    // - IOA0, IOA1, IOA4-6: JTAG
+    // - IOA7, IOA8, IOB0-2, IOB9-12: HyperDebug I2C and SPI2 pins
+    // - IOB3, IOB4, IOB6: HyperDebug SPI2 and UART3 pins
+    // - IOC0-2: SW Strap 0-2
+    // - IOC3-4: UART0 RX/TX (requires rework as test uses a UART console)
+    // - IOC5: TAP Strap 1
+    // - IOC6: PWM / EXT_CLK
+    // - IOC7: USB VBUS DETECT
+    // - IOC8: TAP Strap 0
+    // - IOC9: PMOD2 IO2
+    // - IOR3-6: HyperDebug UART4 and UART5 pins
+    // - IOR8-9: sysrst_ctrl ec_rst_l and flash_wp_l
+    let common_pads = vec![
+        PinmuxMioOut::Ioa2,
+        PinmuxMioOut::Ioa3,
+        PinmuxMioOut::Iob7,
+        PinmuxMioOut::Iob8,
+        PinmuxMioOut::Ioc10,
+        PinmuxMioOut::Ioc11,
+        PinmuxMioOut::Ioc12,
+        PinmuxMioOut::Ior0,
+        PinmuxMioOut::Ior1,
+        PinmuxMioOut::Ior2,
+        PinmuxMioOut::Ior7,
+        PinmuxMioOut::Ior10,
+        PinmuxMioOut::Ior11,
+        PinmuxMioOut::Ior12,
+        PinmuxMioOut::Ior13,
+    ];
 
     collection! {
-        "hyper310" => common_pin_config.clone(),
-        "hyper340" => common_pin_config.clone(),
-        "teacup" => common_pin_config,
+        "hyper310" => common_pads.clone(),
+        "hyper340" => common_pads.clone(),
+        "teacup" => common_pads,
     }
 });
 
-/// Returns the interface's pin configuration, moved to the given GPIO instance.
+/// Returns the interface's pin configuration for the given GPIO instance.
 fn get_config(opts: &Opts, instance: u8) -> Config {
-    let config = CONFIG
+    let pads = CONFIG
         .get(opts.init.backend_opts.interface.as_str())
         .unwrap_or_else(|| panic!("Unknown interface {:?}", opts.init.backend_opts.interface));
-    Config {
-        input: config
+    let mut config = Config {
+        input: HashMap::new(),
+        output: HashMap::new(),
+    };
+    for &pad in pads {
+        let mio = u32::from(pad);
+        if mio / GPIO_PINS != u32::from(instance) {
+            continue;
+        }
+        let pin = mio % GPIO_PINS;
+        // The INSEL value of a pad is its MIO index plus 2.
+        config
             .input
-            .iter()
-            .map(|(&k, &v)| (peripheral_in(instance, input_pin(k)), v))
-            .collect(),
-        output: config
-            .output
-            .iter()
-            .map(|(&k, &v)| (k, outsel(instance, output_pin(v))))
-            .collect(),
+            .insert(peripheral_in(instance, pin), PinmuxInsel(mio + 2));
+        config.output.insert(pad, outsel(instance, pin));
     }
+    config
 }
 
 fn gpio_write(
