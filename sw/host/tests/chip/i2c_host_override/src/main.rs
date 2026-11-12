@@ -102,12 +102,17 @@ fn main() -> Result<()> {
     let data = test_utils::object::symbol_data(&object, "kBitbangData")?;
     let backdoor_start_addr = test_utils::object::symbol_addr(&object, "backdoor_start")?;
 
-    let gpio_pins = transport.gpio_pins(&["IOA7", "IOA8"].map(str::to_owned))?;
-    for pin in &gpio_pins {
-        pin.set_mode(PinMode::OpenDrain)?;
-    }
-
-    for _ in 0..3 {
+    for instance in 0..3 {
+        // In the sparse pinmux i2c1 cannot reach IOA7/IOA8, it uses IOB12/IOB11.
+        let pads = if instance == 1 {
+            ["IOB12", "IOB11"]
+        } else {
+            ["IOA7", "IOA8"]
+        };
+        let gpio_pins = transport.gpio_pins(&pads.map(str::to_owned))?;
+        for pin in &gpio_pins {
+            pin.set_mode(PinMode::OpenDrain)?;
+        }
         execute_test!(
             test_override,
             &opts,
