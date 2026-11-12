@@ -461,19 +461,19 @@ interface chip_if;
   wire __enable_jtag = |tap_straps_if.pins_oe;
   jtag_if jtag_if();
 
-  assign mios[top_earlgrey_pkg::MioPadIor0] = __enable_jtag ? jtag_if.tms : 1'bz;
-  assign jtag_if.tdo = __enable_jtag ? mios[top_earlgrey_pkg::MioPadIor1] : 1'bz;
-  assign mios[top_earlgrey_pkg::MioPadIor2] = __enable_jtag ? jtag_if.tdi : 1'bz;
-  assign mios[top_earlgrey_pkg::MioPadIor3] = __enable_jtag ? jtag_if.tck : 1'bz;
-  assign mios[top_earlgrey_pkg::MioPadIor4] = __enable_jtag ? jtag_if.trst_n : 1'bz;
+  assign mios[top_earlgrey_pkg::MioPadIoa0] = __enable_jtag ? jtag_if.tms : 1'bz;
+  assign jtag_if.tdo = __enable_jtag ? mios[top_earlgrey_pkg::MioPadIoa1] : 1'bz;
+  assign mios[top_earlgrey_pkg::MioPadIoa4] = __enable_jtag ? jtag_if.tdi : 1'bz;
+  assign mios[top_earlgrey_pkg::MioPadIoa5] = __enable_jtag ? jtag_if.tck : 1'bz;
+  assign mios[top_earlgrey_pkg::MioPadIoa6] = __enable_jtag ? jtag_if.trst_n : 1'bz;
 
   function automatic void set_tdo_pull(bit value);
     if (value) begin
-      mios_if.pins_pd[top_earlgrey_pkg::MioPadIor1] = 0;
-      mios_if.pins_pu[top_earlgrey_pkg::MioPadIor1] = 1;
+      mios_if.pins_pd[top_earlgrey_pkg::MioPadIoa1] = 0;
+      mios_if.pins_pu[top_earlgrey_pkg::MioPadIoa1] = 1;
     end else begin
-      mios_if.pins_pu[top_earlgrey_pkg::MioPadIor1] = 0;
-      mios_if.pins_pd[top_earlgrey_pkg::MioPadIor1] = 1;
+      mios_if.pins_pu[top_earlgrey_pkg::MioPadIoa1] = 0;
+      mios_if.pins_pd[top_earlgrey_pkg::MioPadIoa1] = 1;
     end
   endfunction
 
