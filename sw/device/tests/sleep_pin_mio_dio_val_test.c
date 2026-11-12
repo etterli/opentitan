@@ -36,8 +36,8 @@ OTTF_DEFINE_TEST_CONFIG();
 
 #if defined(OPENTITAN_IS_EARLGREY)
 static const dt_pad_t kOptOut[] = {
-    kDtPadSpiDeviceSck,
-    kDtPadSpiDeviceCsb,
+    kDtPadSpiDevClk,
+    kDtPadSpiDevCsL,
 };
 #elif defined(OPENTITAN_IS_DARJEELING)
 static const dt_pad_t kOptOut[] = {};
