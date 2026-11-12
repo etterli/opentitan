@@ -224,7 +224,8 @@ uint32_t pinmux_read_straps(void) {
 }
 
 bool pinmux_read_gpio(uint32_t gpio) {
-  uint32_t val =
-      abs_mmio_read32(TOP_EARLGREY_GPIO0_BASE_ADDR + GPIO_DATA_IN_REG_OFFSET);
-  return bitfield_bit32_read(val, gpio);
+  uint32_t base =
+      gpio < 32 ? TOP_EARLGREY_GPIO0_BASE_ADDR : TOP_EARLGREY_GPIO1_BASE_ADDR;
+  uint32_t val = abs_mmio_read32(base + GPIO_DATA_IN_REG_OFFSET);
+  return bitfield_bit32_read(val, gpio % 32);
 }
