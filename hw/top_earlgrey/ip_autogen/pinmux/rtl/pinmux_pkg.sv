@@ -80,12 +80,12 @@ package pinmux_pkg;
     49'h0200000500003, // i3c1_scl
     49'h1000000800203, // i3c0_sda
     49'h0800000400403, // i3c0_scl
-    49'h1ffffffffffff, // i2c2_scl
-    49'h1ffffffffffff, // i2c2_sda
-    49'h1ffffffffffff, // i2c1_scl
-    49'h1ffffffffffff, // i2c1_sda
-    49'h1ffffffffffff, // i2c0_scl
-    49'h1ffffffffffff, // i2c0_sda
+    49'h0000200300403, // i2c2_scl
+    49'h0001000300203, // i2c2_sda
+    49'h0200000c00003, // i2c1_scl
+    49'h0400000c00003, // i2c1_sda
+    49'h0800000100403, // i2c0_scl
+    49'h1000000200203, // i2c0_sda
     49'h1ffffffffffff, // gpio1_gpio[31]
     49'h1ffffffffffff, // gpio1_gpio[30]
     49'h1ffffffffffff, // gpio1_gpio[29]
@@ -155,53 +155,53 @@ package pinmux_pkg;
   // Legal MIO_OUTSEL values for each MIO pad. LSB corresponds to lowest index. Includes static
   // options.
   parameter logic [NMioPads-1:0][NMioPeriphOut+2:0] MioOutselLegal = {
-    108'hfffff81e5ffffffffffffffffff, // IOR13
-    108'hfffff81e3ffffffffffffffffff, // IOR12
-    108'hfffff81f1ffffffffffffffffff, // IOR11
-    108'hfffff81e9ffffffffffffffffff, // IOR10
-    108'hfffffa1e1ffffffffffffffffff, // IOR7
-    108'hfffff85e1ffffffffffffffffff, // IOR6
-    108'hfffff81e1ffffffffffffffffff, // IOR5
-    108'hfffff91e1ffffffffffffffffff, // IOR4
-    108'hfffff81e1ffffffffffffffffff, // IOR3
-    108'hfffffc1e1ffffffffffffffffff, // IOR2
-    108'hfffff81e1ffffffffffffffffff, // IOR1
-    108'hfffff81e1ffffffffffffffffff, // IOR0
-    108'hfffff81e1ffffffffffffffffff, // IOC12
-    108'hfffff89e1ffffffffffffffffff, // IOC11
-    108'hfffff81e1ffffffffffffffffff, // IOC10
-    108'hfffff81e1ffffffffffffffffff, // IOC9
-    108'hfffff81e1ffffffffffffffffff, // IOC8
-    108'hfffff81e1ffffffffffffffffff, // IOC7
-    108'hfffff81e1ffffffffffffffffff, // IOC6
-    108'hfffff81e1ffffffffffffffffff, // IOC5
-    108'hfffff83e1ffffffffffffffffff, // IOC4
-    108'hfffff81e1ffffffffffffffffff, // IOC3
-    108'hfffff81e1ffffffffffffffffff, // IOC2
-    108'hfffff81e1ffffffffffffffffff, // IOC1
-    108'hfffff81e1ffffffffffffffffff, // IOC0
-    108'hfffff81f5ffffffffffffffffff, // IOB12
-    108'hfffff81ebffffffffffffffffff, // IOB11
-    108'hfffffc1f1ffffffffffffffffff, // IOB10
-    108'hfffff81e9ffffffffffffffffff, // IOB9
-    108'hfffffa1e1ffffffffffffffffff, // IOB8
-    108'hfffffc1e1ffffffffffffffffff, // IOB7
-    108'hfffff81e1ffffffffffffffffff, // IOB6
-    108'hfffff89e1ffffffffffffffffff, // IOB5
-    108'hfffff81e1ffffffffffffffffff, // IOB4
-    108'hfffff81e1ffffffffffffffffff, // IOB3
-    108'hfffff81e1ffffffffffffffffff, // IOB2
-    108'hfffff81e1ffffffffffffffffff, // IOB1
-    108'hfffff81e1ffffffffffffffffff, // IOB0
-    108'hfffff81e3ffffffffffffffffff, // IOA8
-    108'hfffff81e5ffffffffffffffffff, // IOA7
-    108'hfffff81e1ffffffffffffffffff, // IOA6
-    108'hfffff91e1ffffffffffffffffff, // IOA5
-    108'hfffff81e1ffffffffffffffffff, // IOA4
-    108'hfffff83e1ffffffffffffffffff, // IOA3
-    108'hfffffa1e1ffffffffffffffffff, // IOA2
-    108'hfffff85e1ffffffffffffffffff, // IOA1
-    108'hfffff81e1ffffffffffffffffff  // IOA0
+    108'hfffff81e40fffffffffffffffff, // IOR13
+    108'hfffff81e217ffffffffffffffff, // IOR12
+    108'hfffff81f027ffffffffffffffff, // IOR11
+    108'hfffff81e847ffffffffffffffff, // IOR10
+    108'hfffffa1e007ffffffffffffffff, // IOR7
+    108'hfffff85e007ffffffffffffffff, // IOR6
+    108'hfffff81e007ffffffffffffffff, // IOR5
+    108'hfffff91e007ffffffffffffffff, // IOR4
+    108'hfffff81e007ffffffffffffffff, // IOR3
+    108'hfffffc1e007ffffffffffffffff, // IOR2
+    108'hfffff81e007ffffffffffffffff, // IOR1
+    108'hfffff81e007ffffffffffffffff, // IOR0
+    108'hfffff81e087ffffffffffffffff, // IOC12
+    108'hfffff89e007ffffffffffffffff, // IOC11
+    108'hfffff81e007ffffffffffffffff, // IOC10
+    108'hfffff81e107ffffffffffffffff, // IOC9
+    108'hfffff81e007ffffffffffffffff, // IOC8
+    108'hfffff81e007ffffffffffffffff, // IOC7
+    108'hfffff81e007ffffffffffffffff, // IOC6
+    108'hfffff81e007ffffffffffffffff, // IOC5
+    108'hfffff83e007ffffffffffffffff, // IOC4
+    108'hfffff81e007ffffffffffffffff, // IOC3
+    108'hfffff81e007ffffffffffffffff, // IOC2
+    108'hfffff81e007ffffffffffffffff, // IOC1
+    108'hfffff81e007ffffffffffffffff, // IOC0
+    108'hfffff81f467ffffffffffffffff, // IOB12
+    108'hfffff81ea67ffffffffffffffff, // IOB11
+    108'hfffffc1f18fffffffffffffffff, // IOB10
+    108'hfffff81e997ffffffffffffffff, // IOB9
+    108'hfffffa1e007ffffffffffffffff, // IOB8
+    108'hfffffc1e007ffffffffffffffff, // IOB7
+    108'hfffff81e007ffffffffffffffff, // IOB6
+    108'hfffff89e007ffffffffffffffff, // IOB5
+    108'hfffff81e007ffffffffffffffff, // IOB4
+    108'hfffff81e007ffffffffffffffff, // IOB3
+    108'hfffff81e007ffffffffffffffff, // IOB2
+    108'hfffff81e007ffffffffffffffff, // IOB1
+    108'hfffff81e007ffffffffffffffff, // IOB0
+    108'hfffff81e317ffffffffffffffff, // IOA8
+    108'hfffff81e48fffffffffffffffff, // IOA7
+    108'hfffff81e007ffffffffffffffff, // IOA6
+    108'hfffff91e007ffffffffffffffff, // IOA5
+    108'hfffff81e007ffffffffffffffff, // IOA4
+    108'hfffff83e007ffffffffffffffff, // IOA3
+    108'hfffffa1e007ffffffffffffffff, // IOA2
+    108'hfffff85e007ffffffffffffffff, // IOA1
+    108'hfffff81e007ffffffffffffffff  // IOA0
   };
 
   // Reset values of the MIO_PAD_ATTR CSRs defined by the top. LSB corresponds to lowest index.
