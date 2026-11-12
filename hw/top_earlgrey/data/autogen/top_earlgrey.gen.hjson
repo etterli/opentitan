@@ -20409,9 +20409,9 @@
           }
           {
             name: dft1
-            pad: SPI_HOST_D2
+            pad: SPI_HOST_D3
             desc: DFT strap signal.
-            idx: 2
+            idx: 3
           }
           {
             name: tck
@@ -20545,9 +20545,9 @@
           }
           {
             name: dft1
-            pad: SPI_HOST_D2
+            pad: SPI_HOST_D3
             desc: DFT strap signal.
-            idx: 2
+            idx: 3
           }
           {
             name: tck
@@ -20786,9 +20786,9 @@
           }
           {
             name: dft1
-            pad: SPI_HOST_D2
+            pad: SPI_HOST_D3
             desc: DFT strap signal.
-            idx: 2
+            idx: 3
           }
           {
             name: tck

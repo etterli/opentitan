@@ -2045,7 +2045,7 @@
           { name: 'tap0',   pad: 'IOC8',        desc: 'TAP strap signal.'   },
           { name: 'tap1',   pad: 'IOC5',        desc: 'TAP strap signal.'   },
           { name: 'dft0',   pad: 'SPI_HOST_D2', desc: 'DFT strap signal.'   },
-          { name: 'dft1',   pad: 'SPI_HOST_D2', desc: 'DFT strap signal.'   },
+          { name: 'dft1',   pad: 'SPI_HOST_D3', desc: 'DFT strap signal.'   },
           // JTAG
           { name: 'tck',    pad: 'IOA5', desc: 'JTAG tck signal.'    },
           { name: 'tms',    pad: 'IOA0', desc: 'JTAG tms signal.'    },
@@ -2104,7 +2104,7 @@
           { name: 'tap0',   pad: 'IOC8',        desc: 'TAP strap signal.'   },
           { name: 'tap1',   pad: 'IOC5',        desc: 'TAP strap signal.'   },
           { name: 'dft0',   pad: 'SPI_HOST_D2', desc: 'DFT strap signal.'   },
-          { name: 'dft1',   pad: 'SPI_HOST_D2', desc: 'DFT strap signal.'   },
+          { name: 'dft1',   pad: 'SPI_HOST_D3', desc: 'DFT strap signal.'   },
           // JTAG
           { name: 'tck',    pad: 'IOA5', desc: 'JTAG tck signal.'    },
           { name: 'tms',    pad: 'IOA0', desc: 'JTAG tms signal.'    },
@@ -2173,7 +2173,7 @@
           { name: 'tap0',   pad: 'IOC8',        desc: 'TAP strap signal.'   },
           { name: 'tap1',   pad: 'IOC5',        desc: 'TAP strap signal.'   },
           { name: 'dft0',   pad: 'SPI_HOST_D2', desc: 'DFT strap signal.'   },
-          { name: 'dft1',   pad: 'SPI_HOST_D2', desc: 'DFT strap signal.'   },
+          { name: 'dft1',   pad: 'SPI_HOST_D3', desc: 'DFT strap signal.'   },
           // JTAG
           { name: 'tck',    pad: 'IOA5', desc: 'JTAG tck signal.'    },
           { name: 'tms',    pad: 'IOA0', desc: 'JTAG tms signal.'    },
