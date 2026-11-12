@@ -29,6 +29,7 @@
           10
           11
         ]
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpi[13]
@@ -47,6 +48,7 @@
           10
           11
         ]
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpi[14]
@@ -65,6 +67,7 @@
           10
           11
         ]
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpi[15]
@@ -83,6 +86,7 @@
           10
           11
         ]
+        partition: primary
       }
     ]
     mio_periph_outs:
@@ -104,6 +108,7 @@
           10
           11
         ]
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpo[13]
@@ -122,6 +127,7 @@
           10
           11
         ]
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpo[14]
@@ -140,6 +146,7 @@
           10
           11
         ]
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpo[15]
@@ -158,6 +165,7 @@
           10
           11
         ]
+        partition: primary
       }
       {
         name: otp_macro_test[0]
@@ -176,6 +184,7 @@
           10
           11
         ]
+        partition: primary
       }
     ]
     mio_pad_attr_resvals:

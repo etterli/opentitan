@@ -38,7 +38,7 @@ module pinmux_part_secondary
   assign mio_mux = AlignedMioInMuxSize'({p2s_i.mio_in, 1'b1, 1'b0});
 
   for (genvar k = 0; k < NMioPeriphIn; k++) begin : gen_mio_periph_in
-    if (!MioPeriphInIsInPrimary[k]) begin : gen_mio_in_mux
+    if (MioPeriphInPart[k] inside {MuxPartSecondary, MuxPartBoth}) begin : gen_mio_in_mux
       // This peripheral is handled by this pinmux partition. Apply the pinmux matrix and
       // instantiate the mux. Illegal selections are masked to constant 0.
       logic [AlignedMioInMuxSize-1:0] mio_mux_legal;
