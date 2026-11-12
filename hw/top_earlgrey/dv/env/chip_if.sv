@@ -324,9 +324,9 @@ interface chip_if;
            mios[top_earlgrey_pkg::MioPadIor13], mios[top_earlgrey_pkg::MioPadIor6]})
   );
 
-  // Functional (muxed) interface: DFT straps.
+  // Functional (muxed) interface: DFT straps (dft1 on SPI_HOST_D3, dft0 on SPI_HOST_D2).
   pins_if #(.Width(2), .PullStrength("Weak")) dft_straps_if(
-    .pins({mios[top_earlgrey_pkg::MioPadIor7], mios[top_earlgrey_pkg::MioPadIor5]})
+    .pins({mios[top_earlgrey_pkg::MioPadSpiHostD3], mios[top_earlgrey_pkg::MioPadSpiHostD2]})
   );
 
   // Functional (muxed) interface: TAP straps.
