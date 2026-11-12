@@ -56,6 +56,13 @@ static dt_spi_host_t kSpiHost0Dt = (dt_spi_host_t)0;
 static_assert(kDtSpiHostCount >= 1,
               "This test requiest at least one SPI Host instance");
 
+#if defined(OPENTITAN_IS_EARLGREY)
+// Earlgrey has muxed SPI host0 pads.
+#define SPI_HOST0_SD_PAD(n) kDtPadSpiHostD##n
+#else
+#define SPI_HOST0_SD_PAD(n) kDtPadSpiHost0Sd##n
+#endif
+
 // Enable pull-ups for spi_host data pins to avoid floating inputs.
 static const pinmux_pad_attributes_t pinmux_pad_config[] = {
 #if defined(OPENTITAN_IS_EARLGREY)
@@ -75,22 +82,22 @@ static const pinmux_pad_attributes_t pinmux_pad_config[] = {
 #error "spi_passthrough_test does not support this top"
 #endif
     {
-        .pad = kDtPadSpiHost0Sd0,
+        .pad = SPI_HOST0_SD_PAD(0),
         .flags = kDifPinmuxPadAttrPullResistorEnable |
                  kDifPinmuxPadAttrPullResistorUp,
     },
     {
-        .pad = kDtPadSpiHost0Sd1,
+        .pad = SPI_HOST0_SD_PAD(1),
         .flags = kDifPinmuxPadAttrPullResistorEnable |
                  kDifPinmuxPadAttrPullResistorUp,
     },
     {
-        .pad = kDtPadSpiHost0Sd2,
+        .pad = SPI_HOST0_SD_PAD(2),
         .flags = kDifPinmuxPadAttrPullResistorEnable |
                  kDifPinmuxPadAttrPullResistorUp,
     },
     {
-        .pad = kDtPadSpiHost0Sd3,
+        .pad = SPI_HOST0_SD_PAD(3),
         .flags = kDifPinmuxPadAttrPullResistorEnable |
                  kDifPinmuxPadAttrPullResistorUp,
     },
