@@ -7,6 +7,7 @@
 #include "sw/device/lib/dif/dif_rv_plic.h"
 #include "sw/device/lib/runtime/irq.h"
 #include "sw/device/lib/runtime/log.h"
+#include "sw/device/lib/testing/pinmux_testutils.h"
 #include "sw/device/lib/testing/pwrmgr_testutils.h"
 #include "sw/device/lib/testing/rand_testutils.h"
 #include "sw/device/lib/testing/rv_plic_testutils.h"
@@ -41,8 +42,6 @@ static const dt_pad_t kOptOut[] = {
     // Virtual open drain by default
     kDtPadIor8,
     kDtPadIor9,
-    // I3C test board UART TX on the CW340, driven permanently by the board
-    kDtPadIob7,
 };
 #elif defined(OPENTITAN_IS_DARJEELING)
 static const dt_pad_t kOptOut[] = {};
@@ -95,6 +94,12 @@ void draw_pinmux_ret(uint32_t num_pins, uint8_t *arr, const dt_pad_t *optout,
   // OptOut processing after draw.
   for (int i = 0; i < num_optout; i++) {
     arr[optout[i]] = 2;  // High-Z always
+  }
+  // Pads another device on the board can drive.
+  for (uint32_t i = 0; i < num_pins; ++i) {
+    if (pinmux_testutils_is_board_driven_pad((dt_pad_t)i)) {
+      arr[i] = 2;
+    }
   }
 }
 

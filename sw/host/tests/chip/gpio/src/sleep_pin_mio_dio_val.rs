@@ -20,6 +20,7 @@ struct Pad {
 }
 
 // Valid on CW310: IOR6/7, IOR10-13
+// Valid on CW340: fpga_pads::GPIO_PADS
 // Valid on Silicon: IOA6, IOB6, IOC9-12, IOR5-7, IOR10-13.
 #[rustfmt::skip]
 const MIO_PADS: &[Pad] = &[
@@ -99,6 +100,7 @@ struct Opts {
 fn is_valid_pad(pad: &Pad, interface: &str) -> bool {
     match interface {
         "hyper310" => pad.valid_cw310,
+        "hyper340" => fpga_pads::is_gpio_pad(pad.name),
         "teacup" => pad.valid_silicon,
         _ => false,
     }
@@ -110,8 +112,16 @@ fn sleep_pin_mio_dio_test(opts: &Opts, transport: &TransportWrapper) -> Result<(
     log::info!("Starting host side");
 
     let mut expected_pin_values = [0u8; MIO_PADS.len()];
-    for _ in 0..MIO_PADS.len() {
-        let msg = UartConsole::wait_for(&*uart, r"MIO \[(\d+)\]: (\d+)", opts.timeout)?;
+    // The device also prints the two constant pads as MIO 0, so read up to the end marker.
+    loop {
+        let msg = UartConsole::wait_for(
+            &*uart,
+            r"MIO \[(\d+)\]: (\d+)|END Chosen Retention Types",
+            opts.timeout,
+        )?;
+        if msg[1].is_empty() {
+            break;
+        }
         let index: usize = msg[1].parse()?;
         expected_pin_values[index] = msg[2].parse()?;
     }

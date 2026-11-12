@@ -35,84 +35,50 @@ struct Opts {
 struct Config {
     input: HashMap<PinmuxPeripheralIn, PinmuxInsel>,
     output: HashMap<PinmuxMioOut, PinmuxOutsel>,
+    pins: Vec<u32>,
 }
 
 // Although all supported interfaces use the same config, keep a map because:
 //  (a) Future interfaces may need different mappings
 //  (b) Hyperdebug firmware updates may enable more testing with differences
 //  (c) Testing for the presence of a known interface is useful anyway.
-static CONFIG: LazyLock<HashMap<&'static str, Config>> = LazyLock::new(|| {
-    // Common FPGA (CW310/340) pin configuration. Also applies for teacup.
-    // See the `top_earlgrey/data/pins_{cw310_hyperdebug,cw341}.xdc` files.
-    let common_pin_config = Config {
-        // These items represent reserved or multi-function pins. When the
-        // hyperdebug firmware is updated to be able to set these multi-function
-        // pins into GPIO mode, these can be added back. Some other pins could
-        // be tested but require extra test logic reworks (e.g. UART0 TX/RX).
-        // - IOC0-2: SW Strap 0-2
-        // - IOC3-4: UART0 RX/TX (requires rework as test uses a UART console)
-        // - IOC5: TAP Strap 1
-        // - IOC6: PWM / EXT_CLK
-        // - IOC7: USB VBUS DETECT
-        // - IOC8: TAP Strap 0
-        // - IOC9: PMOD2 IO2
-        // - IOR0-4: reserved for JTAG
-        // - IOR8-9: sysrst_ctrl ec_rst_l and flash_wp_l
-        input: collection! {
-            PinmuxPeripheralIn::Gpio0Gpio17 => PinmuxInsel::Ioc10,
-            PinmuxPeripheralIn::Gpio0Gpio18 => PinmuxInsel::Ioc11,
-            PinmuxPeripheralIn::Gpio0Gpio19 => PinmuxInsel::Ioc12,
-
-            PinmuxPeripheralIn::Gpio0Gpio20 => PinmuxInsel::Ior5,
-            PinmuxPeripheralIn::Gpio0Gpio21 => PinmuxInsel::Ior6,
-            PinmuxPeripheralIn::Gpio0Gpio22 => PinmuxInsel::Ior7,
-
-            PinmuxPeripheralIn::Gpio0Gpio25 => PinmuxInsel::Ior10,
-            PinmuxPeripheralIn::Gpio0Gpio26 => PinmuxInsel::Ior11,
-            PinmuxPeripheralIn::Gpio0Gpio27 => PinmuxInsel::Ior12,
-            PinmuxPeripheralIn::Gpio0Gpio28 => PinmuxInsel::Ior13,
-        },
-        output: collection! {
-            PinmuxMioOut::Ioc10 => PinmuxOutsel::Gpio0Gpio17,
-            PinmuxMioOut::Ioc11 => PinmuxOutsel::Gpio0Gpio18,
-            PinmuxMioOut::Ioc12 => PinmuxOutsel::Gpio0Gpio19,
-
-
-            PinmuxMioOut::Ior5 => PinmuxOutsel::Gpio0Gpio20,
-            PinmuxMioOut::Ior6 => PinmuxOutsel::Gpio0Gpio21,
-            PinmuxMioOut::Ior7 => PinmuxOutsel::Gpio0Gpio22,
-
-            PinmuxMioOut::Ior10 => PinmuxOutsel::Gpio0Gpio25,
-            PinmuxMioOut::Ior11 => PinmuxOutsel::Gpio0Gpio26,
-            PinmuxMioOut::Ior12 => PinmuxOutsel::Gpio0Gpio27,
-            PinmuxMioOut::Ior13 => PinmuxOutsel::Gpio0Gpio28,
-        },
-    };
-
+//
+// In the sparse pinmux every GPIO pin can only reach one pad, see
+// fpga_pads::GPIO_PIN_PADS. So the config is a list of pads, and each instance
+// tests the pads it reaches.
+static CONFIG: LazyLock<HashMap<&'static str, Vec<PinmuxMioOut>>> = LazyLock::new(|| {
     collection! {
-        "hyper310" => common_pin_config.clone(),
-        "hyper340" => common_pin_config.clone(),
-        "teacup" => common_pin_config,
+        "hyper310" => fpga_pads::GPIO_PADS.to_vec(),
+        "hyper340" => fpga_pads::GPIO_PADS.to_vec(),
+        "teacup" => fpga_pads::GPIO_PADS.to_vec(),
     }
 });
 
-/// Returns the interface's pin configuration, moved to the given GPIO instance.
+/// Returns the interface's pin configuration for the given GPIO instance.
 fn get_config(opts: &Opts, instance: u8) -> Config {
-    let config = CONFIG
+    let pads = CONFIG
         .get(opts.init.backend_opts.interface.as_str())
         .unwrap_or_else(|| panic!("Unknown interface {:?}", opts.init.backend_opts.interface));
-    Config {
-        input: config
-            .input
-            .iter()
-            .map(|(&k, &v)| (peripheral_in(instance, input_pin(k)), v))
-            .collect(),
-        output: config
-            .output
-            .iter()
-            .map(|(&k, &v)| (k, outsel(instance, output_pin(v))))
-            .collect(),
+    let mut config = Config {
+        input: HashMap::new(),
+        output: HashMap::new(),
+        pins: Vec::new(),
+    };
+    for &pad in pads {
+        match fpga_pads::gpio_pin_of_pad(pad) {
+            Some((i, pin)) if i == instance => {
+                // The INSEL value of a pad is its MIO index plus 2.
+                config.input.insert(
+                    peripheral_in(instance, pin),
+                    PinmuxInsel(u32::from(pad) + 2),
+                );
+                config.output.insert(pad, outsel(instance, pin));
+                config.pins.push(pin);
+            }
+            _ => {}
+        }
     }
+    config
 }
 
 fn gpio_write(
@@ -215,6 +181,7 @@ fn test_gpio_outputs(opts: &Opts, transport: &TransportWrapper, instance: u8) ->
         opts.init.backend_opts.interface
     );
     let config = get_config(opts, instance);
+    let pin_mask = config.pins.iter().fold(0, |acc, &pin| acc | 1u32 << pin);
     PinmuxConfig::configure(&*uart, Some(&config.input), Some(&config.output), None)?;
 
     log::info!("Configuring debugger GPIOs as inputs");
@@ -236,7 +203,7 @@ fn test_gpio_outputs(opts: &Opts, transport: &TransportWrapper, instance: u8) ->
     log::info!("test: output level high test");
 
     // Walking 1
-    for i in 16..30 {
+    for &i in &config.pins {
         gpio_write(transport, &*uart, instance, 1 << i, &config.output, 0)?;
     }
     GpioSet::irq_disable_all(&*uart, instance, u32::MAX)?;
@@ -249,7 +216,7 @@ fn test_gpio_outputs(opts: &Opts, transport: &TransportWrapper, instance: u8) ->
     log::info!("test: output rising edge test");
 
     // Walking 1
-    for i in 16..30 {
+    for &i in &config.pins {
         gpio_write(transport, &*uart, instance, 1 << i, &config.output, 0)?;
     }
     GpioSet::irq_disable_all(&*uart, instance, u32::MAX)?;
@@ -260,7 +227,7 @@ fn test_gpio_outputs(opts: &Opts, transport: &TransportWrapper, instance: u8) ->
 
     GpioSet::irq_set_trigger(&*uart, instance, u32::MAX, "low".into())?;
     GpioSet::irq_acknowledge_all(&*uart, instance)?;
-    GpioSet::irq_restore_all(&*uart, instance, 0x1E7E_0000)?;
+    GpioSet::irq_restore_all(&*uart, instance, pin_mask)?;
     // Walking 0
     for i in 0..32 {
         gpio_write(transport, &*uart, instance, 1 << i, &config.output, 1)?;
@@ -288,6 +255,7 @@ fn test_gpio_inputs(opts: &Opts, transport: &TransportWrapper, instance: u8) -> 
         opts.init.backend_opts.interface
     );
     let config = get_config(opts, instance);
+    let pin_mask = config.pins.iter().fold(0, |acc, &pin| acc | 1u32 << pin);
     PinmuxConfig::configure(&*uart, Some(&config.input), None, None)?;
 
     log::info!("Configuring debugger GPIOs as outputs");
@@ -313,7 +281,7 @@ fn test_gpio_inputs(opts: &Opts, transport: &TransportWrapper, instance: u8) -> 
     GpioSet::irq_acknowledge_all(&*uart, instance)?;
     GpioSet::irq_restore_all(&*uart, instance, u32::MAX)?;
     // Walking 1
-    for i in 16..30 {
+    for &i in &config.pins {
         gpio_read(transport, &*uart, instance, 1 << i, &config.input, 0)?;
     }
     GpioSet::irq_disable_all(&*uart, instance, u32::MAX)?;
@@ -328,7 +296,7 @@ fn test_gpio_inputs(opts: &Opts, transport: &TransportWrapper, instance: u8) -> 
     GpioSet::irq_acknowledge_all(&*uart, instance)?;
     GpioSet::irq_restore_all(&*uart, instance, u32::MAX)?;
     // Walking 1
-    for i in 16..30 {
+    for &i in &config.pins {
         gpio_read(transport, &*uart, instance, 1 << i, &config.input, 0)?;
     }
     GpioSet::irq_disable_all(&*uart, instance, u32::MAX)?;
@@ -342,9 +310,9 @@ fn test_gpio_inputs(opts: &Opts, transport: &TransportWrapper, instance: u8) -> 
     log::info!("test: input level low test");
     GpioSet::irq_set_trigger(&*uart, instance, u32::MAX, "low".into())?;
     GpioSet::irq_acknowledge_all(&*uart, instance)?;
-    GpioSet::irq_restore_all(&*uart, instance, 0x1E7E_0000)?;
+    GpioSet::irq_restore_all(&*uart, instance, pin_mask)?;
     // Walking 0
-    for i in 16..30 {
+    for &i in &config.pins {
         gpio_read(transport, &*uart, instance, 1 << i, &config.input, 1)?;
     }
     GpioSet::irq_disable_all(&*uart, instance, u32::MAX)?;
@@ -360,7 +328,7 @@ fn test_gpio_inputs(opts: &Opts, transport: &TransportWrapper, instance: u8) -> 
     GpioSet::irq_restore_all(&*uart, instance, u32::MAX)?;
 
     // Walking 0
-    for i in 16..30 {
+    for &i in &config.pins {
         gpio_read(transport, &*uart, instance, 1 << i, &config.input, 1)?;
     }
     Ok(())
