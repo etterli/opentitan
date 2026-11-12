@@ -530,7 +530,7 @@
           "mode": "PushPull"
         }
       ]
-    }
+    },
     {
       "name": "USB_VBUS_SENSE",
       "pins": [

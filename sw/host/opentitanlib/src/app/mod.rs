@@ -1160,8 +1160,18 @@ impl TransportWrapper {
     pub fn reset_with_delay(&self, uart_rx: UartRx, delay: Duration) -> Result<()> {
         log::info!("Asserting the reset signal");
 
-        if self.disable_dft_on_reset.get() {
-            self.pin_strapping("PRERESET_DFT_DISABLE")?.apply()?;
+        // Not every transport configuration can drive the DFT straps.
+        let dft_disable = if self.disable_dft_on_reset.get() {
+            let dft_disable = self.optional_pin_strapping("PRERESET_DFT_DISABLE")?;
+            if dft_disable.is_none() {
+                log::warn!("No PRERESET_DFT_DISABLE strapping, the DFT straps are not driven");
+            }
+            dft_disable
+        } else {
+            None
+        };
+        if let Some(dft_disable) = &dft_disable {
+            dft_disable.apply()?;
         }
 
         // Hold the JTAG TAP in reset for as long as the main reset is asserted. This works around
@@ -1189,11 +1199,11 @@ impl TransportWrapper {
             trst.remove()?;
         }
 
-        if self.disable_dft_on_reset.get() {
+        if let Some(dft_disable) = &dft_disable {
             std::thread::sleep(Duration::from_millis(10));
             // We remove the DFT strapping after waiting some time, as the DFT straps should have been
             // sampled by then and we can resume our desired pin configuration.
-            self.pin_strapping("PRERESET_DFT_DISABLE")?.remove()?;
+            dft_disable.remove()?;
         }
 
         std::thread::sleep(delay);
