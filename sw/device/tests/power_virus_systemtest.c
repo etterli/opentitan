@@ -517,22 +517,22 @@ static void configure_pinmux_sim(void) {
   const pinmux_pad_attributes_t pinmux_pad_attributes[] = {
       // Enable pull-ups for spi_host_0 data pins to avoid floating inputs.
       {
-          .pad = kDtPadSpiHost0Sd0,
+          .pad = kDtPadSpiHostD0,
           .flags = kDifPinmuxPadAttrPullResistorEnable |
                    kDifPinmuxPadAttrPullResistorUp,
       },
       {
-          .pad = kDtPadSpiHost0Sd1,
+          .pad = kDtPadSpiHostD1,
           .flags = kDifPinmuxPadAttrPullResistorEnable |
                    kDifPinmuxPadAttrPullResistorUp,
       },
       {
-          .pad = kDtPadSpiHost0Sd2,
+          .pad = kDtPadSpiHostD2,
           .flags = kDifPinmuxPadAttrPullResistorEnable |
                    kDifPinmuxPadAttrPullResistorUp,
       },
       {
-          .pad = kDtPadSpiHost0Sd3,
+          .pad = kDtPadSpiHostD3,
           .flags = kDifPinmuxPadAttrPullResistorEnable |
                    kDifPinmuxPadAttrPullResistorUp,
       },
