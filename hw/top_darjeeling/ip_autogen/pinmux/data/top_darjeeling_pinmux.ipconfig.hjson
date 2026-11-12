@@ -85,13 +85,6 @@
         ]
       }
     ]
-    mio_insel_resvals:
-    [
-      0
-      0
-      0
-      0
-    ]
     mio_periph_outs:
     [
       {
@@ -184,21 +177,6 @@
           11
         ]
       }
-    ]
-    mio_outsel_resvals:
-    [
-      2
-      2
-      2
-      2
-      2
-      2
-      2
-      2
-      2
-      2
-      2
-      2
     ]
     mio_pad_attr_resvals:
     [

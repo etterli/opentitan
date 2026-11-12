@@ -464,7 +464,8 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
 
     Returns two lists of {name, pads} dicts, one entry per MIO peripheral input and output ordered
     by its INSEL/OUTSEL index. pads lists the indices of the MIO pads the signal can be muxed to.
-    The pinmux template derives the legal select masks from them."""
+    The default of a signal is added as default_pad (pad index) or default_const (raw value). The
+    pinmux template checks the values and derives the legal select masks and reset values."""
 
     pinmux = top["pinmux"]
     n_mio_pads = pinmux["io_counts"]["muxed"]["pads"]
@@ -486,48 +487,28 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
             pads = list(range(n_mio_pads))
 
         name = io['name'] + (f"[{io['idx']}]" if io['idx'] >= 0 else '')
+        periph_in = {'name': name, 'pads': pads}
+        periph_out = {'name': name, 'pads': pads}
+
+        default = io.get('default')
+        if isinstance(default, str):
+            # Unknown pads are reported by validate, skip them here.
+            if default in mio_pad_idx:
+                periph_in['default_pad'] = periph_out['default_pad'] = mio_pad_idx[default]
+        elif default is not None:
+            # A constant only defines the INSEL reset value. Pass it for pure outputs too, the
+            # template rejects it.
+            periph_in['default_const'] = default
+            if io['type'] == 'output':
+                periph_out['default_const'] = default
+
         # io type is view from peripheral (hjson).
         if io['type'] in ['input', 'inout']:
-            mio_periph_ins.append({'name': name, 'pads': pads})
+            mio_periph_ins.append(periph_in)
         if io['type'] in ['output', 'inout']:
-            mio_periph_outs.append({'name': name, 'pads': pads})
+            mio_periph_outs.append(periph_out)
 
     return mio_periph_ins, mio_periph_outs
-
-
-def _gen_muxing_resvals(top: ConfigT, n_mio_periph_in: int,
-                        n_mio_pads: int) -> Tuple[List[int], List[int]]:
-    """Determine the reset values for the INSEL and OUTSEL CSRs."""
-
-    # Per default select a static 0 for inputs and high-Z for pads.
-    mio_insel_resvals = [0] * n_mio_periph_in
-    mio_outsel_resvals = [2] * n_mio_pads
-
-    mio_pad_idx = {pad['name']: pad['idx'] for pad in top['pinout']['pads']
-                   if pad['connection'] == 'muxed'}
-
-    for io in top['pinmux']['ios']:
-        if io['connection'] != 'muxed' or 'default' not in io:
-            continue
-
-        # The first topgen pass runs before validation. Invalid defaults are reported by validate,
-        # skip them here. See top.hjson for valid default options.
-        default = io['default']
-        is_input = io['type'] in ['input', 'inout']
-        is_output = io['type'] in ['output', 'inout']
-
-        if isinstance(default, str) and default in mio_pad_idx:
-            # A valid pad is specified.
-            pad_idx = mio_pad_idx[default]
-            if is_input:
-                mio_insel_resvals[io['glob_idx']] = pad_idx + 2
-            if is_output:
-                mio_outsel_resvals[pad_idx] = io['glob_idx'] + 3
-        elif default in (0, 1) and is_input:
-            # If a constant is set only INSEL is affected (input or inout).
-            mio_insel_resvals[io['glob_idx']] = int(default)
-
-    return mio_insel_resvals, mio_outsel_resvals
 
 
 def _gen_pad_attr_resvals(
@@ -609,9 +590,6 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
     # Determine the MIO muxing connectivity
     mio_periph_ins, mio_periph_outs = _gen_mio_periphs(top)
 
-    # Determine the reset values for the CSRs defining the MIO muxing.
-    mio_insel_resvals, mio_outsel_resvals = _gen_muxing_resvals(top, n_mio_periph_in, n_mio_pads)
-
     # Determine the reset values of the pad attribute CSRs.
     mio_pad_attr_resvals, dio_pad_attr_resvals = _gen_pad_attr_resvals(top)
 
@@ -635,9 +613,7 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
         "n_mio_periph_in": n_mio_periph_in,
         "n_mio_periph_out": n_mio_periph_out,
         "mio_periph_ins": mio_periph_ins,
-        "mio_insel_resvals": mio_insel_resvals,
         "mio_periph_outs": mio_periph_outs,
-        "mio_outsel_resvals": mio_outsel_resvals,
         "mio_pad_attr_resvals": mio_pad_attr_resvals,
         "n_dio_pads": n_dio_pads,
         "dio_pad_attr_resvals": dio_pad_attr_resvals,
