@@ -16490,7 +16490,12 @@
         instance: usbdev
         port: sense
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC7
+          IOC12
+          IOR11
+        ]
         desc: ""
         attr: ""
       }
@@ -16515,6 +16520,30 @@
           SPI_HOST_CS_L
         ]
         default: SPI_HOST_CS_L
+        desc: ""
+        attr: ""
+      }
+      {
+        instance: spi_host0
+        port: csb[1]
+        connection: muxed
+        pads:
+        [
+          IOA2
+          IOA5
+        ]
+        desc: ""
+        attr: ""
+      }
+      {
+        instance: spi_host0
+        port: csb[2]
+        connection: muxed
+        pads:
+        [
+          IOA3
+          IOA4
+        ]
         desc: ""
         attr: ""
       }
@@ -16567,6 +16596,95 @@
         attr: ""
       }
       {
+        instance: spi_host1
+        port: sck
+        connection: muxed
+        pads:
+        [
+          IOB3
+        ]
+        desc: ""
+        attr: ""
+      }
+      {
+        instance: spi_host1
+        port: csb[0]
+        connection: muxed
+        pads:
+        [
+          IOB0
+        ]
+        desc: ""
+        attr: ""
+      }
+      {
+        instance: spi_host1
+        port: csb[1]
+        connection: muxed
+        pads:
+        [
+          IOB5
+        ]
+        desc: ""
+        attr: ""
+      }
+      {
+        instance: spi_host1
+        port: csb[2]
+        connection: muxed
+        pads:
+        [
+          IOB7
+          IOB8
+        ]
+        desc: ""
+        attr: ""
+      }
+      {
+        instance: spi_host1
+        port: sd[0]
+        connection: muxed
+        pads:
+        [
+          IOB1
+        ]
+        desc: ""
+        attr: ""
+      }
+      {
+        instance: spi_host1
+        port: sd[1]
+        connection: muxed
+        pads:
+        [
+          IOB2
+        ]
+        desc: ""
+        attr: ""
+      }
+      {
+        instance: spi_host1
+        port: sd[2]
+        connection: muxed
+        pads:
+        [
+          IOB4
+        ]
+        desc: ""
+        attr: ""
+      }
+      {
+        instance: spi_host1
+        port: sd[3]
+        connection: muxed
+        pads:
+        [
+          IOB6
+        ]
+        desc: ""
+        attr: ""
+      }
+      {
         instance: spi_device
         port: sck
         connection: muxed
@@ -16587,6 +16705,19 @@
           SPI_DEV_CS_L
         ]
         default: SPI_DEV_CS_L
+        desc: ""
+        attr: ""
+      }
+      {
+        instance: spi_device
+        port: tpm_csb
+        connection: muxed
+        pads:
+        [
+          IOA2
+          IOA4
+          IOA7
+        ]
         desc: ""
         attr: ""
       }
@@ -16642,7 +16773,10 @@
         instance: gpio0
         port: gpio[0]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_HOST_D0
+        ]
         desc: ""
         attr: ""
       }
@@ -16650,7 +16784,10 @@
         instance: gpio0
         port: gpio[1]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_HOST_D1
+        ]
         desc: ""
         attr: ""
       }
@@ -16658,7 +16795,10 @@
         instance: gpio0
         port: gpio[2]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_HOST_D2
+        ]
         desc: ""
         attr: ""
       }
@@ -16666,7 +16806,10 @@
         instance: gpio0
         port: gpio[3]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_HOST_D3
+        ]
         desc: ""
         attr: ""
       }
@@ -16674,7 +16817,10 @@
         instance: gpio0
         port: gpio[4]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_HOST_CLK
+        ]
         desc: ""
         attr: ""
       }
@@ -16682,7 +16828,10 @@
         instance: gpio0
         port: gpio[5]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_HOST_CS_L
+        ]
         desc: ""
         attr: ""
       }
@@ -16690,7 +16839,10 @@
         instance: gpio0
         port: gpio[6]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_DEV_D0
+        ]
         desc: ""
         attr: ""
       }
@@ -16698,7 +16850,10 @@
         instance: gpio0
         port: gpio[7]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_DEV_D1
+        ]
         desc: ""
         attr: ""
       }
@@ -16706,7 +16861,10 @@
         instance: gpio0
         port: gpio[8]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_DEV_D2
+        ]
         desc: ""
         attr: ""
       }
@@ -16714,7 +16872,10 @@
         instance: gpio0
         port: gpio[9]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_DEV_D3
+        ]
         desc: ""
         attr: ""
       }
@@ -16722,7 +16883,10 @@
         instance: gpio0
         port: gpio[10]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_DEV_CLK
+        ]
         desc: ""
         attr: ""
       }
@@ -16730,7 +16894,10 @@
         instance: gpio0
         port: gpio[11]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_DEV_CS_L
+        ]
         desc: ""
         attr: ""
       }
@@ -16738,7 +16905,11 @@
         instance: gpio0
         port: gpio[12]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA0
+        ]
+        default: IOA0
         desc: ""
         attr: ""
       }
@@ -16746,7 +16917,11 @@
         instance: gpio0
         port: gpio[13]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA1
+        ]
+        default: IOA1
         desc: ""
         attr: ""
       }
@@ -16754,7 +16929,11 @@
         instance: gpio0
         port: gpio[14]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA2
+        ]
+        default: IOA2
         desc: ""
         attr: ""
       }
@@ -16762,7 +16941,11 @@
         instance: gpio0
         port: gpio[15]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA3
+        ]
+        default: IOA3
         desc: ""
         attr: ""
       }
@@ -16770,7 +16953,11 @@
         instance: gpio0
         port: gpio[16]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA4
+        ]
+        default: IOA4
         desc: ""
         attr: ""
       }
@@ -16778,7 +16965,11 @@
         instance: gpio0
         port: gpio[17]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA5
+        ]
+        default: IOA5
         desc: ""
         attr: ""
       }
@@ -16786,7 +16977,11 @@
         instance: gpio0
         port: gpio[18]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA6
+        ]
+        default: IOA6
         desc: ""
         attr: ""
       }
@@ -16794,7 +16989,11 @@
         instance: gpio0
         port: gpio[19]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA7
+        ]
+        default: IOA7
         desc: ""
         attr: ""
       }
@@ -16802,7 +17001,11 @@
         instance: gpio0
         port: gpio[20]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA8
+        ]
+        default: IOA8
         desc: ""
         attr: ""
       }
@@ -16810,7 +17013,11 @@
         instance: gpio0
         port: gpio[21]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB0
+        ]
+        default: IOB0
         desc: ""
         attr: ""
       }
@@ -16818,7 +17025,11 @@
         instance: gpio0
         port: gpio[22]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB1
+        ]
+        default: IOB1
         desc: ""
         attr: ""
       }
@@ -16826,7 +17037,11 @@
         instance: gpio0
         port: gpio[23]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB2
+        ]
+        default: IOB2
         desc: ""
         attr: ""
       }
@@ -16834,7 +17049,11 @@
         instance: gpio0
         port: gpio[24]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB3
+        ]
+        default: IOB3
         desc: ""
         attr: ""
       }
@@ -16842,7 +17061,11 @@
         instance: gpio0
         port: gpio[25]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB4
+        ]
+        default: IOB4
         desc: ""
         attr: ""
       }
@@ -16850,7 +17073,11 @@
         instance: gpio0
         port: gpio[26]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB5
+        ]
+        default: IOB5
         desc: ""
         attr: ""
       }
@@ -16858,7 +17085,11 @@
         instance: gpio0
         port: gpio[27]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB6
+        ]
+        default: IOB6
         desc: ""
         attr: ""
       }
@@ -16866,7 +17097,11 @@
         instance: gpio0
         port: gpio[28]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB7
+        ]
+        default: IOB7
         desc: ""
         attr: ""
       }
@@ -16874,7 +17109,11 @@
         instance: gpio0
         port: gpio[29]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB8
+        ]
+        default: IOB8
         desc: ""
         attr: ""
       }
@@ -16882,7 +17121,11 @@
         instance: gpio0
         port: gpio[30]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB9
+        ]
+        default: IOB9
         desc: ""
         attr: ""
       }
@@ -16890,7 +17133,11 @@
         instance: gpio0
         port: gpio[31]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB10
+        ]
+        default: IOB10
         desc: ""
         attr: ""
       }
@@ -16898,7 +17145,11 @@
         instance: gpio1
         port: gpio[0]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB11
+        ]
+        default: IOB11
         desc: ""
         attr: ""
       }
@@ -16906,7 +17157,11 @@
         instance: gpio1
         port: gpio[1]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOB12
+        ]
+        default: IOB12
         desc: ""
         attr: ""
       }
@@ -16914,7 +17169,11 @@
         instance: gpio1
         port: gpio[2]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC0
+        ]
+        default: IOC0
         desc: ""
         attr: ""
       }
@@ -16922,7 +17181,11 @@
         instance: gpio1
         port: gpio[3]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC1
+        ]
+        default: IOC1
         desc: ""
         attr: ""
       }
@@ -16930,7 +17193,11 @@
         instance: gpio1
         port: gpio[4]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC2
+        ]
+        default: IOC2
         desc: ""
         attr: ""
       }
@@ -16938,7 +17205,11 @@
         instance: gpio1
         port: gpio[5]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC3
+        ]
+        default: IOC3
         desc: ""
         attr: ""
       }
@@ -16946,7 +17217,11 @@
         instance: gpio1
         port: gpio[6]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC4
+        ]
+        default: IOC4
         desc: ""
         attr: ""
       }
@@ -16954,7 +17229,11 @@
         instance: gpio1
         port: gpio[7]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC5
+        ]
+        default: IOC5
         desc: ""
         attr: ""
       }
@@ -16962,7 +17241,11 @@
         instance: gpio1
         port: gpio[8]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC6
+        ]
+        default: IOC6
         desc: ""
         attr: ""
       }
@@ -16970,7 +17253,11 @@
         instance: gpio1
         port: gpio[9]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC7
+        ]
+        default: IOC7
         desc: ""
         attr: ""
       }
@@ -16978,7 +17265,11 @@
         instance: gpio1
         port: gpio[10]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC8
+        ]
+        default: IOC8
         desc: ""
         attr: ""
       }
@@ -16986,7 +17277,11 @@
         instance: gpio1
         port: gpio[11]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC9
+        ]
+        default: IOC9
         desc: ""
         attr: ""
       }
@@ -16994,7 +17289,11 @@
         instance: gpio1
         port: gpio[12]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC10
+        ]
+        default: IOC10
         desc: ""
         attr: ""
       }
@@ -17002,7 +17301,11 @@
         instance: gpio1
         port: gpio[13]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC11
+        ]
+        default: IOC11
         desc: ""
         attr: ""
       }
@@ -17010,7 +17313,11 @@
         instance: gpio1
         port: gpio[14]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC12
+        ]
+        default: IOC12
         desc: ""
         attr: ""
       }
@@ -17018,7 +17325,11 @@
         instance: gpio1
         port: gpio[15]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR0
+        ]
+        default: IOR0
         desc: ""
         attr: ""
       }
@@ -17026,7 +17337,11 @@
         instance: gpio1
         port: gpio[16]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR1
+        ]
+        default: IOR1
         desc: ""
         attr: ""
       }
@@ -17034,7 +17349,11 @@
         instance: gpio1
         port: gpio[17]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR2
+        ]
+        default: IOR2
         desc: ""
         attr: ""
       }
@@ -17042,7 +17361,11 @@
         instance: gpio1
         port: gpio[18]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR3
+        ]
+        default: IOR3
         desc: ""
         attr: ""
       }
@@ -17050,7 +17373,11 @@
         instance: gpio1
         port: gpio[19]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR4
+        ]
+        default: IOR4
         desc: ""
         attr: ""
       }
@@ -17058,7 +17385,11 @@
         instance: gpio1
         port: gpio[20]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR5
+        ]
+        default: IOR5
         desc: ""
         attr: ""
       }
@@ -17066,7 +17397,11 @@
         instance: gpio1
         port: gpio[21]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR6
+        ]
+        default: IOR6
         desc: ""
         attr: ""
       }
@@ -17074,7 +17409,11 @@
         instance: gpio1
         port: gpio[22]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR7
+        ]
+        default: IOR7
         desc: ""
         attr: ""
       }
@@ -17082,7 +17421,10 @@
         instance: gpio1
         port: gpio[23]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR8
+        ]
         desc: ""
         attr: ""
       }
@@ -17090,7 +17432,10 @@
         instance: gpio1
         port: gpio[24]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR9
+        ]
         desc: ""
         attr: ""
       }
@@ -17098,7 +17443,11 @@
         instance: gpio1
         port: gpio[25]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR10
+        ]
+        default: IOR10
         desc: ""
         attr: ""
       }
@@ -17106,7 +17455,11 @@
         instance: gpio1
         port: gpio[26]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR11
+        ]
+        default: IOR11
         desc: ""
         attr: ""
       }
@@ -17114,7 +17467,11 @@
         instance: gpio1
         port: gpio[27]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR12
+        ]
+        default: IOR12
         desc: ""
         attr: ""
       }
@@ -17122,7 +17479,11 @@
         instance: gpio1
         port: gpio[28]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR13
+        ]
+        default: IOR13
         desc: ""
         attr: ""
       }
@@ -17130,7 +17491,10 @@
         instance: gpio1
         port: gpio[29]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR10
+        ]
         desc: ""
         attr: ""
       }
@@ -17138,7 +17502,10 @@
         instance: gpio1
         port: gpio[30]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR11
+        ]
         desc: ""
         attr: ""
       }
@@ -17146,7 +17513,10 @@
         instance: gpio1
         port: gpio[31]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOR12
+        ]
         desc: ""
         attr: ""
       }
@@ -17457,130 +17827,13 @@
         attr: ""
       }
       {
-        instance: spi_device
-        port: tpm_csb
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: spi_host0
-        port: csb[1]
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: spi_host0
-        port: csb[2]
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: spi_host1
-        port: sck
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: spi_host1
-        port: csb[0]
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: spi_host1
-        port: csb[1]
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: spi_host1
-        port: csb[2]
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: spi_host1
-        port: sd[0]
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: spi_host1
-        port: sd[1]
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: spi_host1
-        port: sd[2]
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: spi_host1
-        port: sd[3]
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: rram_macro
-        port: tck
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: rram_macro
-        port: tms
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: rram_macro
-        port: tdi
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: rram_macro
-        port: tdo
-        connection: muxed
-        pads: []
-        desc: ""
-        attr: ""
-      }
-      {
         instance: sensor_ctrl
         port: ast_debug_out[0]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA7
+        ]
         desc: ""
         attr: ""
       }
@@ -17588,7 +17841,10 @@
         instance: sensor_ctrl
         port: ast_debug_out[1]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOA8
+        ]
         desc: ""
         attr: ""
       }
@@ -17596,7 +17852,10 @@
         instance: sensor_ctrl
         port: ast_debug_out[2]
         connection: muxed
-        pads: []
+        pads:
+        [
+          SPI_HOST_D3
+        ]
         desc: ""
         attr: ""
       }
@@ -17604,7 +17863,10 @@
         instance: sensor_ctrl
         port: ast_debug_out[3]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC1
+        ]
         desc: ""
         attr: ""
       }
@@ -17612,7 +17874,10 @@
         instance: sensor_ctrl
         port: ast_debug_out[4]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC2
+        ]
         desc: ""
         attr: ""
       }
@@ -17620,7 +17885,10 @@
         instance: sensor_ctrl
         port: ast_debug_out[5]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC0
+        ]
         desc: ""
         attr: ""
       }
@@ -17628,7 +17896,10 @@
         instance: sensor_ctrl
         port: ast_debug_out[6]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC4
+        ]
         desc: ""
         attr: ""
       }
@@ -17636,7 +17907,10 @@
         instance: sensor_ctrl
         port: ast_debug_out[7]
         connection: muxed
-        pads: []
+        pads:
+        [
+          IOC3
+        ]
         desc: ""
         attr: ""
       }
@@ -17900,6 +18174,66 @@
         glob_idx: 3
       }
       {
+        name: spi_host1_sd
+        width: 4
+        type: inout
+        idx: 0
+        pads:
+        [
+          IOB1
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 4
+      }
+      {
+        name: spi_host1_sd
+        width: 4
+        type: inout
+        idx: 1
+        pads:
+        [
+          IOB2
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 5
+      }
+      {
+        name: spi_host1_sd
+        width: 4
+        type: inout
+        idx: 2
+        pads:
+        [
+          IOB4
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 6
+      }
+      {
+        name: spi_host1_sd
+        width: 4
+        type: inout
+        idx: 3
+        pads:
+        [
+          IOB6
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 7
+      }
+      {
         name: spi_device_sd
         width: 4
         type: inout
@@ -17913,7 +18247,7 @@
         desc: ""
         default: SPI_DEV_D0
         domain: Main
-        glob_idx: 4
+        glob_idx: 8
       }
       {
         name: spi_device_sd
@@ -17929,7 +18263,7 @@
         desc: ""
         default: SPI_DEV_D1
         domain: Main
-        glob_idx: 5
+        glob_idx: 9
       }
       {
         name: spi_device_sd
@@ -17945,7 +18279,7 @@
         desc: ""
         default: SPI_DEV_D2
         domain: Main
-        glob_idx: 6
+        glob_idx: 10
       }
       {
         name: spi_device_sd
@@ -17961,62 +18295,17 @@
         desc: ""
         default: SPI_DEV_D3
         domain: Main
-        glob_idx: 7
-      }
-      {
-        name: gpio0_gpio
-        width: 32
-        type: inout
-        idx: 0
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 8
-      }
-      {
-        name: gpio0_gpio
-        width: 32
-        type: inout
-        idx: 1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 9
-      }
-      {
-        name: gpio0_gpio
-        width: 32
-        type: inout
-        idx: 2
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 10
-      }
-      {
-        name: gpio0_gpio
-        width: 32
-        type: inout
-        idx: 3
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
         glob_idx: 11
       }
       {
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 4
-        pads: []
+        idx: 0
+        pads:
+        [
+          SPI_HOST_D0
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18027,8 +18316,11 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 5
-        pads: []
+        idx: 1
+        pads:
+        [
+          SPI_HOST_D1
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18039,8 +18331,11 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 6
-        pads: []
+        idx: 2
+        pads:
+        [
+          SPI_HOST_D2
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18051,8 +18346,11 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 7
-        pads: []
+        idx: 3
+        pads:
+        [
+          SPI_HOST_D3
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18063,8 +18361,11 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 8
-        pads: []
+        idx: 4
+        pads:
+        [
+          SPI_HOST_CLK
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18075,8 +18376,11 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 9
-        pads: []
+        idx: 5
+        pads:
+        [
+          SPI_HOST_CS_L
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18087,8 +18391,11 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 10
-        pads: []
+        idx: 6
+        pads:
+        [
+          SPI_DEV_D0
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18099,8 +18406,11 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 11
-        pads: []
+        idx: 7
+        pads:
+        [
+          SPI_DEV_D1
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18111,8 +18421,11 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 12
-        pads: []
+        idx: 8
+        pads:
+        [
+          SPI_DEV_D2
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18123,8 +18436,11 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 13
-        pads: []
+        idx: 9
+        pads:
+        [
+          SPI_DEV_D3
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18135,8 +18451,11 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 14
-        pads: []
+        idx: 10
+        pads:
+        [
+          SPI_DEV_CLK
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18147,8 +18466,11 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 15
-        pads: []
+        idx: 11
+        pads:
+        [
+          SPI_DEV_CS_L
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18159,11 +18481,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 16
-        pads: []
+        idx: 12
+        pads:
+        [
+          IOA0
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOA0
         domain: Main
         glob_idx: 24
       }
@@ -18171,11 +18497,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 17
-        pads: []
+        idx: 13
+        pads:
+        [
+          IOA1
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOA1
         domain: Main
         glob_idx: 25
       }
@@ -18183,11 +18513,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 18
-        pads: []
+        idx: 14
+        pads:
+        [
+          IOA2
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOA2
         domain: Main
         glob_idx: 26
       }
@@ -18195,11 +18529,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 19
-        pads: []
+        idx: 15
+        pads:
+        [
+          IOA3
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOA3
         domain: Main
         glob_idx: 27
       }
@@ -18207,11 +18545,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 20
-        pads: []
+        idx: 16
+        pads:
+        [
+          IOA4
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOA4
         domain: Main
         glob_idx: 28
       }
@@ -18219,11 +18561,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 21
-        pads: []
+        idx: 17
+        pads:
+        [
+          IOA5
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOA5
         domain: Main
         glob_idx: 29
       }
@@ -18231,11 +18577,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 22
-        pads: []
+        idx: 18
+        pads:
+        [
+          IOA6
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOA6
         domain: Main
         glob_idx: 30
       }
@@ -18243,11 +18593,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 23
-        pads: []
+        idx: 19
+        pads:
+        [
+          IOA7
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOA7
         domain: Main
         glob_idx: 31
       }
@@ -18255,11 +18609,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 24
-        pads: []
+        idx: 20
+        pads:
+        [
+          IOA8
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOA8
         domain: Main
         glob_idx: 32
       }
@@ -18267,11 +18625,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 25
-        pads: []
+        idx: 21
+        pads:
+        [
+          IOB0
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB0
         domain: Main
         glob_idx: 33
       }
@@ -18279,11 +18641,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 26
-        pads: []
+        idx: 22
+        pads:
+        [
+          IOB1
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB1
         domain: Main
         glob_idx: 34
       }
@@ -18291,11 +18657,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 27
-        pads: []
+        idx: 23
+        pads:
+        [
+          IOB2
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB2
         domain: Main
         glob_idx: 35
       }
@@ -18303,11 +18673,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 28
-        pads: []
+        idx: 24
+        pads:
+        [
+          IOB3
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB3
         domain: Main
         glob_idx: 36
       }
@@ -18315,11 +18689,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 29
-        pads: []
+        idx: 25
+        pads:
+        [
+          IOB4
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB4
         domain: Main
         glob_idx: 37
       }
@@ -18327,11 +18705,15 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 30
-        pads: []
+        idx: 26
+        pads:
+        [
+          IOB5
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB5
         domain: Main
         glob_idx: 38
       }
@@ -18339,59 +18721,79 @@
         name: gpio0_gpio
         width: 32
         type: inout
-        idx: 31
-        pads: []
+        idx: 27
+        pads:
+        [
+          IOB6
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB6
         domain: Main
         glob_idx: 39
       }
       {
-        name: gpio1_gpio
+        name: gpio0_gpio
         width: 32
         type: inout
-        idx: 0
-        pads: []
+        idx: 28
+        pads:
+        [
+          IOB7
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB7
         domain: Main
         glob_idx: 40
       }
       {
-        name: gpio1_gpio
+        name: gpio0_gpio
         width: 32
         type: inout
-        idx: 1
-        pads: []
+        idx: 29
+        pads:
+        [
+          IOB8
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB8
         domain: Main
         glob_idx: 41
       }
       {
-        name: gpio1_gpio
+        name: gpio0_gpio
         width: 32
         type: inout
-        idx: 2
-        pads: []
+        idx: 30
+        pads:
+        [
+          IOB9
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB9
         domain: Main
         glob_idx: 42
       }
       {
-        name: gpio1_gpio
+        name: gpio0_gpio
         width: 32
         type: inout
-        idx: 3
-        pads: []
+        idx: 31
+        pads:
+        [
+          IOB10
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB10
         domain: Main
         glob_idx: 43
       }
@@ -18399,11 +18801,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 4
-        pads: []
+        idx: 0
+        pads:
+        [
+          IOB11
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB11
         domain: Main
         glob_idx: 44
       }
@@ -18411,11 +18817,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 5
-        pads: []
+        idx: 1
+        pads:
+        [
+          IOB12
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOB12
         domain: Main
         glob_idx: 45
       }
@@ -18423,11 +18833,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 6
-        pads: []
+        idx: 2
+        pads:
+        [
+          IOC0
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC0
         domain: Main
         glob_idx: 46
       }
@@ -18435,11 +18849,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 7
-        pads: []
+        idx: 3
+        pads:
+        [
+          IOC1
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC1
         domain: Main
         glob_idx: 47
       }
@@ -18447,11 +18865,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 8
-        pads: []
+        idx: 4
+        pads:
+        [
+          IOC2
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC2
         domain: Main
         glob_idx: 48
       }
@@ -18459,11 +18881,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 9
-        pads: []
+        idx: 5
+        pads:
+        [
+          IOC3
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC3
         domain: Main
         glob_idx: 49
       }
@@ -18471,11 +18897,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 10
-        pads: []
+        idx: 6
+        pads:
+        [
+          IOC4
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC4
         domain: Main
         glob_idx: 50
       }
@@ -18483,11 +18913,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 11
-        pads: []
+        idx: 7
+        pads:
+        [
+          IOC5
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC5
         domain: Main
         glob_idx: 51
       }
@@ -18495,11 +18929,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 12
-        pads: []
+        idx: 8
+        pads:
+        [
+          IOC6
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC6
         domain: Main
         glob_idx: 52
       }
@@ -18507,11 +18945,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 13
-        pads: []
+        idx: 9
+        pads:
+        [
+          IOC7
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC7
         domain: Main
         glob_idx: 53
       }
@@ -18519,11 +18961,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 14
-        pads: []
+        idx: 10
+        pads:
+        [
+          IOC8
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC8
         domain: Main
         glob_idx: 54
       }
@@ -18531,11 +18977,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 15
-        pads: []
+        idx: 11
+        pads:
+        [
+          IOC9
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC9
         domain: Main
         glob_idx: 55
       }
@@ -18543,11 +18993,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 16
-        pads: []
+        idx: 12
+        pads:
+        [
+          IOC10
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC10
         domain: Main
         glob_idx: 56
       }
@@ -18555,11 +19009,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 17
-        pads: []
+        idx: 13
+        pads:
+        [
+          IOC11
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC11
         domain: Main
         glob_idx: 57
       }
@@ -18567,11 +19025,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 18
-        pads: []
+        idx: 14
+        pads:
+        [
+          IOC12
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOC12
         domain: Main
         glob_idx: 58
       }
@@ -18579,11 +19041,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 19
-        pads: []
+        idx: 15
+        pads:
+        [
+          IOR0
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOR0
         domain: Main
         glob_idx: 59
       }
@@ -18591,11 +19057,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 20
-        pads: []
+        idx: 16
+        pads:
+        [
+          IOR1
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOR1
         domain: Main
         glob_idx: 60
       }
@@ -18603,11 +19073,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 21
-        pads: []
+        idx: 17
+        pads:
+        [
+          IOR2
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOR2
         domain: Main
         glob_idx: 61
       }
@@ -18615,11 +19089,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 22
-        pads: []
+        idx: 18
+        pads:
+        [
+          IOR3
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOR3
         domain: Main
         glob_idx: 62
       }
@@ -18627,11 +19105,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 23
-        pads: []
+        idx: 19
+        pads:
+        [
+          IOR4
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOR4
         domain: Main
         glob_idx: 63
       }
@@ -18639,11 +19121,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 24
-        pads: []
+        idx: 20
+        pads:
+        [
+          IOR5
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOR5
         domain: Main
         glob_idx: 64
       }
@@ -18651,11 +19137,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 25
-        pads: []
+        idx: 21
+        pads:
+        [
+          IOR6
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOR6
         domain: Main
         glob_idx: 65
       }
@@ -18663,11 +19153,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 26
-        pads: []
+        idx: 22
+        pads:
+        [
+          IOR7
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOR7
         domain: Main
         glob_idx: 66
       }
@@ -18675,8 +19169,11 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 27
-        pads: []
+        idx: 23
+        pads:
+        [
+          IOR8
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18687,8 +19184,11 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 28
-        pads: []
+        idx: 24
+        pads:
+        [
+          IOR9
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -18699,11 +19199,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 29
-        pads: []
+        idx: 25
+        pads:
+        [
+          IOR10
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOR10
         domain: Main
         glob_idx: 69
       }
@@ -18711,11 +19215,15 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 30
-        pads: []
+        idx: 26
+        pads:
+        [
+          IOR11
+        ]
         attr: ""
         connection: muxed
         desc: ""
+        default: IOR11
         domain: Main
         glob_idx: 70
       }
@@ -18723,13 +19231,78 @@
         name: gpio1_gpio
         width: 32
         type: inout
-        idx: 31
-        pads: []
+        idx: 27
+        pads:
+        [
+          IOR12
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        default: IOR12
+        domain: Main
+        glob_idx: 71
+      }
+      {
+        name: gpio1_gpio
+        width: 32
+        type: inout
+        idx: 28
+        pads:
+        [
+          IOR13
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        default: IOR13
+        domain: Main
+        glob_idx: 72
+      }
+      {
+        name: gpio1_gpio
+        width: 32
+        type: inout
+        idx: 29
+        pads:
+        [
+          IOR10
+        ]
         attr: ""
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 71
+        glob_idx: 73
+      }
+      {
+        name: gpio1_gpio
+        width: 32
+        type: inout
+        idx: 30
+        pads:
+        [
+          IOR11
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 74
+      }
+      {
+        name: gpio1_gpio
+        width: 32
+        type: inout
+        idx: 31
+        pads:
+        [
+          IOR12
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 75
       }
       {
         name: i2c0_sda
@@ -18746,7 +19319,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 72
+        glob_idx: 76
       }
       {
         name: i2c0_scl
@@ -18763,7 +19336,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 73
+        glob_idx: 77
       }
       {
         name: i2c1_sda
@@ -18780,7 +19353,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 74
+        glob_idx: 78
       }
       {
         name: i2c1_scl
@@ -18797,7 +19370,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 75
+        glob_idx: 79
       }
       {
         name: i2c2_sda
@@ -18815,7 +19388,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 76
+        glob_idx: 80
       }
       {
         name: i2c2_scl
@@ -18833,7 +19406,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 77
+        glob_idx: 81
       }
       {
         name: i3c0_scl
@@ -18850,7 +19423,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 78
+        glob_idx: 82
       }
       {
         name: i3c0_sda
@@ -18867,7 +19440,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 79
+        glob_idx: 83
       }
       {
         name: i3c1_scl
@@ -18884,7 +19457,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 80
+        glob_idx: 84
       }
       {
         name: i3c1_sda
@@ -18897,54 +19470,6 @@
           IOB12
           IOR11
         ]
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 81
-      }
-      {
-        name: spi_host1_sd
-        width: 4
-        type: inout
-        idx: 0
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 82
-      }
-      {
-        name: spi_host1_sd
-        width: 4
-        type: inout
-        idx: 1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 83
-      }
-      {
-        name: spi_host1_sd
-        width: 4
-        type: inout
-        idx: 2
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 84
-      }
-      {
-        name: spi_host1_sd
-        width: 4
-        type: inout
-        idx: 3
-        pads: []
         attr: ""
         connection: muxed
         desc: ""
@@ -18988,7 +19513,12 @@
         width: 1
         type: input
         idx: -1
-        pads: []
+        pads:
+        [
+          IOC7
+          IOC12
+          IOR11
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19028,6 +19558,23 @@
         glob_idx: 90
       }
       {
+        name: spi_device_tpm_csb
+        width: 1
+        type: input
+        idx: -1
+        pads:
+        [
+          IOA2
+          IOA4
+          IOA7
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 91
+      }
+      {
         name: uart0_rx
         width: 1
         type: input
@@ -19041,7 +19588,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 91
+        glob_idx: 92
       }
       {
         name: uart1_rx
@@ -19057,7 +19604,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 92
+        glob_idx: 93
       }
       {
         name: uart2_rx
@@ -19073,7 +19620,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 93
+        glob_idx: 94
       }
       {
         name: uart3_rx
@@ -19089,7 +19636,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 94
+        glob_idx: 95
       }
       {
         name: i3c0_rstdet_scl
@@ -19107,7 +19654,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 95
+        glob_idx: 96
       }
       {
         name: i3c0_rstdet_sda
@@ -19125,7 +19672,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 96
+        glob_idx: 97
       }
       {
         name: i3c1_rstdet_scl
@@ -19143,7 +19690,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 97
+        glob_idx: 98
       }
       {
         name: i3c1_rstdet_sda
@@ -19161,55 +19708,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 98
-      }
-      {
-        name: spi_device_tpm_csb
-        width: 1
-        type: input
-        idx: -1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
         glob_idx: 99
-      }
-      {
-        name: rram_macro_tck
-        width: 1
-        type: input
-        idx: -1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 100
-      }
-      {
-        name: rram_macro_tms
-        width: 1
-        type: input
-        idx: -1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 101
-      }
-      {
-        name: rram_macro_tdi
-        width: 1
-        type: input
-        idx: -1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 102
       }
       {
         name: sysrst_ctrl_ac_present
@@ -19224,7 +19723,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 103
+        glob_idx: 100
       }
       {
         name: sysrst_ctrl_key0_in
@@ -19239,7 +19738,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 104
+        glob_idx: 101
       }
       {
         name: sysrst_ctrl_key1_in
@@ -19254,7 +19753,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 105
+        glob_idx: 102
       }
       {
         name: sysrst_ctrl_key2_in
@@ -19269,7 +19768,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 106
+        glob_idx: 103
       }
       {
         name: sysrst_ctrl_pwrb_in
@@ -19284,7 +19783,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 107
+        glob_idx: 104
       }
       {
         name: sysrst_ctrl_lid_open
@@ -19299,7 +19798,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 108
+        glob_idx: 105
       }
       {
         name: spi_host0_sck
@@ -19334,6 +19833,99 @@
         glob_idx: 89
       }
       {
+        name: spi_host0_csb
+        width: 3
+        type: output
+        idx: 1
+        pads:
+        [
+          IOA2
+          IOA5
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 90
+      }
+      {
+        name: spi_host0_csb
+        width: 3
+        type: output
+        idx: 2
+        pads:
+        [
+          IOA3
+          IOA4
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 91
+      }
+      {
+        name: spi_host1_sck
+        width: 1
+        type: output
+        idx: -1
+        pads:
+        [
+          IOB3
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 92
+      }
+      {
+        name: spi_host1_csb
+        width: 3
+        type: output
+        idx: 0
+        pads:
+        [
+          IOB0
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 93
+      }
+      {
+        name: spi_host1_csb
+        width: 3
+        type: output
+        idx: 1
+        pads:
+        [
+          IOB5
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 94
+      }
+      {
+        name: spi_host1_csb
+        width: 3
+        type: output
+        idx: 2
+        pads:
+        [
+          IOB7
+          IOB8
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Main
+        glob_idx: 95
+      }
+      {
         name: uart0_tx
         width: 1
         type: output
@@ -19347,7 +19939,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 90
+        glob_idx: 96
       }
       {
         name: uart1_tx
@@ -19363,7 +19955,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 91
+        glob_idx: 97
       }
       {
         name: uart2_tx
@@ -19379,7 +19971,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 92
+        glob_idx: 98
       }
       {
         name: uart3_tx
@@ -19395,7 +19987,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 93
+        glob_idx: 99
       }
       {
         name: i3c0_ctrl_sda_pu
@@ -19412,7 +20004,7 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 94
+        glob_idx: 100
       }
       {
         name: i3c1_ctrl_sda_pu
@@ -19429,98 +20021,32 @@
         connection: muxed
         desc: ""
         domain: Main
-        glob_idx: 95
-      }
-      {
-        name: spi_host0_csb
-        width: 3
-        type: output
-        idx: 1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 96
-      }
-      {
-        name: spi_host0_csb
-        width: 3
-        type: output
-        idx: 2
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 97
-      }
-      {
-        name: spi_host1_sck
-        width: 1
-        type: output
-        idx: -1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 98
-      }
-      {
-        name: spi_host1_csb
-        width: 3
-        type: output
-        idx: 0
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 99
-      }
-      {
-        name: spi_host1_csb
-        width: 3
-        type: output
-        idx: 1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 100
-      }
-      {
-        name: spi_host1_csb
-        width: 3
-        type: output
-        idx: 2
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
         glob_idx: 101
-      }
-      {
-        name: rram_macro_tdo
-        width: 1
-        type: output
-        idx: -1
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 102
       }
       {
         name: sensor_ctrl_ast_debug_out
         width: 9
         type: output
         idx: 0
-        pads: []
+        pads:
+        [
+          IOA7
+        ]
+        attr: ""
+        connection: muxed
+        desc: ""
+        domain: Aon
+        glob_idx: 102
+      }
+      {
+        name: sensor_ctrl_ast_debug_out
+        width: 9
+        type: output
+        idx: 1
+        pads:
+        [
+          IOA8
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19531,8 +20057,11 @@
         name: sensor_ctrl_ast_debug_out
         width: 9
         type: output
-        idx: 1
-        pads: []
+        idx: 2
+        pads:
+        [
+          SPI_HOST_D3
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19543,8 +20072,11 @@
         name: sensor_ctrl_ast_debug_out
         width: 9
         type: output
-        idx: 2
-        pads: []
+        idx: 3
+        pads:
+        [
+          IOC1
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19555,8 +20087,11 @@
         name: sensor_ctrl_ast_debug_out
         width: 9
         type: output
-        idx: 3
-        pads: []
+        idx: 4
+        pads:
+        [
+          IOC2
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19567,8 +20102,11 @@
         name: sensor_ctrl_ast_debug_out
         width: 9
         type: output
-        idx: 4
-        pads: []
+        idx: 5
+        pads:
+        [
+          IOC0
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19579,8 +20117,11 @@
         name: sensor_ctrl_ast_debug_out
         width: 9
         type: output
-        idx: 5
-        pads: []
+        idx: 6
+        pads:
+        [
+          IOC4
+        ]
         attr: ""
         connection: muxed
         desc: ""
@@ -19591,25 +20132,16 @@
         name: sensor_ctrl_ast_debug_out
         width: 9
         type: output
-        idx: 6
-        pads: []
+        idx: 7
+        pads:
+        [
+          IOC3
+        ]
         attr: ""
         connection: muxed
         desc: ""
         domain: Aon
         glob_idx: 109
-      }
-      {
-        name: sensor_ctrl_ast_debug_out
-        width: 9
-        type: output
-        idx: 7
-        pads: []
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Aon
-        glob_idx: 110
       }
       {
         name: sensor_ctrl_ast_debug_out
@@ -19621,7 +20153,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 111
+        glob_idx: 110
       }
       {
         name: sysrst_ctrl_bat_disable
@@ -19636,7 +20168,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 112
+        glob_idx: 111
       }
       {
         name: sysrst_ctrl_key0_out
@@ -19651,7 +20183,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 113
+        glob_idx: 112
       }
       {
         name: sysrst_ctrl_key1_out
@@ -19666,7 +20198,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 114
+        glob_idx: 113
       }
       {
         name: sysrst_ctrl_key2_out
@@ -19681,7 +20213,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 115
+        glob_idx: 114
       }
       {
         name: sysrst_ctrl_pwrb_out
@@ -19696,7 +20228,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 116
+        glob_idx: 115
       }
       {
         name: sysrst_ctrl_z3_wakeup
@@ -19711,7 +20243,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 117
+        glob_idx: 116
       }
     ]
     io_counts:
@@ -19726,8 +20258,8 @@
       muxed:
       {
         inouts: 88
-        inputs: 21
-        outputs: 30
+        inputs: 18
+        outputs: 29
         pads: 61
       }
     }
@@ -19810,45 +20342,45 @@
           }
           {
             name: dft0
-            pad: IOR5
+            pad: SPI_HOST_D2
             desc: DFT strap signal.
-            idx: 52
+            idx: 2
           }
           {
             name: dft1
-            pad: IOR7
+            pad: SPI_HOST_D2
             desc: DFT strap signal.
-            idx: 54
+            idx: 2
           }
           {
             name: tck
-            pad: IOR3
+            pad: IOA5
             desc: JTAG tck signal.
-            idx: 50
+            idx: 17
           }
           {
             name: tms
-            pad: IOR0
+            pad: IOA0
             desc: JTAG tms signal.
-            idx: 47
+            idx: 12
           }
           {
             name: trst_n
-            pad: IOR4
+            pad: IOA6
             desc: JTAG trst_n signal.
-            idx: 51
+            idx: 18
           }
           {
             name: tdi
-            pad: IOR2
+            pad: IOA4
             desc: JTAG tdi signal.
-            idx: 49
+            idx: 16
           }
           {
             name: tdo
-            pad: IOR1
+            pad: IOA1
             desc: JTAG tdo signal.
-            idx: 48
+            idx: 13
           }
         ]
       }
@@ -19946,45 +20478,45 @@
           }
           {
             name: dft0
-            pad: IOR5
+            pad: SPI_HOST_D2
             desc: DFT strap signal.
-            idx: 52
+            idx: 2
           }
           {
             name: dft1
-            pad: IOR7
+            pad: SPI_HOST_D2
             desc: DFT strap signal.
-            idx: 54
+            idx: 2
           }
           {
             name: tck
-            pad: IOR3
+            pad: IOA5
             desc: JTAG tck signal.
-            idx: 50
+            idx: 17
           }
           {
             name: tms
-            pad: IOR0
+            pad: IOA0
             desc: JTAG tms signal.
-            idx: 47
+            idx: 12
           }
           {
             name: trst_n
-            pad: IOR4
+            pad: IOA6
             desc: JTAG trst_n signal.
-            idx: 51
+            idx: 18
           }
           {
             name: tdi
-            pad: IOR2
+            pad: IOA4
             desc: JTAG tdi signal.
-            idx: 49
+            idx: 16
           }
           {
             name: tdo
-            pad: IOR1
+            pad: IOA1
             desc: JTAG tdo signal.
-            idx: 48
+            idx: 13
           }
         ]
       }
@@ -20187,45 +20719,45 @@
           }
           {
             name: dft0
-            pad: IOR5
+            pad: SPI_HOST_D2
             desc: DFT strap signal.
-            idx: 52
+            idx: 2
           }
           {
             name: dft1
-            pad: IOR7
+            pad: SPI_HOST_D2
             desc: DFT strap signal.
-            idx: 54
+            idx: 2
           }
           {
             name: tck
-            pad: IOR3
+            pad: IOA5
             desc: JTAG tck signal.
-            idx: 50
+            idx: 17
           }
           {
             name: tms
-            pad: IOR0
+            pad: IOA0
             desc: JTAG tms signal.
-            idx: 47
+            idx: 12
           }
           {
             name: trst_n
-            pad: IOR4
+            pad: IOA6
             desc: JTAG trst_n signal.
-            idx: 51
+            idx: 18
           }
           {
             name: tdi
-            pad: IOR2
+            pad: IOA4
             desc: JTAG tdi signal.
-            idx: 49
+            idx: 16
           }
           {
             name: tdo
-            pad: IOR1
+            pad: IOA1
             desc: JTAG tdo signal.
-            idx: 48
+            idx: 13
           }
         ]
       }
