@@ -62,14 +62,9 @@ static const dt_sysrst_ctrl_periph_io_t kPeripheralInputs[] = {
     kDtSysrstCtrlPeriphIoAcPresent, kDtSysrstCtrlPeriphIoLidOpen,
 };
 
-static const dt_pad_t kInputPadsDV[] = {
-    kDtPadIob3, kDtPadIob6, kDtPadIob8, kDtPadIob9, kDtPadIoc7, kDtPadIoc9,
-};
-
-// We need different pins on the hyperdebug boards since certain
-// pins are not routed to the hyperdebug.
-static const dt_pad_t kInputPadsReal[] = {
-    kDtPadIor10, kDtPadIor11, kDtPadIor12, kDtPadIor5, kDtPadIor6, kDtPadIor7,
+// Each sysrst_ctrl input can only be muxed to a single pad.
+static const dt_pad_t kInputPads[] = {
+    kDtPadIor1, kDtPadIor3, kDtPadIor5, kDtPadIor0, kDtPadIor2, kDtPadIor11,
 };
 
 // On DV this device is in the flash and written by the testbench.
@@ -183,8 +178,6 @@ bool test_main(void) {
 
   dif_pinmux_t pinmux;
   CHECK_DIF_OK(dif_pinmux_init_from_dt(kPinmuxDt, &pinmux));
-  const dt_pad_t *kInputPads =
-      kDeviceType == kDeviceSimDV ? kInputPadsDV : kInputPadsReal;
   for (int i = 0; i < kOutputNumMioPads; ++i) {
     CHECK_DIF_OK(dif_pinmux_mio_select_input(
         &pinmux, dt_sysrst_ctrl_periph_io(kSysrstCtrlDt, kPeripheralInputs[i]),

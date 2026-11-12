@@ -22,7 +22,8 @@ struct Opts {
 }
 
 fn sleep_all_resets_test(opts: &Opts, transport: &TransportWrapper) -> Result<()> {
-    let ioc0_pin = transport.gpio_pin("Ioc0")?;
+    // sysrst_ctrl key0_in can only be muxed to IOR1.
+    let key0_pin = transport.gpio_pin("Ior1")?;
     let uart = transport.uart("console")?;
     uart.set_flow_control(true)?;
     loop {
@@ -33,11 +34,11 @@ fn sleep_all_resets_test(opts: &Opts, transport: &TransportWrapper) -> Result<()
             "FAIL" => return Err(anyhow!("Failure result: {:?}", vec)),
             _ => {}
         };
-        log::info!("Sending rst via ioc0");
-        ioc0_pin.write(true)?;
+        log::info!("Sending rst via ior1");
+        key0_pin.write(true)?;
         // Hold it up for some time before a transition low.
         std::thread::sleep(Duration::from_millis(1));
-        ioc0_pin.write(false)?;
+        key0_pin.write(false)?;
     }
 }
 
