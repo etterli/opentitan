@@ -109,8 +109,6 @@ package chip_common_pkg;
     top_earlgrey_pkg::DioPadSpiDevD1,   /* DioSpiDeviceSd1 */
     top_earlgrey_pkg::DioPadSpiDevD2,   /* DioSpiDeviceSd2 */
     top_earlgrey_pkg::DioPadSpiDevD3,   /* DioSpiDeviceSd3 */
-    top_earlgrey_pkg::DioPadIor8,       /* DioSysrstCtrlEcRstL */
-    top_earlgrey_pkg::DioPadIor9,       /* DioSysrstCtrlFlashWpL */
     top_earlgrey_pkg::DioPadSpiDevClk,  /* DioSpiDeviceSck */
     top_earlgrey_pkg::DioPadSpiDevCsL,  /* DioSpiDeviceCsb */
     top_earlgrey_pkg::DioPadSpiHostClk, /* DioSpiHost0Sck */
