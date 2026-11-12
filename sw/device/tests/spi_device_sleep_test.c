@@ -45,6 +45,8 @@ static const dt_aon_timer_t kAonTimerDt = 0;
 static_assert(kDtAonTimerCount == 1, "this test expects an aon_timer");
 static const dt_gpio_t kGpioDt = kDtGpioFirst;
 static_assert(kDtGpioCount >= 1, "this test expects at least one gpio");
+// The host signals sleep on IOA8, which only gpio0 pin 20 can read.
+static const dif_gpio_pin_t kSleepGpioPin = 20;
 static const dt_spi_device_t kSpiDeviceDt = 0;
 static_assert(kDtSpiDeviceCount >= 1,
               "this test expects at least one spi_device");
@@ -56,7 +58,7 @@ static status_t enter_low_power(void) {
   // Wait for the host signal that the device can sleep.
   bool sleep = false;
   do {
-    CHECK_DIF_OK(dif_gpio_read(&gpio, 0, &sleep));
+    CHECK_DIF_OK(dif_gpio_read(&gpio, kSleepGpioPin, &sleep));
   } while (!sleep);
 
   dif_pwrmgr_request_sources_t wakeup_sources;
@@ -79,7 +81,7 @@ static status_t enter_low_power(void) {
   // enter low power mode. In that case we loop checking if the host requested a
   // sleep. If not we loop until core enters low power mode.
   do {
-    CHECK_DIF_OK(dif_gpio_read(&gpio, 0, &sleep));
+    CHECK_DIF_OK(dif_gpio_read(&gpio, kSleepGpioPin, &sleep));
   } while (sleep);
   irq_global_ctrl(true);
   LOG_INFO("SYNC: Awaked");
@@ -167,9 +169,9 @@ bool test_main(void) {
       &pinmux, kTopEarlgreyMuxedPadsSpiDevD3, kDifPinmuxPadKindMio,
       kDifPinmuxSleepModeHigh));
   LOG_INFO("Use IOA7 to let host know when sleep is active.");
-  CHECK_DIF_OK(dif_pinmux_input_select(&pinmux,
-                                       kTopEarlgreyPinmuxPeripheralInGpio0Gpio0,
-                                       kTopEarlgreyPinmuxInselIoa8));
+  CHECK_DIF_OK(dif_pinmux_input_select(
+      &pinmux, kTopEarlgreyPinmuxPeripheralInGpio0Gpio20,
+      kTopEarlgreyPinmuxInselIoa8));
   CHECK_DIF_OK(dif_pinmux_pad_sleep_enable(&pinmux, kTopEarlgreyMuxedPadsIoa7,
                                            kDifPinmuxPadKindMio,
                                            kDifPinmuxSleepModeLow));
