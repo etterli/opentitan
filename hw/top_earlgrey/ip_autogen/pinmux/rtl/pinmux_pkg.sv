@@ -53,6 +53,157 @@ package pinmux_pkg;
     mio_scan_role:     {NMioPads{NoScan}}
   };
 
+  // Legal MIO_PERIPH_INSEL values for each MIO peripheral input. LSB corresponds to lowest index.
+  // Includes static options.
+  parameter logic [NMioPeriphIn-1:0][NMioPads+1:0] MioPeriphInselLegal = {
+    49'h1ffffffffffff, // usbdev_sense
+    49'h1ffffffffffff, // sysrst_ctrl_lid_open
+    49'h1ffffffffffff, // sysrst_ctrl_pwrb_in
+    49'h1ffffffffffff, // sysrst_ctrl_key2_in
+    49'h1ffffffffffff, // sysrst_ctrl_key1_in
+    49'h1ffffffffffff, // sysrst_ctrl_key0_in
+    49'h1ffffffffffff, // sysrst_ctrl_ac_present
+    49'h1ffffffffffff, // spi_device_tpm_csb
+    49'h1ffffffffffff, // i3c1_rstdet_sda
+    49'h1ffffffffffff, // i3c1_rstdet_scl
+    49'h1ffffffffffff, // i3c0_rstdet_sda
+    49'h1ffffffffffff, // i3c0_rstdet_scl
+    49'h1ffffffffffff, // uart3_rx
+    49'h1ffffffffffff, // uart2_rx
+    49'h1ffffffffffff, // uart1_rx
+    49'h1ffffffffffff, // uart0_rx
+    49'h1ffffffffffff, // spi_host1_sd[3]
+    49'h1ffffffffffff, // spi_host1_sd[2]
+    49'h1ffffffffffff, // spi_host1_sd[1]
+    49'h1ffffffffffff, // spi_host1_sd[0]
+    49'h1ffffffffffff, // i3c1_sda
+    49'h1ffffffffffff, // i3c1_scl
+    49'h1ffffffffffff, // i3c0_sda
+    49'h1ffffffffffff, // i3c0_scl
+    49'h1ffffffffffff, // i2c2_scl
+    49'h1ffffffffffff, // i2c2_sda
+    49'h1ffffffffffff, // i2c1_scl
+    49'h1ffffffffffff, // i2c1_sda
+    49'h1ffffffffffff, // i2c0_scl
+    49'h1ffffffffffff, // i2c0_sda
+    49'h1ffffffffffff, // gpio1_gpio[31]
+    49'h1ffffffffffff, // gpio1_gpio[30]
+    49'h1ffffffffffff, // gpio1_gpio[29]
+    49'h1ffffffffffff, // gpio1_gpio[28]
+    49'h1ffffffffffff, // gpio1_gpio[27]
+    49'h1ffffffffffff, // gpio1_gpio[26]
+    49'h1ffffffffffff, // gpio1_gpio[25]
+    49'h1ffffffffffff, // gpio1_gpio[24]
+    49'h1ffffffffffff, // gpio1_gpio[23]
+    49'h1ffffffffffff, // gpio1_gpio[22]
+    49'h1ffffffffffff, // gpio1_gpio[21]
+    49'h1ffffffffffff, // gpio1_gpio[20]
+    49'h1ffffffffffff, // gpio1_gpio[19]
+    49'h1ffffffffffff, // gpio1_gpio[18]
+    49'h1ffffffffffff, // gpio1_gpio[17]
+    49'h1ffffffffffff, // gpio1_gpio[16]
+    49'h1ffffffffffff, // gpio1_gpio[15]
+    49'h1ffffffffffff, // gpio1_gpio[14]
+    49'h1ffffffffffff, // gpio1_gpio[13]
+    49'h1ffffffffffff, // gpio1_gpio[12]
+    49'h1ffffffffffff, // gpio1_gpio[11]
+    49'h1ffffffffffff, // gpio1_gpio[10]
+    49'h1ffffffffffff, // gpio1_gpio[9]
+    49'h1ffffffffffff, // gpio1_gpio[8]
+    49'h1ffffffffffff, // gpio1_gpio[7]
+    49'h1ffffffffffff, // gpio1_gpio[6]
+    49'h1ffffffffffff, // gpio1_gpio[5]
+    49'h1ffffffffffff, // gpio1_gpio[4]
+    49'h1ffffffffffff, // gpio1_gpio[3]
+    49'h1ffffffffffff, // gpio1_gpio[2]
+    49'h1ffffffffffff, // gpio1_gpio[1]
+    49'h1ffffffffffff, // gpio1_gpio[0]
+    49'h1ffffffffffff, // gpio0_gpio[31]
+    49'h1ffffffffffff, // gpio0_gpio[30]
+    49'h1ffffffffffff, // gpio0_gpio[29]
+    49'h1ffffffffffff, // gpio0_gpio[28]
+    49'h1ffffffffffff, // gpio0_gpio[27]
+    49'h1ffffffffffff, // gpio0_gpio[26]
+    49'h1ffffffffffff, // gpio0_gpio[25]
+    49'h1ffffffffffff, // gpio0_gpio[24]
+    49'h1ffffffffffff, // gpio0_gpio[23]
+    49'h1ffffffffffff, // gpio0_gpio[22]
+    49'h1ffffffffffff, // gpio0_gpio[21]
+    49'h1ffffffffffff, // gpio0_gpio[20]
+    49'h1ffffffffffff, // gpio0_gpio[19]
+    49'h1ffffffffffff, // gpio0_gpio[18]
+    49'h1ffffffffffff, // gpio0_gpio[17]
+    49'h1ffffffffffff, // gpio0_gpio[16]
+    49'h1ffffffffffff, // gpio0_gpio[15]
+    49'h1ffffffffffff, // gpio0_gpio[14]
+    49'h1ffffffffffff, // gpio0_gpio[13]
+    49'h1ffffffffffff, // gpio0_gpio[12]
+    49'h1ffffffffffff, // gpio0_gpio[11]
+    49'h1ffffffffffff, // gpio0_gpio[10]
+    49'h1ffffffffffff, // gpio0_gpio[9]
+    49'h1ffffffffffff, // gpio0_gpio[8]
+    49'h1ffffffffffff, // gpio0_gpio[7]
+    49'h1ffffffffffff, // gpio0_gpio[6]
+    49'h1ffffffffffff, // gpio0_gpio[5]
+    49'h1ffffffffffff, // gpio0_gpio[4]
+    49'h1ffffffffffff, // gpio0_gpio[3]
+    49'h1ffffffffffff, // gpio0_gpio[2]
+    49'h1ffffffffffff, // gpio0_gpio[1]
+    49'h1ffffffffffff  // gpio0_gpio[0]
+  };
+
+  // Legal MIO_OUTSEL values for each MIO pad. LSB corresponds to lowest index. Includes static
+  // options.
+  parameter logic [NMioPads-1:0][NMioPeriphOut+2:0] MioOutselLegal = {
+    107'h7ffffffffffffffffffffffffff, // IOR13
+    107'h7ffffffffffffffffffffffffff, // IOR12
+    107'h7ffffffffffffffffffffffffff, // IOR11
+    107'h7ffffffffffffffffffffffffff, // IOR10
+    107'h7ffffffffffffffffffffffffff, // IOR7
+    107'h7ffffffffffffffffffffffffff, // IOR6
+    107'h7ffffffffffffffffffffffffff, // IOR5
+    107'h7ffffffffffffffffffffffffff, // IOR4
+    107'h7ffffffffffffffffffffffffff, // IOR3
+    107'h7ffffffffffffffffffffffffff, // IOR2
+    107'h7ffffffffffffffffffffffffff, // IOR1
+    107'h7ffffffffffffffffffffffffff, // IOR0
+    107'h7ffffffffffffffffffffffffff, // IOC12
+    107'h7ffffffffffffffffffffffffff, // IOC11
+    107'h7ffffffffffffffffffffffffff, // IOC10
+    107'h7ffffffffffffffffffffffffff, // IOC9
+    107'h7ffffffffffffffffffffffffff, // IOC8
+    107'h7ffffffffffffffffffffffffff, // IOC7
+    107'h7ffffffffffffffffffffffffff, // IOC6
+    107'h7ffffffffffffffffffffffffff, // IOC5
+    107'h7ffffffffffffffffffffffffff, // IOC4
+    107'h7ffffffffffffffffffffffffff, // IOC3
+    107'h7ffffffffffffffffffffffffff, // IOC2
+    107'h7ffffffffffffffffffffffffff, // IOC1
+    107'h7ffffffffffffffffffffffffff, // IOC0
+    107'h7ffffffffffffffffffffffffff, // IOB12
+    107'h7ffffffffffffffffffffffffff, // IOB11
+    107'h7ffffffffffffffffffffffffff, // IOB10
+    107'h7ffffffffffffffffffffffffff, // IOB9
+    107'h7ffffffffffffffffffffffffff, // IOB8
+    107'h7ffffffffffffffffffffffffff, // IOB7
+    107'h7ffffffffffffffffffffffffff, // IOB6
+    107'h7ffffffffffffffffffffffffff, // IOB5
+    107'h7ffffffffffffffffffffffffff, // IOB4
+    107'h7ffffffffffffffffffffffffff, // IOB3
+    107'h7ffffffffffffffffffffffffff, // IOB2
+    107'h7ffffffffffffffffffffffffff, // IOB1
+    107'h7ffffffffffffffffffffffffff, // IOB0
+    107'h7ffffffffffffffffffffffffff, // IOA8
+    107'h7ffffffffffffffffffffffffff, // IOA7
+    107'h7ffffffffffffffffffffffffff, // IOA6
+    107'h7ffffffffffffffffffffffffff, // IOA5
+    107'h7ffffffffffffffffffffffffff, // IOA4
+    107'h7ffffffffffffffffffffffffff, // IOA3
+    107'h7ffffffffffffffffffffffffff, // IOA2
+    107'h7ffffffffffffffffffffffffff, // IOA1
+    107'h7ffffffffffffffffffffffffff  // IOA0
+  };
+
   // Reset values of the MIO_PAD_ATTR CSRs defined by the top. LSB corresponds to lowest index.
   parameter pad_attr_t [NMioPads-1:0] MioPadAttrResval = {
     pad_attr_t'{default: '0}, // IOR13
