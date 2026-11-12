@@ -129,9 +129,15 @@ interface chip_if;
     end else begin
       dios_if.disconnect();
     end
-    // The SPI device pads are muxed but keep their weak pull downs. The SPI host pads need none.
-    mios_if.pins_pd[top_earlgrey_pkg::MioPadSpiDevCsL:top_earlgrey_pkg::MioPadSpiDevD0] =
-        {6{enable}};
+    // Weak pull downs on the muxed pads. Most GPIO inputs select their pad by default, so an
+    // undriven pad would read as X in GPIO DATA_IN. Skipped are the SPI host pads, which need
+    // none, and the SW strap and UART0 RX pads, on which the software enables internal pulls.
+    for (int i = top_earlgrey_pkg::MioPadSpiDevD0; i < top_earlgrey_pkg::MioPadCount; i++) begin
+      if (!(i inside {top_earlgrey_pkg::MioPadIoc0, top_earlgrey_pkg::MioPadIoc1,
+                      top_earlgrey_pkg::MioPadIoc2, top_earlgrey_pkg::MioPadIoc3})) begin
+        mios_if.pins_pd[i] = enable;
+      end
+    end
     // The sysrst_ctrl ec_rst_l and flash_wp_l open drain pads are muxed, but they are active low
     // and default to sysrst_ctrl, so they get the same pull ups.
     mios_if.pins_pu[top_earlgrey_pkg::MioPadIor8] = enable;
