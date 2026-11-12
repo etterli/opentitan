@@ -7,7 +7,7 @@ import os
 import shutil
 import time
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import reggen.gen_rtl
 from mako import exceptions as mako_exceptions  # type: ignore
@@ -15,7 +15,8 @@ from mako.lookup import TemplateLookup as MakoTemplateLookup  # type: ignore
 from reggen.countermeasure import CounterMeasure
 from reggen.ip_block import IpBlock
 
-from .lib import IpConfig, IpTemplate, TemplateParameter, TemplateRenderError
+from .lib import (IpConfig, IpTemplate, TemplateParameter, TemplateParamError,
+                  TemplateRenderError)
 
 _HJSON_LICENSE_HEADER = (
     """// Copyright lowRISC contributors (OpenTitan project).
@@ -24,6 +25,17 @@ _HJSON_LICENSE_HEADER = (
 """)
 
 log = logging.getLogger(__name__)
+
+# Locations in template errors are reported relative to the repository root.
+_REPO_TOP = Path(__file__).resolve().parents[2]
+
+
+def _location(filename: str, lineno: int) -> str:
+    """Format a source location, relative to the repository root if it is inside."""
+    path = Path(filename).resolve()
+    if path.is_relative_to(_REPO_TOP):
+        path = path.relative_to(_REPO_TOP)
+    return f"{path}:{lineno}"
 
 
 class IpTemplateRendererBase:
@@ -179,11 +191,24 @@ class IpTemplateRendererBase:
         }
         try:
             return template.render(**tpl_args)
+        except TemplateParamError as e:
+            raise self._param_error(e.errors) from None
+        except AssertionError as e:
+            # Templates also check their parameter values with plain assertions.
+            filename, lineno, _, _ = mako_exceptions.RichTraceback().traceback[-1]
+            raise self._param_error([(str(e), filename, lineno)]) from None
         except Exception:
             raise TemplateRenderError(
                 "Unable to render template: " +
                 mako_exceptions.text_error_template().render(),
                 self.get_template_parameter_values()) from None
+
+    def _param_error(self, errors: List[Tuple[str, str, int]]) -> TemplateRenderError:
+        """Report invalid parameter values with their location, one per line, instead of the full
+        traceback and template variables."""
+        return TemplateRenderError("\n".join(
+            f"{self.ip_template.name}: {msg} ({_location(filename, lineno)})"
+            for msg, filename, lineno in errors))
 
     def _render_mako_template_to_file(self, template_filepath: Path,
                                       outdir_path: Path) -> None:

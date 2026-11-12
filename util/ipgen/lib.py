@@ -2,8 +2,9 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
+import inspect
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import hjson  # type: ignore
 from reggen.lib import (check_bool, check_int, check_keys, check_list,
@@ -29,6 +30,37 @@ class TemplateRenderError(Exception):
             return (self.message + "\n" + "Template variables:\n" +
                     PrettyPrinter().pformat(self.template_vars))
         return self.message
+
+
+class TemplateParamError(Exception):
+    """Invalid template parameter values found by the checks of a template.
+
+    errors is a list of (message, filename, line) tuples, see ParamErrors.
+    """
+
+    def __init__(self, errors: List[Tuple[str, str, int]]) -> None:
+        super().__init__("\n".join(msg for msg, _, _ in errors))
+        self.errors = errors
+
+
+class ParamErrors:
+    """Collects the errors of template parameter checks to report them all at once.
+
+    Each error records the location of the code that added it. This is meant for checks in Python
+    modules, an error added in template code gets the location of the generated mako module.
+    """
+
+    def __init__(self) -> None:
+        self.errors: List[Tuple[str, str, int]] = []
+
+    def add(self, msg: str) -> None:
+        caller = inspect.stack(context=0)[1]
+        self.errors.append((msg, caller.filename, caller.lineno))
+
+    def raise_errors(self) -> None:
+        """Raise a TemplateParamError with all errors if there are any."""
+        if self.errors:
+            raise TemplateParamError(self.errors)
 
 
 class TemplateParameter(BaseParam):
