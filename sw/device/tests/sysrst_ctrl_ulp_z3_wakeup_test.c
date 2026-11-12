@@ -85,6 +85,8 @@ static const dt_pad_t kOutputPads[] = {
 
 // Mask of the GPIOs used on the real device to read the test phase.
 static const uint32_t kGpioMask = 0x7;
+// The phase pads IOB0-IOB2 can only be read by gpio0 pins 21-23.
+static const uint32_t kPhaseGpioShift = 21;
 
 /**
  * Sets up the pinmux to assign input and output pads to the sysrst_ctrl
@@ -113,7 +115,7 @@ static uint8_t read_phase_pins(void) {
   // a Gray code encoding so that it suffices to change one pin to go to
   // the next phase.
   static const uint8_t kGrayCode[] = {0, 1, 3, 2, 7, 6, 4, 5};
-  return kGrayCode[gpio_state & kGpioMask];
+  return kGrayCode[(gpio_state >> kPhaseGpioShift) & kGpioMask];
 }
 
 /**
@@ -202,11 +204,14 @@ bool test_main(void) {
   // it so use three pins to read the test phase.
   if (kDeviceType != kDeviceSimDV) {
     CHECK_DIF_OK(dif_pinmux_mio_select_input(
-        &pinmux, dt_gpio_periph_io(kGpioDt, kDtGpioPeriphIoGpio0), kDtPadIob0));
+        &pinmux, dt_gpio_periph_io(kGpioDt, kDtGpioPeriphIoGpio21),
+        kDtPadIob0));
     CHECK_DIF_OK(dif_pinmux_mio_select_input(
-        &pinmux, dt_gpio_periph_io(kGpioDt, kDtGpioPeriphIoGpio1), kDtPadIob1));
+        &pinmux, dt_gpio_periph_io(kGpioDt, kDtGpioPeriphIoGpio22),
+        kDtPadIob1));
     CHECK_DIF_OK(dif_pinmux_mio_select_input(
-        &pinmux, dt_gpio_periph_io(kGpioDt, kDtGpioPeriphIoGpio2), kDtPadIob2));
+        &pinmux, dt_gpio_periph_io(kGpioDt, kDtGpioPeriphIoGpio23),
+        kDtPadIob2));
   }
   LOG_INFO("reset");
 
