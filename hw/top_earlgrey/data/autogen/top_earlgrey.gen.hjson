@@ -16287,6 +16287,10 @@
         bank: VCC
         connection: muxed
         desc: Muxed IO pad
+        attrs:
+        {
+          pull_en: 1
+        }
         idx: 30
         port_type: inout
       }
