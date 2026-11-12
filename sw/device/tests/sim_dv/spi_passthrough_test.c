@@ -72,7 +72,7 @@ static const pinmux_pad_attributes_t pinmux_pad_config[] = {
                  kDifPinmuxPadAttrPullResistorUp,
     },
     {
-        .pad = kDtPadIob3,
+        .pad = kDtPadIob2,
         .flags = kDifPinmuxPadAttrPullResistorEnable |
                  kDifPinmuxPadAttrPullResistorUp,
     },
@@ -118,12 +118,12 @@ static const pinmux_select_t pinmux_out_config[] = {
     // Passthrough uses CSB[0] of spi_host0.  The testbench checks that the
     // other chip select lines of spi_host0 stay inactive.
     {
-        .pad = kDtPadIoa3,
+        .pad = kDtPadIoa2,
         .peripheral_dt = kDtSpiHost0,
         .peripheral_sig = kDtSpiHostPeriphIoCsb1,
     },
     {
-        .pad = kDtPadIoa6,
+        .pad = kDtPadIoa3,
         .peripheral_dt = kDtSpiHost0,
         .peripheral_sig = kDtSpiHostPeriphIoCsb2,
     },
@@ -133,7 +133,7 @@ static const pinmux_select_t pinmux_out_config[] = {
         .peripheral_sig = kDtSpiHostPeriphIoCsb0,
     },
     {
-        .pad = kDtPadIob2,
+        .pad = kDtPadIob3,
         .peripheral_dt = kDtSpiHost1,
         .peripheral_sig = kDtSpiHostPeriphIoSck,
     },
@@ -143,7 +143,7 @@ static const pinmux_select_t pinmux_out_config[] = {
         .peripheral_sig = kDtSpiHostPeriphIoSd0,
     },
     {
-        .pad = kDtPadIob3,
+        .pad = kDtPadIob2,
         .peripheral_dt = kDtSpiHost1,
         .peripheral_sig = kDtSpiHostPeriphIoSd1,
     },
@@ -167,7 +167,7 @@ static const pinmux_select_t pinmux_in_config[] = {
         .peripheral_sig = kDtSpiHostPeriphIoSd0,
     },
     {
-        .pad = kDtPadIob3,
+        .pad = kDtPadIob2,
         .peripheral_dt = kDtSpiHost1,
         .peripheral_sig = kDtSpiHostPeriphIoSd1,
     },
