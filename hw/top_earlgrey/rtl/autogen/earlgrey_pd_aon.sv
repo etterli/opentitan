@@ -214,14 +214,14 @@ module earlgrey_pd_aon #(
   input  logic       ast_clk_src_usb_i,
 
   // Multiplexed I/O
-  input  logic [46:0] mio_in_i,
-  output logic [46:0] mio_out_o,
-  output logic [46:0] mio_oe_o,
+  input  logic [48:0] mio_in_i,
+  output logic [48:0] mio_out_o,
+  output logic [48:0] mio_oe_o,
 
   // Dedicated I/O
-  input  logic [15:0] dio_in_i,
-  output logic [15:0] dio_out_o,
-  output logic [15:0] dio_oe_o,
+  input  logic [13:0] dio_in_i,
+  output logic [13:0] dio_out_o,
+  output logic [13:0] dio_oe_o,
 
   // Pad attributes to padring
   output prim_pad_wrapper_pkg::pad_attr_t [pinmux_reg_pkg::NMioPads-1:0] mio_attr_o,
@@ -259,12 +259,12 @@ module earlgrey_pd_aon #(
   localparam int SramCtrlRetOutstanding = 2;
 
   // Signals
-  logic [93:0] mio_p2d;
-  logic [104:0] mio_d2p;
-  logic [104:0] mio_en_d2p;
-  logic [15:0] dio_p2d;
-  logic [15:0] dio_d2p;
-  logic [15:0] dio_en_d2p;
+  logic [95:0] mio_p2d;
+  logic [106:0] mio_d2p;
+  logic [106:0] mio_en_d2p;
+  logic [13:0] dio_p2d;
+  logic [13:0] dio_d2p;
+  logic [13:0] dio_en_d2p;
   // i3c0
   logic        cio_i3c0_rstdet_scl_p2d;
   logic        cio_i3c0_rstdet_sda_p2d;
@@ -932,6 +932,8 @@ module earlgrey_pd_aon #(
   assign cio_spi_host1_sd_p2d_o[1] = mio_p2d[MioInSpiHost1Sd1];
   assign cio_spi_host1_sd_p2d_o[2] = mio_p2d[MioInSpiHost1Sd2];
   assign cio_spi_host1_sd_p2d_o[3] = mio_p2d[MioInSpiHost1Sd3];
+  assign cio_sysrst_ctrl_ec_rst_l_p2d = mio_p2d[MioInSysrstCtrlEcRstL];
+  assign cio_sysrst_ctrl_flash_wp_l_p2d = mio_p2d[MioInSysrstCtrlFlashWpL];
   assign cio_usbdev_sense_p2d_o = mio_p2d[MioInUsbdevSense];
   assign cio_uart0_rx_p2d_o = mio_p2d[MioInUart0Rx];
   assign cio_uart1_rx_p2d_o = mio_p2d[MioInUart1Rx];
@@ -1028,6 +1030,8 @@ module earlgrey_pd_aon #(
   assign mio_d2p[MioOutSpiHost1Sd1] = cio_spi_host1_sd_d2p_i[1];
   assign mio_d2p[MioOutSpiHost1Sd2] = cio_spi_host1_sd_d2p_i[2];
   assign mio_d2p[MioOutSpiHost1Sd3] = cio_spi_host1_sd_d2p_i[3];
+  assign mio_d2p[MioOutSysrstCtrlEcRstL] = cio_sysrst_ctrl_ec_rst_l_d2p;
+  assign mio_d2p[MioOutSysrstCtrlFlashWpL] = cio_sysrst_ctrl_flash_wp_l_d2p;
   assign mio_d2p[MioOutUart0Tx] = cio_uart0_tx_d2p_i;
   assign mio_d2p[MioOutUart1Tx] = cio_uart1_tx_d2p_i;
   assign mio_d2p[MioOutUart2Tx] = cio_uart2_tx_d2p_i;
@@ -1135,6 +1139,8 @@ module earlgrey_pd_aon #(
   assign mio_en_d2p[MioOutSpiHost1Sd1] = cio_spi_host1_sd_en_d2p_i[1];
   assign mio_en_d2p[MioOutSpiHost1Sd2] = cio_spi_host1_sd_en_d2p_i[2];
   assign mio_en_d2p[MioOutSpiHost1Sd3] = cio_spi_host1_sd_en_d2p_i[3];
+  assign mio_en_d2p[MioOutSysrstCtrlEcRstL] = cio_sysrst_ctrl_ec_rst_l_en_d2p;
+  assign mio_en_d2p[MioOutSysrstCtrlFlashWpL] = cio_sysrst_ctrl_flash_wp_l_en_d2p;
   assign mio_en_d2p[MioOutUart0Tx] = cio_uart0_tx_en_d2p_i;
   assign mio_en_d2p[MioOutUart1Tx] = cio_uart1_tx_en_d2p_i;
   assign mio_en_d2p[MioOutUart2Tx] = cio_uart2_tx_en_d2p_i;
@@ -1164,7 +1170,7 @@ module earlgrey_pd_aon #(
   assign mio_en_d2p[MioOutSysrstCtrlZ3Wakeup] = cio_sysrst_ctrl_z3_wakeup_en_d2p;
 
   // All dedicated inputs
-  logic [15:0] unused_dio_p2d;
+  logic [13:0] unused_dio_p2d;
   assign unused_dio_p2d = dio_p2d;
   assign cio_usbdev_usb_dp_p2d_o = dio_p2d[DioUsbdevUsbDp];
   assign cio_usbdev_usb_dn_p2d_o = dio_p2d[DioUsbdevUsbDn];
@@ -1176,8 +1182,6 @@ module earlgrey_pd_aon #(
   assign cio_spi_device_sd_p2d_o[1] = dio_p2d[DioSpiDeviceSd1];
   assign cio_spi_device_sd_p2d_o[2] = dio_p2d[DioSpiDeviceSd2];
   assign cio_spi_device_sd_p2d_o[3] = dio_p2d[DioSpiDeviceSd3];
-  assign cio_sysrst_ctrl_ec_rst_l_p2d = dio_p2d[DioSysrstCtrlEcRstL];
-  assign cio_sysrst_ctrl_flash_wp_l_p2d = dio_p2d[DioSysrstCtrlFlashWpL];
   assign cio_spi_device_sck_p2d_o = dio_p2d[DioSpiDeviceSck];
   assign cio_spi_device_csb_p2d_o = dio_p2d[DioSpiDeviceCsb];
 
@@ -1192,8 +1196,6 @@ module earlgrey_pd_aon #(
   assign dio_d2p[DioSpiDeviceSd1] = cio_spi_device_sd_d2p_i[1];
   assign dio_d2p[DioSpiDeviceSd2] = cio_spi_device_sd_d2p_i[2];
   assign dio_d2p[DioSpiDeviceSd3] = cio_spi_device_sd_d2p_i[3];
-  assign dio_d2p[DioSysrstCtrlEcRstL] = cio_sysrst_ctrl_ec_rst_l_d2p;
-  assign dio_d2p[DioSysrstCtrlFlashWpL] = cio_sysrst_ctrl_flash_wp_l_d2p;
   assign dio_d2p[DioSpiDeviceSck] = 1'b0;
   assign dio_d2p[DioSpiDeviceCsb] = 1'b0;
   assign dio_d2p[DioSpiHost0Sck] = cio_spi_host0_sck_d2p_i;
@@ -1210,8 +1212,6 @@ module earlgrey_pd_aon #(
   assign dio_en_d2p[DioSpiDeviceSd1] = cio_spi_device_sd_en_d2p_i[1];
   assign dio_en_d2p[DioSpiDeviceSd2] = cio_spi_device_sd_en_d2p_i[2];
   assign dio_en_d2p[DioSpiDeviceSd3] = cio_spi_device_sd_en_d2p_i[3];
-  assign dio_en_d2p[DioSysrstCtrlEcRstL] = cio_sysrst_ctrl_ec_rst_l_en_d2p;
-  assign dio_en_d2p[DioSysrstCtrlFlashWpL] = cio_sysrst_ctrl_flash_wp_l_en_d2p;
   assign dio_en_d2p[DioSpiDeviceSck] = 1'b0;
   assign dio_en_d2p[DioSpiDeviceCsb] = 1'b0;
   assign dio_en_d2p[DioSpiHost0Sck] = cio_spi_host0_sck_en_d2p_i;
