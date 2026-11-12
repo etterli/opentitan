@@ -20,8 +20,8 @@ set_property -dict { PACKAGE_PIN  G26 IOSTANDARD LVCMOS18 PULLTYPE PULLUP } [get
 # CW341, not the OT_IOC7 signal.
 
 ## IOA bank
-set_property -dict { PACKAGE_PIN AN26 IOSTANDARD LVCMOS18 } [get_ports { IOA0 }]; # EarlGrey:UART2_RX
-set_property -dict { PACKAGE_PIN AK26 IOSTANDARD LVCMOS18 } [get_ports { IOA1 }]; # EarlGrey:UART2_TX
+set_property -dict { PACKAGE_PIN AN26 IOSTANDARD LVCMOS18 } [get_ports { IOA0 }]; # EarlGrey:UART1_RX
+set_property -dict { PACKAGE_PIN AK26 IOSTANDARD LVCMOS18 } [get_ports { IOA1 }]; # EarlGrey:UART1_TX
 set_property -dict { PACKAGE_PIN AN27 IOSTANDARD LVCMOS18 } [get_ports { IOA2 }]; # EarlGrey:GPIO
 set_property -dict { PACKAGE_PIN AP26 IOSTANDARD LVCMOS18 } [get_ports { IOA3 }]; # EarlGrey:GPIO
 set_property -dict { PACKAGE_PIN AP28 IOSTANDARD LVCMOS18 } [get_ports { IOA4 }]; # EarlGrey:UART3_RX
@@ -35,8 +35,8 @@ set_property -dict { PACKAGE_PIN AP8  IOSTANDARD LVCMOS18 } [get_ports { IOB0  }
 set_property -dict { PACKAGE_PIN AN8  IOSTANDARD LVCMOS18 } [get_ports { IOB1  }]; # EarlGrey:SPI_HOST1_CSB
 set_property -dict { PACKAGE_PIN AP9  IOSTANDARD LVCMOS18 } [get_ports { IOB2  }]; # EarlGrey:SPI_HOST1_CSB
 set_property -dict { PACKAGE_PIN AL8  IOSTANDARD LVCMOS18 } [get_ports { IOB3  }]; # EarlGrey:SPI_HOST1_CSB
-set_property -dict { PACKAGE_PIN AL10 IOSTANDARD LVCMOS18 } [get_ports { IOB4  }]; # EarlGrey:UART1_RX
-set_property -dict { PACKAGE_PIN AN9  IOSTANDARD LVCMOS18 } [get_ports { IOB5  }]; # EarlGrey:UART1_TX
+set_property -dict { PACKAGE_PIN AL10 IOSTANDARD LVCMOS18 } [get_ports { IOB4  }]; # EarlGrey:UART2_RX
+set_property -dict { PACKAGE_PIN AN9  IOSTANDARD LVCMOS18 } [get_ports { IOB5  }]; # EarlGrey:UART2_TX
 set_property -dict { PACKAGE_PIN AM10 IOSTANDARD LVCMOS18 } [get_ports { IOB6  }]; # EarlGrey:GPIO
 set_property -dict { PACKAGE_PIN AP10 IOSTANDARD LVCMOS18 } [get_ports { IOB7  }]; # EarlGrey:GPIO,I3C1_SDA_PU
 set_property -dict { PACKAGE_PIN AL9  IOSTANDARD LVCMOS18 } [get_ports { IOB8  }]; # EarlGrey:GPIO,I3C0_SDA_PU
