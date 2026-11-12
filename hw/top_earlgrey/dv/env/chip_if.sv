@@ -96,6 +96,12 @@ interface chip_if;
   pins_if#(.Width(top_earlgrey_pkg::MioPadCount), .PullStrength("Weak")) mios_if(.pins(mios));
   pins_if#(.Width(top_earlgrey_pkg::DioPadCount), .PullStrength("Weak")) dios_if(.pins(dios));
 
+  // Muxed chip select pads of spi_device0_if (spi_host0 csb[1:2]) and spi_device1_if (spi_host1).
+  localparam top_earlgrey_pkg::mio_pad_e SpiAgentCsbPads[5] = '{
+    top_earlgrey_pkg::MioPadIoa2, top_earlgrey_pkg::MioPadIoa3, top_earlgrey_pkg::MioPadIob0,
+    top_earlgrey_pkg::MioPadIob5, top_earlgrey_pkg::MioPadIob7
+  };
+
   //Allow pull up from testbench on POR and PORA pads
   bit por_external_pu = 1;
   bit pora_external_pu = 1;
@@ -130,14 +136,21 @@ interface chip_if;
       dios_if.disconnect();
     end
     // Weak pull downs on the muxed pads. Most GPIO inputs select their pad by default, so an
-    // undriven pad would read as X in GPIO DATA_IN. Skipped are the SPI host pads, which need
-    // none, and the SW strap and UART0 RX pads, on which the software enables internal pulls.
+    // undriven pad would read as X in GPIO DATA_IN. Skipped are the pads on which the software
+    // enables internal pulls, which a testbench pull of equal strength would turn into X: the
+    // SPI host pads of spi_host0, the sck and data pads of spi_host1, the SW straps and UART0 RX.
     for (int i = top_earlgrey_pkg::MioPadSpiDevD0; i < top_earlgrey_pkg::MioPadCount; i++) begin
-      if (!(i inside {top_earlgrey_pkg::MioPadIoc0, top_earlgrey_pkg::MioPadIoc1,
-                      top_earlgrey_pkg::MioPadIoc2, top_earlgrey_pkg::MioPadIoc3})) begin
+      if (!(i inside {top_earlgrey_pkg::MioPadIob1, top_earlgrey_pkg::MioPadIob2,
+                      top_earlgrey_pkg::MioPadIob3, top_earlgrey_pkg::MioPadIob4,
+                      top_earlgrey_pkg::MioPadIob6, top_earlgrey_pkg::MioPadIoc0,
+                      top_earlgrey_pkg::MioPadIoc1, top_earlgrey_pkg::MioPadIoc2,
+                      top_earlgrey_pkg::MioPadIoc3})) begin
         mios_if.pins_pd[i] = enable;
       end
     end
+    // The chip select pads of the SPI device agents are active low, an undriven pad must read as
+    // inactive.
+    foreach (SpiAgentCsbPads[i]) mios_if.pins_pu[SpiAgentCsbPads[i]] = enable;
     // The sysrst_ctrl ec_rst_l and flash_wp_l open drain pads are muxed, but they are active low
     // and default to sysrst_ctrl, so they get the same pull ups.
     mios_if.pins_pu[top_earlgrey_pkg::MioPadIor8] = enable;
@@ -252,8 +265,8 @@ interface chip_if;
 
   // CSB[0] is on SPI_HOST_CS_L, CSB[1] and CSB[2] on IOA pads. Undriven pads are inactive.
   assign spi_device0_if.csb = __enable_spi_device[0] ?
-      {{(spi_agent_pkg::CSB_WIDTH-3){1'b1}}, pulled_up(mios[top_earlgrey_pkg::MioPadIoa6]),
-       pulled_up(mios[top_earlgrey_pkg::MioPadIoa3]),
+      {{(spi_agent_pkg::CSB_WIDTH-3){1'b1}}, pulled_up(mios[top_earlgrey_pkg::MioPadIoa3]),
+       pulled_up(mios[top_earlgrey_pkg::MioPadIoa2]),
        mios[top_earlgrey_pkg::MioPadSpiHostCsL]} : '1;
 
   initial begin
@@ -268,19 +281,19 @@ interface chip_if;
   spi_if spi_device1_if(
     .rst_n(`SPI_HOST_HIER(1).rst_ni),
     .sio  ({mios[top_earlgrey_pkg::MioPadIob6],  // sio[3]
-            mios[top_earlgrey_pkg::MioPadIob5],  // sio[2]
-            mios[top_earlgrey_pkg::MioPadIob4],  // sio[1]
-            mios[top_earlgrey_pkg::MioPadIob3]}) // sio[0]
+            mios[top_earlgrey_pkg::MioPadIob4],  // sio[2]
+            mios[top_earlgrey_pkg::MioPadIob2],  // sio[1]
+            mios[top_earlgrey_pkg::MioPadIob1]}) // sio[0]
   );
 
   assign spi_device1_if.sck = __enable_spi_device[1] ?
-      mios[top_earlgrey_pkg::MioPadIob0] : 1'bz;
+      mios[top_earlgrey_pkg::MioPadIob3] : 1'bz;
 
   // All CSB lines are muxed.  Undriven pads are inactive.
   assign spi_device1_if.csb = __enable_spi_device[1] ?
-      {{(spi_agent_pkg::CSB_WIDTH-3){1'b1}}, pulled_up(mios[top_earlgrey_pkg::MioPadIoc10]),
-       pulled_up(mios[top_earlgrey_pkg::MioPadIob7]),
-       mios[top_earlgrey_pkg::MioPadIob1]} : '1;
+      {{(spi_agent_pkg::CSB_WIDTH-3){1'b1}}, pulled_up(mios[top_earlgrey_pkg::MioPadIob7]),
+       pulled_up(mios[top_earlgrey_pkg::MioPadIob5]),
+       mios[top_earlgrey_pkg::MioPadIob0]} : '1;
 
   initial begin
     uvm_config_db#(virtual spi_if)::set(null, "*.env.m_spi_device_agents1*", "vif", spi_device1_if);
