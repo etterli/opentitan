@@ -111,7 +111,8 @@ uint32_t pinmux_testutils_read_strap_pin(dif_pinmux_t *pinmux, dif_gpio_t *gpio,
  * [IOC2, IOC1, IOC0] and ranges from [0..63].
  * This function assumes the Earlgrey configuration where the external
  * pads IOC{0,1,2} are used as software straps and that the pinmux is
- * configured to map those pads to GPIOs 22, 23 and 24.
+ * configured to map those pads to gpio1 bits 2, 3 and 4 (gpio0 bits 22, 23
+ * and 24 on the other tops). `gpio` must be that GPIO instance.
  *
  * @return A result in the range [0..63].
  */
