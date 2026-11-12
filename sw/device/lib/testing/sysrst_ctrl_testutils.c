@@ -11,7 +11,7 @@
 #include "hw/top_earlgrey/sw/autogen/top_earlgrey.h"
 
 void sysrst_ctrl_testutils_setup_dio(dif_pinmux_t *pinmux) {
-  // Make sure that the DIO pins EC reset and flash WP are configured correctly
+  // Make sure that the pins EC reset and flash WP are configured correctly
   // https://opentitan.org/book/hw/ip/sysrst_ctrl/doc/theory_of_operation.html#ec-and-power-on-reset
   // https://opentitan.org/book/hw/ip/sysrst_ctrl/doc/theory_of_operation.html#flash-write-protect-output
   //
@@ -23,28 +23,28 @@ void sysrst_ctrl_testutils_setup_dio(dif_pinmux_t *pinmux) {
       .flags = kDifPinmuxPadAttrOpenDrain,
   };
   dif_result_t res =
-      dif_pinmux_pad_write_attrs(pinmux, kTopEarlgreyDirectPadsSysrstCtrlEcRstL,
-                                 kDifPinmuxPadKindDio, in_attr, &out_attr);
+      dif_pinmux_pad_write_attrs(pinmux, kTopEarlgreyMuxedPadsIor8,
+                                 kDifPinmuxPadKindMio, in_attr, &out_attr);
   // Not all targets support open drain on these pads, but they have virtual
   // open drain. Try to use that if open drain did not work.
   if (res == kDifError && out_attr.flags != kDifPinmuxPadAttrOpenDrain) {
     LOG_INFO(
         "cannot use open drain for sysrst pins, trying virtual open drain");
     in_attr.flags = kDifPinmuxPadAttrVirtualOpenDrain;
-    CHECK_DIF_OK(dif_pinmux_pad_write_attrs(
-        pinmux, kTopEarlgreyDirectPadsSysrstCtrlEcRstL, kDifPinmuxPadKindDio,
-        in_attr, &out_attr));
+    CHECK_DIF_OK(dif_pinmux_pad_write_attrs(pinmux, kTopEarlgreyMuxedPadsIor8,
+                                            kDifPinmuxPadKindMio, in_attr,
+                                            &out_attr));
     // Note: fallthrough with the modified `in_attr` so that the same attributes
     // are used for both pads.
   }
-  CHECK_DIF_OK(dif_pinmux_pad_write_attrs(
-      pinmux, kTopEarlgreyDirectPadsSysrstCtrlFlashWpL, kDifPinmuxPadKindDio,
-      in_attr, &out_attr));
+  CHECK_DIF_OK(dif_pinmux_pad_write_attrs(pinmux, kTopEarlgreyMuxedPadsIor9,
+                                          kDifPinmuxPadKindMio, in_attr,
+                                          &out_attr));
 }
 
 void sysrst_ctrl_testutils_release_dio(dif_sysrst_ctrl_t *sysrst_ctrl,
                                        bool release_ec, bool release_flash) {
-  // Make sure that the DIO pins EC reset and flash WP are released according to
+  // Make sure that the pins EC reset and flash WP are released according to
   // the documentation:
   // https://opentitan.org/book/hw/ip/sysrst_ctrl/doc/theory_of_operation.html#ec-and-power-on-reset
   // https://opentitan.org/book/hw/ip/sysrst_ctrl/doc/theory_of_operation.html#flash-write-protect-output

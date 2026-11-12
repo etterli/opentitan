@@ -57,7 +57,7 @@ static CONFIG: LazyLock<HashMap<&'static str, Config>> = LazyLock::new(|| {
         // - IOC8: TAP Strap 0
         // - IOC9: PMOD2 IO2
         // - IOR0-4: reserved for JTAG
-        // - IOR8-9: dedicated IOs (for sysrst_ctrl)
+        // - IOR8-9: sysrst_ctrl ec_rst_l and flash_wp_l
         input: collection! {
             PinmuxPeripheralIn::Gpio0Gpio17 => PinmuxInsel::Ioc10,
             PinmuxPeripheralIn::Gpio0Gpio18 => PinmuxInsel::Ioc11,

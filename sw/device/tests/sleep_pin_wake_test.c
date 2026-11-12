@@ -38,12 +38,15 @@ enum {
   kPlicTarget = 0,
 };
 
-static const uint32_t kNumDio = 16;  // top_earlgrey has 16 DIOs
+static const uint32_t kNumDio = NUM_DIO_PADS;
 
 // kDirectDio is a list of Dio index that TB cannot control the PAD value.
 // The list should be incremental order (see the code below)
 #define NUM_DIRECT_DIO 5
-static const uint32_t kDirectDio[NUM_DIRECT_DIO] = {6, 12, 13, 14, 15};
+static const uint32_t kDirectDio[NUM_DIRECT_DIO] = {
+    kTopEarlgreyDirectPadsSpiDeviceSd0, kTopEarlgreyDirectPadsSpiDeviceSck,
+    kTopEarlgreyDirectPadsSpiDeviceCsb, kTopEarlgreyDirectPadsSpiHost0Sck,
+    kTopEarlgreyDirectPadsSpiHost0Csb};
 
 // Preserve wakeup_detector_selected over multiple resets
 OT_SET_BSS_SECTION(".non_volatile_scratch", uint32_t wakeup_detector_idx;)
@@ -145,9 +148,9 @@ bool test_main(void) {
       CHECK_DIF_OK(dif_pwrmgr_irq_set_enabled(&pwrmgr, 0, kDifToggleEnabled));
     }
 
-    // SpiDev CLK(idx 12), CS#(idx 13), D0(idx 6) and SpiHost CLK (14), CS#
-    // (15) are directly connected to the SPI IF. Cannot control them. Roll 3
-    // less and compensated later.
+    // SpiDev CLK, CS#, D0 and SpiHost CLK, CS# are directly connected to the
+    // SPI IF. Cannot control them. Roll NUM_DIRECT_DIO less and compensate
+    // later.
     if (mio0_dio1) {
       // DIO
       pad_sel = rand_testutils_gen32_range(0, kNumDio - 1 - NUM_DIRECT_DIO);
