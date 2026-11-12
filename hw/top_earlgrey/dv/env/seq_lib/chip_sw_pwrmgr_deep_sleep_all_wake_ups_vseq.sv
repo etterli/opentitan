@@ -78,7 +78,9 @@ class chip_sw_pwrmgr_deep_sleep_all_wake_ups_vseq extends chip_sw_base_vseq;
       wait_for_adc_channel();
     join_none
 
-    // Give the pin a default value.
+    // Give the pin a default value. IOB7 is also a chip select pad of the SPI agents, drop its
+    // default pull up.
+    cfg.chip_vif.mios_if.pins_pu[top_earlgrey_pkg::MioPadIob7] = 1'b0;
     cfg.chip_vif.pinmux_wkup_if.set_pulldown_en(1'b1);
 
     if ($value$plusargs("do_random=%b", twice_each) && twice_each) begin
