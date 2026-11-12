@@ -21,6 +21,7 @@ use opentitanlib::test_utils::status::Status;
 use opentitanlib::uart::console::UartConsole;
 use std::borrow::Borrow;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 #[derive(Debug, Parser)]
 struct Opts {
@@ -34,6 +35,29 @@ struct Opts {
     /// Name of the debugger's I2C interface.
     #[arg(long, default_value = "TPM")]
     i2c: String,
+}
+
+// The I2C instance under test. In the sparse pinmux i2c1 cannot reach
+// IOA7/IOA8, it uses IOB12/IOB11, which sit on the HyperDebug I2C2 port.
+static INSTANCE: AtomicU8 = AtomicU8::new(0);
+
+/// Returns the debugger's I2C interface for the instance under test.
+fn host_i2c(opts: &Opts) -> &str {
+    if INSTANCE.load(Ordering::Relaxed) == 1 {
+        "ot_i2c1"
+    } else {
+        &opts.i2c
+    }
+}
+
+/// Returns the SDA and SCL pads of the instance under test.
+fn bitbang_pins(instance: u8) -> [String; 2] {
+    let pins = if instance == 1 {
+        ["IOB12", "IOB11"]
+    } else {
+        ["IOA7", "IOA8"]
+    };
+    pins.map(|s| s.to_string())
 }
 
 // A data pattern to send across the I2C bus:
@@ -59,7 +83,7 @@ fn test_set_target_address(_opts: &Opts, transport: &TransportWrapper, instance:
 
 fn test_read_transaction(opts: &Opts, transport: &TransportWrapper, address: u8) -> Result<()> {
     let uart = transport.uart("console")?;
-    let i2c = transport.i2c(&opts.i2c)?;
+    let i2c = transport.i2c(host_i2c(opts))?;
 
     log::info!("Testing read transaction at I2C address {address:02x}");
     let txn = I2cTransferStart::new(address, b"Hello", true);
@@ -73,7 +97,7 @@ fn test_read_transaction(opts: &Opts, transport: &TransportWrapper, address: u8)
 
 fn test_clock_stretching(opts: &Opts, transport: &TransportWrapper, address: u8) -> Result<()> {
     let uart = transport.uart("console")?;
-    let i2c = transport.i2c(&opts.i2c)?;
+    let i2c = transport.i2c(host_i2c(opts))?;
 
     let stretching_delay = I2cTestConfig {
         clock_stretching_delay_millis: 10,
@@ -98,7 +122,7 @@ fn test_clock_stretching(opts: &Opts, transport: &TransportWrapper, address: u8)
 
 fn test_write_transaction(opts: &Opts, transport: &TransportWrapper, address: u8) -> Result<()> {
     let uart = transport.uart("console")?;
-    let i2c = transport.i2c(&opts.i2c)?;
+    let i2c = transport.i2c(host_i2c(opts))?;
     log::info!("Testing write transaction at I2C address {address:02x}");
 
     let transfer = I2cTransferStart::execute_write(&*uart, || {
@@ -117,7 +141,7 @@ fn test_write_transaction_slow(
     address: u8,
 ) -> Result<()> {
     let uart = transport.uart("console")?;
-    let i2c = transport.i2c(&opts.i2c)?;
+    let i2c = transport.i2c(host_i2c(opts))?;
     log::info!("Testing slow write transaction at I2C address {address:02x}");
     let result = I2cTransferStart::execute_write_slow(&*uart, || {
         i2c.run_transaction(Some(address), &mut [Transfer::Write(GETTYSBURG.as_bytes())])
@@ -131,7 +155,7 @@ fn test_write_transaction_slow(
 
 fn test_wakeup_normal_sleep(opts: &Opts, transport: &TransportWrapper, address: u8) -> Result<()> {
     let uart = transport.uart("console")?;
-    let i2c = transport.i2c(&opts.i2c)?;
+    let i2c = transport.i2c(host_i2c(opts))?;
     TestCommand::EnterNormalSleep.send_with_crc(&*uart)?;
     std::thread::sleep(Duration::from_secs(2));
     let mut buf = [0u8; 8];
@@ -150,7 +174,7 @@ fn test_wakeup_deep_sleep(
     instance: u8,
 ) -> Result<()> {
     let uart = transport.uart("console")?;
-    let i2c = transport.i2c(&opts.i2c)?;
+    let i2c = transport.i2c(host_i2c(opts))?;
     TestCommand::EnterDeepSleep.send_with_crc(&*uart)?;
     std::thread::sleep(Duration::from_secs(2));
     let mut buf = [0u8; 8];
@@ -310,6 +334,7 @@ fn main() -> Result<()> {
     uart.clear_rx_buffer()?;
 
     for i2c_instance in 0..3 {
+        INSTANCE.store(i2c_instance, Ordering::Relaxed);
         execute_test!(test_set_target_address, &opts, &transport, i2c_instance);
         execute_test!(test_read_transaction, &opts, &transport, 0x33);
         execute_test!(test_read_transaction, &opts, &transport, 0x70);
@@ -332,11 +357,12 @@ fn main() -> Result<()> {
     // the ones that do gpio bitbanging in order the make the test more
     // reliable.
 
-    let gpio_pins = transport.gpio_pins(&["IOA7", "IOA8"].map(|s| s.to_string()))?;
-    for pin in &gpio_pins {
-        pin.set_mode(PinMode::OpenDrain)?;
-    }
     for i2c_instance in 0..3 {
+        INSTANCE.store(i2c_instance, Ordering::Relaxed);
+        let gpio_pins = transport.gpio_pins(&bitbang_pins(i2c_instance))?;
+        for pin in &gpio_pins {
+            pin.set_mode(PinMode::OpenDrain)?;
+        }
         execute_test!(test_set_target_address, &opts, &transport, i2c_instance);
         execute_test!(
             test_write_repeated_start,
