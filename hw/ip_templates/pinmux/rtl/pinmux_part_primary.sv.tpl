@@ -453,7 +453,9 @@ module pinmux_part_primary
 
   // The sense signal is taken after the MIO mux. Thus this mux must reside in this partition as
   // well. Otherwise the sense would be based upon a tied-off signal.
-  `ASSERT_INIT(UsbSenseMuxInPrimary_A, MioPeriphInIsInPrimary[TargetCfg.usb_sense_idx])
+  // TODO: this fails because of the required wakeup rework.
+  `ASSERT_INIT(UsbSenseMuxInPrimary_A,
+      MioPeriphInPart[TargetCfg.usb_sense_idx] inside {MuxPartPrimary, MuxPartBoth})
 % endif
 
   /////////////////////////
@@ -547,7 +549,7 @@ module pinmux_part_primary
   assign p2s_o.mio_in = mio_in;
 
   for (genvar k = 0; k < NMioPeriphIn; k++) begin : gen_mio_periph_in
-    if (MioPeriphInIsInPrimary[k]) begin : gen_mio_in_mux
+    if (MioPeriphInPart[k] inside {MuxPartPrimary, MuxPartBoth}) begin : gen_mio_in_mux
       // This peripheral is handled by this pinmux partition. Apply the pinmux matrix and
       // instantiate the mux. Illegal selections are masked to constant 0.
       logic [AlignedMioInMuxSize-1:0] mio_mux_legal;
@@ -644,10 +646,10 @@ module pinmux_part_primary
       logic [AlignedMioOutMuxSize-1:0] periph_data, periph_oe;
       for (genvar ii = 0; ii < AlignedMioOutMuxSize; ii++) begin : gen_merge_mio
         // The constants are the same for both sources, so the selection doesn't matter.
-        assign periph_data[ii] = MioPeriphOutIsInPrimary[ii] ? periph_data_1st[ii] :
-                                                               periph_data_2nd[ii];
-        assign periph_oe[ii]   = MioPeriphOutIsInPrimary[ii] ? periph_oe_1st[ii]   :
-                                                               periph_oe_2nd[ii];
+        assign periph_data[ii] = MioOutselInPrimary[ii] ? periph_data_1st[ii] :
+                                                          periph_data_2nd[ii];
+        assign periph_oe[ii]   = MioOutselInPrimary[ii] ? periph_oe_1st[ii]   :
+                                                          periph_oe_2nd[ii];
       end
 
       // Apply the pinmux matrix. Illegal selections are masked implicitly to high-Z (data and

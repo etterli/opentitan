@@ -48,44 +48,48 @@
     {
       name: "mio_periph_ins"
       desc: '''
-            List of {name, pads} dicts, one per MIO peripheral input, ordered ascending by the
-            peripheral input index. pads lists the indices of the MIO pads the input can be muxed
-            to. An entry can define the MIO_PERIPH_INSEL reset value with either default_pad (a pad
-            index of pads) or default_const (0 or 1). Without, the input is tied to 0.
+            List of {name, pads, partition} dicts, one per MIO peripheral input, ordered
+            ascending by the peripheral input index. pads lists the indices of the MIO pads the
+            input can be muxed to. partition is the pinmux partition muxing the input ("primary",
+            "secondary" or "both"), a non-split pinmux only uses "primary". An entry can define
+            the MIO_PERIPH_INSEL reset value with either default_pad (a pad index of pads) or
+            default_const (0 or 1). Without, the input is tied to 0.
             '''
       type: "object"
       // The default is a full muxing for the default n_mio_pads and n_mio_periph_in.
       default: [
-        {name: "periph_in_0", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_in_1", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_in_2", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_in_3", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_in_4", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_in_5", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_in_6", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_in_7", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_in_0", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_in_1", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_in_2", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_in_3", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_in_4", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_in_5", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_in_6", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_in_7", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
       ]
     }
     {
       name: "mio_periph_outs"
       desc: '''
-            List of {name, pads} dicts, one per MIO peripheral output, ordered ascending by the
-            peripheral output index. pads lists the indices of the MIO pads the output can be
-            muxed to. An entry can select itself as the MIO_OUTSEL reset value of a pad with
-            default_pad (a pad index of pads). Each pad can only be the default of one output.
-            Pads without a default are high-Z.
+            List of {name, pads, partition} dicts, one per MIO peripheral output, ordered
+            ascending by the peripheral output index. pads lists the indices of the MIO pads the
+            output can be muxed to. partition is the pinmux partition of the output ("primary" or
+            "secondary"), a non-split pinmux only uses "primary". A pad is muxed in the primary
+            partition if any of its outputs is. An entry can select itself as the MIO_OUTSEL reset
+            value of a pad with default_pad (a pad index of pads). Each pad can only be the
+            default of one output. Pads without a default are high-Z.
             '''
       type: "object"
       // The default is a full muxing for the default n_mio_pads and n_mio_periph_out.
       default: [
-        {name: "periph_out_0", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_out_1", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_out_2", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_out_3", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_out_4", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_out_5", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_out_6", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
-        {name: "periph_out_7", pads: [0, 1, 2, 3, 4, 5, 6, 7]}
+        {name: "periph_out_0", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_out_1", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_out_2", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_out_3", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_out_4", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_out_5", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_out_6", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
+        {name: "periph_out_7", pads: [0, 1, 2, 3, 4, 5, 6, 7], partition: "primary"}
       ]
     }
     {

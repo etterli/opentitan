@@ -53,6 +53,12 @@ package pinmux_pkg;
     mio_scan_role:     {NMioPads{NoScan}}
   };
 
+  // Widths of the dense mux vectors aligned to power of two to avoid Xes. Input has two constant
+  // options (0, 1) and output has 3 (0, 1, high-Z).
+  parameter int AlignedMioInMuxSize  = (NMioPads + 2 > NDioPads) ? 2**$clog2(NMioPads + 2) :
+                                                                  2**$clog2(NDioPads);
+  parameter int AlignedMioOutMuxSize = 2**$clog2(NMioPeriphOut + 3);
+
   // Legal MIO_PERIPH_INSEL values for each MIO peripheral input. LSB corresponds to lowest index.
   // Includes static options.
   parameter logic [NMioPeriphIn-1:0][NMioPads+1:0] MioPeriphInselLegal = {
@@ -230,6 +236,314 @@ package pinmux_pkg;
     120'h02000000000000000000000000800f  // SPI_HOST_D0
   };
 
+  // Partitions of a split pinmux muxing a MIO peripheral input. Bit 0: primary, bit 1: secondary.
+  // A non-split pinmux only has the primary partition.
+  typedef enum logic [1:0] {
+    MuxPartPrimary   = 2'b01,
+    MuxPartSecondary = 2'b10,
+    MuxPartBoth      = 2'b11
+  } mux_part_e;
+
+  // Partitions muxing each MIO peripheral input. LSB corresponds to lowest index.
+  parameter mux_part_e [NMioPeriphIn-1:0] MioPeriphInPart = {
+    MuxPartPrimary, // sysrst_ctrl_lid_open
+    MuxPartPrimary, // sysrst_ctrl_pwrb_in
+    MuxPartPrimary, // sysrst_ctrl_key2_in
+    MuxPartPrimary, // sysrst_ctrl_key1_in
+    MuxPartPrimary, // sysrst_ctrl_key0_in
+    MuxPartPrimary, // sysrst_ctrl_ac_present
+    MuxPartSecondary, // i3c1_rstdet_sda
+    MuxPartSecondary, // i3c1_rstdet_scl
+    MuxPartPrimary, // i3c0_rstdet_sda
+    MuxPartPrimary, // i3c0_rstdet_scl
+    MuxPartSecondary, // uart3_rx
+    MuxPartSecondary, // uart2_rx
+    MuxPartSecondary, // uart1_rx
+    MuxPartSecondary, // uart0_rx
+    MuxPartSecondary, // spi_device_tpm_csb
+    MuxPartSecondary, // spi_device_csb
+    MuxPartSecondary, // spi_device_sck
+    MuxPartSecondary, // usbdev_sense
+    MuxPartPrimary, // sysrst_ctrl_flash_wp_l
+    MuxPartPrimary, // sysrst_ctrl_ec_rst_l
+    MuxPartSecondary, // i3c1_sda
+    MuxPartSecondary, // i3c1_scl
+    MuxPartSecondary, // i3c0_sda
+    MuxPartSecondary, // i3c0_scl
+    MuxPartSecondary, // i2c2_scl
+    MuxPartSecondary, // i2c2_sda
+    MuxPartSecondary, // i2c1_scl
+    MuxPartSecondary, // i2c1_sda
+    MuxPartSecondary, // i2c0_scl
+    MuxPartSecondary, // i2c0_sda
+    MuxPartSecondary, // gpio1_gpio[31]
+    MuxPartSecondary, // gpio1_gpio[30]
+    MuxPartSecondary, // gpio1_gpio[29]
+    MuxPartSecondary, // gpio1_gpio[28]
+    MuxPartSecondary, // gpio1_gpio[27]
+    MuxPartSecondary, // gpio1_gpio[26]
+    MuxPartSecondary, // gpio1_gpio[25]
+    MuxPartSecondary, // gpio1_gpio[24]
+    MuxPartSecondary, // gpio1_gpio[23]
+    MuxPartSecondary, // gpio1_gpio[22]
+    MuxPartSecondary, // gpio1_gpio[21]
+    MuxPartSecondary, // gpio1_gpio[20]
+    MuxPartSecondary, // gpio1_gpio[19]
+    MuxPartSecondary, // gpio1_gpio[18]
+    MuxPartSecondary, // gpio1_gpio[17]
+    MuxPartSecondary, // gpio1_gpio[16]
+    MuxPartSecondary, // gpio1_gpio[15]
+    MuxPartSecondary, // gpio1_gpio[14]
+    MuxPartSecondary, // gpio1_gpio[13]
+    MuxPartSecondary, // gpio1_gpio[12]
+    MuxPartSecondary, // gpio1_gpio[11]
+    MuxPartSecondary, // gpio1_gpio[10]
+    MuxPartSecondary, // gpio1_gpio[9]
+    MuxPartSecondary, // gpio1_gpio[8]
+    MuxPartSecondary, // gpio1_gpio[7]
+    MuxPartSecondary, // gpio1_gpio[6]
+    MuxPartSecondary, // gpio1_gpio[5]
+    MuxPartSecondary, // gpio1_gpio[4]
+    MuxPartSecondary, // gpio1_gpio[3]
+    MuxPartSecondary, // gpio1_gpio[2]
+    MuxPartSecondary, // gpio1_gpio[1]
+    MuxPartSecondary, // gpio1_gpio[0]
+    MuxPartSecondary, // gpio0_gpio[31]
+    MuxPartSecondary, // gpio0_gpio[30]
+    MuxPartSecondary, // gpio0_gpio[29]
+    MuxPartSecondary, // gpio0_gpio[28]
+    MuxPartSecondary, // gpio0_gpio[27]
+    MuxPartSecondary, // gpio0_gpio[26]
+    MuxPartSecondary, // gpio0_gpio[25]
+    MuxPartSecondary, // gpio0_gpio[24]
+    MuxPartSecondary, // gpio0_gpio[23]
+    MuxPartSecondary, // gpio0_gpio[22]
+    MuxPartSecondary, // gpio0_gpio[21]
+    MuxPartSecondary, // gpio0_gpio[20]
+    MuxPartSecondary, // gpio0_gpio[19]
+    MuxPartSecondary, // gpio0_gpio[18]
+    MuxPartSecondary, // gpio0_gpio[17]
+    MuxPartSecondary, // gpio0_gpio[16]
+    MuxPartSecondary, // gpio0_gpio[15]
+    MuxPartSecondary, // gpio0_gpio[14]
+    MuxPartSecondary, // gpio0_gpio[13]
+    MuxPartSecondary, // gpio0_gpio[12]
+    MuxPartSecondary, // gpio0_gpio[11]
+    MuxPartSecondary, // gpio0_gpio[10]
+    MuxPartSecondary, // gpio0_gpio[9]
+    MuxPartSecondary, // gpio0_gpio[8]
+    MuxPartSecondary, // gpio0_gpio[7]
+    MuxPartSecondary, // gpio0_gpio[6]
+    MuxPartSecondary, // gpio0_gpio[5]
+    MuxPartSecondary, // gpio0_gpio[4]
+    MuxPartSecondary, // gpio0_gpio[3]
+    MuxPartSecondary, // gpio0_gpio[2]
+    MuxPartSecondary, // gpio0_gpio[1]
+    MuxPartSecondary, // gpio0_gpio[0]
+    MuxPartSecondary, // spi_device_sd[3]
+    MuxPartSecondary, // spi_device_sd[2]
+    MuxPartSecondary, // spi_device_sd[1]
+    MuxPartSecondary, // spi_device_sd[0]
+    MuxPartSecondary, // spi_host1_sd[3]
+    MuxPartSecondary, // spi_host1_sd[2]
+    MuxPartSecondary, // spi_host1_sd[1]
+    MuxPartSecondary, // spi_host1_sd[0]
+    MuxPartSecondary, // spi_host0_sd[3]
+    MuxPartSecondary, // spi_host0_sd[2]
+    MuxPartSecondary, // spi_host0_sd[1]
+    MuxPartSecondary  // spi_host0_sd[0]
+  };
+
+  // Whether the source of each MIO_OUTSEL value is in the primary partition. LSB corresponds to
+  // lowest index. Includes the static options, which exist in both partitions.
+  parameter logic [AlignedMioOutMuxSize-1:0] MioOutselInPrimary = AlignedMioOutMuxSize'({
+    1'b1, // sysrst_ctrl_z3_wakeup
+    1'b1, // sysrst_ctrl_pwrb_out
+    1'b1, // sysrst_ctrl_key2_out
+    1'b1, // sysrst_ctrl_key1_out
+    1'b1, // sysrst_ctrl_key0_out
+    1'b1, // sysrst_ctrl_bat_disable
+    1'b1, // sensor_ctrl_ast_debug_out[8]
+    1'b1, // sensor_ctrl_ast_debug_out[7]
+    1'b1, // sensor_ctrl_ast_debug_out[6]
+    1'b1, // sensor_ctrl_ast_debug_out[5]
+    1'b1, // sensor_ctrl_ast_debug_out[4]
+    1'b1, // sensor_ctrl_ast_debug_out[3]
+    1'b1, // sensor_ctrl_ast_debug_out[2]
+    1'b1, // sensor_ctrl_ast_debug_out[1]
+    1'b1, // sensor_ctrl_ast_debug_out[0]
+    1'b0, // i3c1_ctrl_sda_pu
+    1'b0, // i3c0_ctrl_sda_pu
+    1'b0, // uart3_tx
+    1'b0, // uart2_tx
+    1'b0, // uart1_tx
+    1'b0, // uart0_tx
+    1'b0, // spi_host1_csb[2]
+    1'b0, // spi_host1_csb[1]
+    1'b0, // spi_host1_csb[0]
+    1'b0, // spi_host1_sck
+    1'b0, // spi_host0_csb[2]
+    1'b0, // spi_host0_csb[1]
+    1'b0, // spi_host0_csb[0]
+    1'b0, // spi_host0_sck
+    1'b1, // sysrst_ctrl_flash_wp_l
+    1'b1, // sysrst_ctrl_ec_rst_l
+    1'b0, // i3c1_sda
+    1'b0, // i3c1_scl
+    1'b0, // i3c0_sda
+    1'b0, // i3c0_scl
+    1'b0, // i2c2_scl
+    1'b0, // i2c2_sda
+    1'b0, // i2c1_scl
+    1'b0, // i2c1_sda
+    1'b0, // i2c0_scl
+    1'b0, // i2c0_sda
+    1'b0, // gpio1_gpio[31]
+    1'b0, // gpio1_gpio[30]
+    1'b0, // gpio1_gpio[29]
+    1'b0, // gpio1_gpio[28]
+    1'b0, // gpio1_gpio[27]
+    1'b0, // gpio1_gpio[26]
+    1'b0, // gpio1_gpio[25]
+    1'b0, // gpio1_gpio[24]
+    1'b0, // gpio1_gpio[23]
+    1'b0, // gpio1_gpio[22]
+    1'b0, // gpio1_gpio[21]
+    1'b0, // gpio1_gpio[20]
+    1'b0, // gpio1_gpio[19]
+    1'b0, // gpio1_gpio[18]
+    1'b0, // gpio1_gpio[17]
+    1'b0, // gpio1_gpio[16]
+    1'b0, // gpio1_gpio[15]
+    1'b0, // gpio1_gpio[14]
+    1'b0, // gpio1_gpio[13]
+    1'b0, // gpio1_gpio[12]
+    1'b0, // gpio1_gpio[11]
+    1'b0, // gpio1_gpio[10]
+    1'b0, // gpio1_gpio[9]
+    1'b0, // gpio1_gpio[8]
+    1'b0, // gpio1_gpio[7]
+    1'b0, // gpio1_gpio[6]
+    1'b0, // gpio1_gpio[5]
+    1'b0, // gpio1_gpio[4]
+    1'b0, // gpio1_gpio[3]
+    1'b0, // gpio1_gpio[2]
+    1'b0, // gpio1_gpio[1]
+    1'b0, // gpio1_gpio[0]
+    1'b0, // gpio0_gpio[31]
+    1'b0, // gpio0_gpio[30]
+    1'b0, // gpio0_gpio[29]
+    1'b0, // gpio0_gpio[28]
+    1'b0, // gpio0_gpio[27]
+    1'b0, // gpio0_gpio[26]
+    1'b0, // gpio0_gpio[25]
+    1'b0, // gpio0_gpio[24]
+    1'b0, // gpio0_gpio[23]
+    1'b0, // gpio0_gpio[22]
+    1'b0, // gpio0_gpio[21]
+    1'b0, // gpio0_gpio[20]
+    1'b0, // gpio0_gpio[19]
+    1'b0, // gpio0_gpio[18]
+    1'b0, // gpio0_gpio[17]
+    1'b0, // gpio0_gpio[16]
+    1'b0, // gpio0_gpio[15]
+    1'b0, // gpio0_gpio[14]
+    1'b0, // gpio0_gpio[13]
+    1'b0, // gpio0_gpio[12]
+    1'b0, // gpio0_gpio[11]
+    1'b0, // gpio0_gpio[10]
+    1'b0, // gpio0_gpio[9]
+    1'b0, // gpio0_gpio[8]
+    1'b0, // gpio0_gpio[7]
+    1'b0, // gpio0_gpio[6]
+    1'b0, // gpio0_gpio[5]
+    1'b0, // gpio0_gpio[4]
+    1'b0, // gpio0_gpio[3]
+    1'b0, // gpio0_gpio[2]
+    1'b0, // gpio0_gpio[1]
+    1'b0, // gpio0_gpio[0]
+    1'b0, // spi_device_sd[3]
+    1'b0, // spi_device_sd[2]
+    1'b0, // spi_device_sd[1]
+    1'b0, // spi_device_sd[0]
+    1'b0, // spi_host1_sd[3]
+    1'b0, // spi_host1_sd[2]
+    1'b0, // spi_host1_sd[1]
+    1'b0, // spi_host1_sd[0]
+    1'b0, // spi_host0_sd[3]
+    1'b0, // spi_host0_sd[2]
+    1'b0, // spi_host0_sd[1]
+    1'b0, // spi_host0_sd[0]
+    3'b111  // static options
+  });
+
+  // Whether the output mux of each MIO pad is in the primary partition. This is the case if any
+  // legal peripheral output of the pad is in the primary partition. LSB corresponds to lowest
+  // index.
+  parameter logic [NMioPads-1:0] MioPadMuxedInPrimary = {
+    1'b1, // IOR13
+    1'b1, // IOR12
+    1'b1, // IOR11
+    1'b1, // IOR10
+    1'b1, // IOR9
+    1'b1, // IOR8
+    1'b1, // IOR7
+    1'b1, // IOR6
+    1'b1, // IOR5
+    1'b1, // IOR4
+    1'b1, // IOR3
+    1'b1, // IOR2
+    1'b1, // IOR1
+    1'b1, // IOR0
+    1'b1, // IOC12
+    1'b1, // IOC11
+    1'b1, // IOC10
+    1'b1, // IOC9
+    1'b1, // IOC8
+    1'b1, // IOC7
+    1'b1, // IOC6
+    1'b1, // IOC5
+    1'b1, // IOC4
+    1'b1, // IOC3
+    1'b1, // IOC2
+    1'b1, // IOC1
+    1'b1, // IOC0
+    1'b1, // IOB12
+    1'b1, // IOB11
+    1'b1, // IOB10
+    1'b1, // IOB9
+    1'b1, // IOB8
+    1'b1, // IOB7
+    1'b1, // IOB6
+    1'b1, // IOB5
+    1'b1, // IOB4
+    1'b1, // IOB3
+    1'b1, // IOB2
+    1'b1, // IOB1
+    1'b1, // IOB0
+    1'b1, // IOA8
+    1'b1, // IOA7
+    1'b1, // IOA6
+    1'b1, // IOA5
+    1'b1, // IOA4
+    1'b1, // IOA3
+    1'b1, // IOA2
+    1'b1, // IOA1
+    1'b1, // IOA0
+    1'b1, // SPI_DEV_CS_L
+    1'b1, // SPI_DEV_CLK
+    1'b1, // SPI_DEV_D3
+    1'b1, // SPI_DEV_D2
+    1'b1, // SPI_DEV_D1
+    1'b1, // SPI_DEV_D0
+    1'b1, // SPI_HOST_CS_L
+    1'b1, // SPI_HOST_CLK
+    1'b1, // SPI_HOST_D3
+    1'b1, // SPI_HOST_D2
+    1'b1, // SPI_HOST_D1
+    1'b1  // SPI_HOST_D0
+  };
+
   // Reset values of the MIO_PAD_ATTR CSRs defined by the top. LSB corresponds to lowest index.
   parameter pad_attr_t [NMioPads-1:0] MioPadAttrResval = {
     pad_attr_t'{default: '0}, // IOR13
@@ -322,5 +636,18 @@ package pinmux_pkg;
     RvTapSel  = 2'b10,
     DftTapSel = 2'b11
   } tap_strap_t;
+
+  // Intra-IP connections
+  typedef struct packed {
+    logic [NMioPads-1:0] mio_in;
+    pinmux_reg2hw_t reg2hw;
+  } p2s_t;
+
+  typedef struct packed {
+    logic [NMioPeriphOut-1:0] periph_data;
+    logic [NMioPeriphOut-1:0] periph_oe;
+    logic [NMioPads-1:0] pad_data;
+    logic [NMioPads-1:0] pad_oe;
+  } s2p_t;
 
 endpackage : pinmux_pkg

@@ -465,12 +465,21 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
     Returns two lists of {name, pads} dicts, one entry per MIO peripheral input and output ordered
     by its INSEL/OUTSEL index. pads lists the indices of the MIO pads the signal can be muxed to.
     The default of a signal is added as default_pad (pad index) or default_const (raw value). The
-    pinmux template checks the values and derives the legal select masks and reset values."""
+    pinmux partition muxing a signal is added as partition. The pinmux template checks the values
+    and derives the legal select masks, reset values and partition constants."""
 
     pinmux = top["pinmux"]
     n_mio_pads = pinmux["io_counts"]["muxed"]["pads"]
     mio_pad_idx = {pad['name']: pad['idx'] for pad in top['pinout']['pads']
                    if pad['connection'] == 'muxed'}
+
+    # A split pinmux muxes a signal in the partition residing in the power domain of the signal.
+    # Without a split, all signals are muxed in the primary partition.
+    m_pinmux = lib.find_module(top['module'], 'pinmux')
+    pd_default = top['power']['default']
+    partitions = lib.get_partitions_of(m_pinmux)
+    part_of_domain = {lib.get_domain_of_partition(m_pinmux, part, pd_default): part
+                      for part in partitions}
 
     mio_periph_ins = []
     mio_periph_outs = []
@@ -487,8 +496,15 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
             pads = list(range(n_mio_pads))
 
         name = io['name'] + (f"[{io['idx']}]" if io['idx'] >= 0 else '')
-        periph_in = {'name': name, 'pads': pads}
-        periph_out = {'name': name, 'pads': pads}
+        if len(partitions) == 1:
+            part = lib.PART_PRIMARY
+        elif io['domain'] in part_of_domain:
+            part = part_of_domain[io['domain']]
+        else:
+            raise ValueError(f"Muxed IO {name} is in the power domain {io['domain']}, which is "
+                             f"not a domain of the pinmux partitions {sorted(part_of_domain)}")
+        periph_in = {'name': name, 'pads': pads, 'partition': part}
+        periph_out = {'name': name, 'pads': pads, 'partition': part}
 
         default = io.get('default')
         if isinstance(default, str):

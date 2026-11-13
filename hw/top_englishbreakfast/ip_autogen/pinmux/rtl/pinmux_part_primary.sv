@@ -106,7 +106,10 @@ module pinmux_part_primary
   output prim_pad_wrapper_pkg::pad_attr_t [NDioPads-1:0] dio_attr_o,
   output logic                            [NDioPads-1:0] dio_out_o,
   output logic                            [NDioPads-1:0] dio_oe_o,
-  input                                   [NDioPads-1:0] dio_in_i
+  input                                   [NDioPads-1:0] dio_in_i,
+  // Intra-IP connections
+  output p2s_t p2s_o,
+  input  s2p_t s2p_i
 );
 
   //////////////////////////////////
@@ -129,6 +132,9 @@ module pinmux_part_primary
     // SEC_CM: BUS.INTEGRITY
     .intg_err_o(alerts[0])
   );
+
+  // Forward reg2hw to secondary partition for muxing.
+  assign p2s_o.reg2hw = reg2hw;
 
   ////////////
   // Alerts //
@@ -408,6 +414,12 @@ module pinmux_part_primary
     .wake_detect_active_aon_o(usbdev_wake_detect_active_o)
   );
 
+  // The sense signal is taken after the MIO mux. Thus this mux must reside in this partition as
+  // well. Otherwise the sense would be based upon a tied-off signal.
+  // TODO: this fails because of the required wakeup rework.
+  `ASSERT_INIT(UsbSenseMuxInPrimary_A,
+      MioPeriphInPart[TargetCfg.usb_sense_idx] inside {MuxPartPrimary, MuxPartBoth})
+
   /////////////////////////
   // Retention Registers //
   /////////////////////////
@@ -456,47 +468,166 @@ module pinmux_part_primary
   /////////////////////
   // MIO Input Muxes //
   /////////////////////
+  // For each peripheral input mux the possible options. Only instantiate a multiplexer for
+  // peripheral inputs which are in the domain of this partition (the left 2 muxs of the image
+  // below). We however stack and loop over all peripherals for convenient indexing but just
+  // tie-off irrelevant mio_to_periph_o signals. These signals should be ignored when distributing
+  // the muxing results to the IPs. The other pinmux partition will handle these. We also rely on
+  // synthesis to optimize away the unused mio_in signals.
+  //
+  // Primary partition (domain A)           ' Secondary partition (domain B)
+  //         +---------+  +---------+       '         +---------+  +---------+
+  //         | Peri 00 |  | Peri 01 |  ...  '         | Peri 10 |  | Peri 11 |  ...
+  //         +---------+  +---------+       '         +---------+  +---------+
+  //              |            |            '              |            |
+  //           /-----\      /-----\         '           /-----\      /-----  // INSEL -->/-------\    /-------\        ' INSEL -->/-------\    /-------  //           | | | |      | | | |         '           | | | |      | | | |
+  //           =======================++======================================= ...
+  //                                  ||    '
+  // All MIO input signals as one     ||    '''''''''''''''''''''''''''''''''''''''''
+  // vector (mio_in). Goes to both -> ||             ^-- partition / domain boundary
+  // partitions for convenient        ||
+  // indexing.                        ||
+  //                     +--------------------------+
+  //                     | JTAG mux, strap sampling |
+  //                     | wakeup logic             |
+  //                     +--------------------------+
+  //                       ^  ^  ^             ^  ^
+  //                       |  |  |     ...     |  |
+  //       +---------------+  |  +---+         |  +-----------------+
+  //       |            +-----+      |         +-------+            |
+  //       |            |            |                 |            |
+  //  +---------+  +---------+  +---------+       +---------+  +---------+
+  //  | Pad 000 |  | Pad 001 |  | Pad 003 |  ...  | Pad 049 |  | Pad 050 |
+  //  +---------+  +---------+  +---------+       +---------+  +---------+
 
-  localparam int AlignedMuxSize = (NMioPads + 2 > NDioPads) ? 2**$clog2(NMioPads + 2) :
-                                                              2**$clog2(NDioPads);
+  // Stack input and default signals for convenient indexing below. Possible defaults are
+  // constant 0 or 1. Make sure mux is aligned to a power of 2 to avoid Xes.
+  logic [AlignedMioInMuxSize-1:0] mio_mux;
+  assign mio_mux = AlignedMioInMuxSize'({mio_in, 1'b1, 1'b0});
 
-  // stack input and default signals for convenient indexing below possible defaults:
-  // constant 0 or 1. make sure mux is aligned to a power of 2 to avoid Xes.
-  logic [AlignedMuxSize-1:0] mio_mux;
-  assign mio_mux = AlignedMuxSize'({mio_in, 1'b1, 1'b0});
+  // Forward all input signals to the other partition for the other muxing part.
+  assign p2s_o.mio_in = mio_in;
 
   for (genvar k = 0; k < NMioPeriphIn; k++) begin : gen_mio_periph_in
-    // illegal selections are masked to constant 0
-    logic [AlignedMuxSize-1:0] mio_mux_legal;
-    assign mio_mux_legal = mio_mux & AlignedMuxSize'(MioPeriphInselLegal[k]);
-    // index using configured insel
-    assign mio_to_periph_o[k] = mio_mux_legal[reg2hw.mio_periph_insel[k].q];
+    if (MioPeriphInPart[k] inside {MuxPartPrimary, MuxPartBoth}) begin : gen_mio_in_mux
+      // This peripheral is handled by this pinmux partition. Apply the pinmux matrix and
+      // instantiate the mux. Illegal selections are masked to constant 0.
+      logic [AlignedMioInMuxSize-1:0] mio_mux_legal;
+      assign mio_mux_legal = mio_mux & AlignedMioInMuxSize'(MioPeriphInselLegal[k]);
+
+      // The actual mux. Index using configured insel.
+      assign mio_to_periph_o[k] = mio_mux_legal[reg2hw.mio_periph_insel[k].q];
+    end else begin : gen_no_mio_in_mux
+      // This peripheral is not managed by this partition. Its signal will not be used in this
+      // domain. Tie it off here.
+      assign mio_to_periph_o[k] = '0;
+    end
   end
 
   //////////////////////
   // MIO Output Muxes //
   //////////////////////
+  // The MIO output muxes reside in the partition depending on their input sources. If all sources
+  // originate in the domain of the secondary partition, the mux is also there. If however at least
+  // one source is in the domain of the primary partition, the mux is here such that it still
+  // functions if the other domain is powered off. This information is given with
+  // MioPadMuxedInPrimary. The output values from peripherals in the 2nd partition are forwarded
+  // to the primary partition. There is a static mux selecting for each pad which selects the
+  // muxing result from the corresponding partition before the actual values are forwarded to the
+  // retention logic / pads.
+  //
+  // Primary partition (domain A)   ' Secondary partition (domain B)
+  // +---------+  +---------+       '  +---------+  +---------+  +---------+  +---------+
+  // | Peri 00 |  | Peri 01 |  ...  '  | Peri 10 |  | Peri 11 |  | Peri 12 |  | Peri 13 |  ...
+  // +---------+  +---------+       '  +---------+  +---------+  +---------+  +---------+
+  //      |            |            '       |            |            |            |
+  //      |        +---+       ++===========x============x============x============x==========
+  //      |        |           ||   '       |            |            |            |
+  //      |        |  +--------||   '       |        +---+            |            |
+  //      +-----+  |  |        ||   '       +-----+  |  +-------------+--+   +-----+
+  //            |  |  |             '             |  |  |                |   |
+  //          \---------/           '           \---------/           \---------/
+  // OUTSEL -->\ Pad 1 /   ...      '  OUTSEL -->\ Pad 4 /   OUTSEL -->\ Pad 5 /           ...
+  //            \-----/             '             \-----/               \-----/
+  //               |                '                |                     |
+  //   ============x===========++   '   ++===========x=====================x==
+  //   ^                       ||   ''''||''''''''''''''''''''''''''''''''''''''''''''''''''''
+  //   Full vector w/ tied-off ||       ||                   ^-- partition / domain boundary
+  //   values for pads not     vv       vv
+  //   managed by this       \-------------/<-- Per pad select which partition does the muxing.
+  //   partition.             \-----------/     This is static / known at compile time.
+  //                                |
+  //                                |  <-- Full vector including all pads
+  //                                v
+  //                          +-----------+
+  //                          | JTAG mux, |<-- Pad attributes from CSRs
+  //                          | Retention |
+  //                          +-----------+
+  //                            |   |   |
+  //                +-----------+   |   +------+
+  //                |               |          |
+  //                v               v          v
+  //            +-------+       +-------+  +-------+
+  //       ...  | Pad 1 |  ...  | Pad 4 |  | Pad 5 |  ...
+  //            +-------+       +-------+  +-------+
 
-  // stack output data/enable and default signals for convenient indexing below
-  // possible defaults: 0, 1 or 2 (high-Z). make sure mux is aligned to a power of 2 to avoid Xes.
-  logic [2**$clog2(NMioPeriphOut+3)-1:0] periph_data_mux, periph_oe_mux;
-  assign periph_data_mux = $bits(periph_data_mux)'({periph_to_mio_i, 1'b0, 1'b1, 1'b0});
-  assign periph_oe_mux   = $bits(periph_oe_mux)'({periph_to_mio_oe_i,  1'b0, 1'b1, 1'b1});
+  // Stack output data/enable and default signals for convenient indexing below.
+  // Possible defaults: 0, 1 or 2 (high-Z). Make sure mux is aligned to a power of 2 to avoid Xes.
+  logic [AlignedMioOutMuxSize-1:0] periph_data_1st, periph_oe_1st;
+  logic [AlignedMioOutMuxSize-1:0] periph_data_2nd, periph_oe_2nd;
+
+  assign periph_data_1st = AlignedMioOutMuxSize'({periph_to_mio_i,    1'b0, 1'b1, 1'b0});
+  assign periph_oe_1st   = AlignedMioOutMuxSize'({periph_to_mio_oe_i, 1'b0, 1'b1, 1'b1});
+  assign periph_data_2nd = AlignedMioOutMuxSize'({s2p_i.periph_data,  1'b0, 1'b1, 1'b0});
+  assign periph_oe_2nd   = AlignedMioOutMuxSize'({s2p_i.periph_oe,    1'b0, 1'b1, 1'b1});
+
+  // We expect that the periph_to_mio[_oe]_i are tied off for peripherals not managed by the
+  // corresponding partition.
+  // TODO: Do we really want this? If there is something muxed which should not, without tie-off
+  //       we would immediately spot this as there are Xes propagating.
+  `ASSERT_KNOWN(PeriphToMioKnown_A, {periph_to_mio_i, periph_to_mio_oe_i,
+                                     s2p_i.periph_data, s2p_i.periph_oe})
 
   for (genvar k = 0; k < NMioPads; k++) begin : gen_mio_out
-    // illegal selections are masked to high-Z (data and enable 0)
-    logic [$bits(periph_data_mux)-1:0] periph_data_mux_legal, periph_oe_mux_legal;
-    assign periph_data_mux_legal = periph_data_mux & $bits(periph_data_mux)'(MioOutselLegal[k]);
-    assign periph_oe_mux_legal   = periph_oe_mux & $bits(periph_oe_mux)'(MioOutselLegal[k]);
+    logic periph_data_muxed, periph_oe_muxed;
 
-    // Check individual sleep enable status bits
+    // Either multiplex pad value from peripherals or take already muxed result from other
+    // partition.
+    if (MioPadMuxedInPrimary[k]) begin : gen_mio_out_mux
+      // Combine periph output values first depending on in which domain the source is.
+      logic [AlignedMioOutMuxSize-1:0] periph_data, periph_oe;
+      for (genvar ii = 0; ii < AlignedMioOutMuxSize; ii++) begin : gen_merge_mio
+        // The constants are the same for both sources, so the selection doesn't matter.
+        assign periph_data[ii] = MioOutselInPrimary[ii] ? periph_data_1st[ii] :
+                                                          periph_data_2nd[ii];
+        assign periph_oe[ii]   = MioOutselInPrimary[ii] ? periph_oe_1st[ii]   :
+                                                          periph_oe_2nd[ii];
+      end
+
+      // Apply the pinmux matrix. Illegal selections are masked implicitly to high-Z (data and
+      // enable are 0)
+      logic [AlignedMioOutMuxSize-1:0] periph_data_legal, periph_oe_legal;
+      assign periph_data_legal = periph_data & AlignedMioOutMuxSize'(MioOutselLegal[k]);
+      assign periph_oe_legal   = periph_oe   & AlignedMioOutMuxSize'(MioOutselLegal[k]);
+
+      // Mux from the peripheral sources based on the configured index.
+      assign periph_data_muxed = periph_data_legal[reg2hw.mio_outsel[k].q];
+      assign periph_oe_muxed   = periph_oe_legal[reg2hw.mio_outsel[k].q];
+    end else begin : gen_no_mio_out_mux
+      // This output is managed by the other partition, so we take directly their already muxed
+      // result.
+      assign periph_data_muxed = s2p_i.pad_data[k];
+      assign periph_oe_muxed   = s2p_i.pad_oe[k];
+    end
+
+    // Check individual sleep enable status bits and select source
     assign mio_out[k] = reg2hw.mio_pad_sleep_status[k].q ?
                         mio_out_retreg_q[k]              :
-                        periph_data_mux_legal[reg2hw.mio_outsel[k].q];
+                        periph_data_muxed;
 
     assign mio_oe[k]  = reg2hw.mio_pad_sleep_status[k].q ?
                         mio_oe_retreg_q[k]               :
-                        periph_oe_mux_legal[reg2hw.mio_outsel[k].q];
+                        periph_oe_muxed;
 
     // latch state when going to sleep
     // 0: drive low
@@ -590,14 +721,14 @@ module pinmux_part_primary
   // Wakeup detector taps are not affected by JTAG/strap
   // selection mux. I.e., we always sample the unmuxed inputs
   // that come directly from the pads.
-  logic [AlignedMuxSize-1:0] dio_wkup_mux;
-  logic [AlignedMuxSize-1:0] mio_wkup_mux;
-  assign dio_wkup_mux = AlignedMuxSize'(dio_wkup_no_scan);
+  logic [AlignedMioInMuxSize-1:0] dio_wkup_mux;
+  logic [AlignedMioInMuxSize-1:0] mio_wkup_mux;
+  assign dio_wkup_mux = AlignedMioInMuxSize'(dio_wkup_no_scan);
   // The two constants that are concatenated here make sure tha the selection
   // indices used to index this array are the same as the ones used to index
   // the mio_mux array above, where positions 0 and 1 select constant 0 and
   // 1, respectively.
-  assign mio_wkup_mux = AlignedMuxSize'({mio_wkup_no_scan, 1'b1, 1'b0});
+  assign mio_wkup_mux = AlignedMioInMuxSize'({mio_wkup_no_scan, 1'b1, 1'b0});
 
   logic [NWkupDetect-1:0] aon_wkup_req;
   for (genvar k = 0; k < NWkupDetect; k++) begin : gen_wkup_detect
@@ -692,4 +823,4 @@ module pinmux_part_primary
   `ASSUME(PwrMgrStrapSampleOnce0_A, strap_en_i |=> !strap_en_i)
   `ASSUME(PwrMgrStrapSampleOnce1_A, $fell(strap_en_i) |-> always !strap_en_i)
 
-endmodule : pinmux_part_primary
+endmodule
