@@ -133,7 +133,8 @@ pinmux_sig_optional = {
     'port': ['s', 'Port name of module'],
     'default': ['s', 'Default signal or/and pad connection'],
     'desc': ['s', 'Signal description'],
-    'attr': ['s', 'Pad type for generating the correct attribute CSR']
+    'attr': ['s', 'Pad type for generating the correct attribute CSR'],
+    'follower': ['s', 'Input muxed with the same INSEL CSR as this signal']
 }
 pinmux_sig_added = {}
 

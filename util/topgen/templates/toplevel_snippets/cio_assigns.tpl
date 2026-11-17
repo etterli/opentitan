@@ -9,15 +9,21 @@
   // Pinmux connections
   // All muxed inputs - Inputs handled by other pinmux partition are unused.
   % for sig in top["pinmux"]["ios"]:
-    % if sig["connection"] == "muxed" and sig["type"] in ["inout", "input"] and sig["domain"] == domain:
+    % if sig["connection"] == "muxed" and sig["type"] in ["inout", "input"]:
 <% literal = lib.get_io_enum_literal(sig, 'mio_in') %>\
+      % if sig["domain"] == domain:
   assign cio_${sig["name"]}_p2d${"[" + str(sig["idx"]) +"]" if sig["idx"] !=-1  else ""} = mio_p2d[${literal}];
+      % endif
+      % if sig.get("follower") and sig["follower_domain"] == domain:
+  assign cio_${sig["follower"].replace(".", "_")}_p2d = mio_p2d[${literal}];
+      % endif
     % endif
   % endfor
 <%
+  ## An input is used in this domain by its own CIO or by the CIO of its follower.
   unused_mio_in = [lib.get_io_enum_literal(sig, 'mio_in') for sig in top["pinmux"]["ios"]
                    if sig["connection"] == "muxed" and sig["type"] in ["inout", "input"] and
-                   sig["domain"] != domain]
+                   domain not in [sig["domain"], sig.get("follower_domain")]]
 %>\
   % if unused_mio_in:
   logic unused_mio_p2d;

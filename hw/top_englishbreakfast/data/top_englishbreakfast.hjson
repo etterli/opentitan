@@ -1038,6 +1038,24 @@
     //                       If this default is not specified, the signal is driven to '0 and no pad
     //                       default is derived.
     //
+    // - follower: Only allowed for muxed 1-bit input or bidir signals. A string naming another
+    //             comportable input which is controlled by the same INSEL CSR, decoded as
+    //             'instance.port'. The follower must always be a 1-bit input and must not have
+    //             its own signal entry. It gets no INSEL CSR of its own.
+    //
+    //             This allows controlling with one INSEL CSR the muxing of signals which go to
+    //             different IPs or partitions of an IP. Examples are the reset detector signals
+    //             for I3C. These must always follow SCL/SDA and the muxing must also be active in
+    //             deep sleep. Defining the reset detector signals as followers of SCL/SDA ensures
+    //             they always stay in sync. It also ensures that the muxing is active in deep
+    //             sleep as in this particular case the muxing is duplicated in both pinmux
+    //             partitions.
+    //
+    //             An empty string generates the INSEL mux of this signal in both partitions, so
+    //             both partitions provide the mux result. This is useful when directly tapping
+    //             into the mux results, see for example the USB wakeup detector inside the
+    //             pinmux.
+    //
     // - desc: Optional description field.
     //
     // - attr: Manual direct IOs may specify an additional pad attr field.

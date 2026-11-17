@@ -490,7 +490,15 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
 
         name = _pinmux_io_name(io)
         part = pinmux_domains[io['domain']]
-        periph_in = {'name': name, 'pads': pads, 'partition': part}
+        # The input is also muxed in the partition of its follower. An empty follower muxes it in
+        # all partitions.
+        in_parts = {part}
+        if io.get('follower') == '':
+            in_parts |= set(pinmux_domains.values())
+        elif io.get('follower'):
+            in_parts.add(pinmux_domains[io['follower_domain']])
+        in_part = part if len(in_parts) == 1 else lib.PART_BOTH
+        periph_in = {'name': name, 'pads': pads, 'partition': in_part}
         periph_out = {'name': name, 'pads': pads, 'partition': part}
 
         default = io.get('default')
