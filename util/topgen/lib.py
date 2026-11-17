@@ -651,6 +651,20 @@ def get_partitions_of(module: ConfigT) -> List[str]:
     return [PART_PRIMARY]
 
 
+def get_pinmux_partitions_domains(top: ConfigT) -> Dict[str, str]:
+    '''Map each power domain of a pinmux partition to the partition handling the IOs of the domain.
+
+    If both partitions reside in the same domain, the primary partition handles all IOs.
+    '''
+    m_pinmux = find_module(top['module'], 'pinmux')
+    pd_default = top['power']['default']
+    pinmux_domains = {}
+    for partition in get_partitions_of(m_pinmux):
+        domain = get_domain_of_partition(m_pinmux, partition, pd_default)
+        pinmux_domains.setdefault(domain, partition)
+    return pinmux_domains
+
+
 def get_conns_for(end_point: ConfigT, key: str) -> List[Tuple[str, ConfigT]]:
     '''Return (partition, connections) for every partition a `key` describes.
 
