@@ -96,7 +96,8 @@ Clock frequencies:
 ## Target Reset Detector pads
 
 The Target Reset Detector observes SCL and SDA through its own inputs, `rstdet_scl` and `rstdet_sda` (see the [Integration Notes](integration_notes.md#target-reset-detector)).
-Where these inputs are connected through a pin multiplexer, software must route them to the same pads as `scl` and `sda` before the detector is activated.
+Where these inputs are connected through a pin multiplexer, the top must make them follow `scl` and `sda`.
+Software then only routes `scl` and `sda`.
 
 # IBI Payload Fetching
 

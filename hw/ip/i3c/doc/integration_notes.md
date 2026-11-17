@@ -154,7 +154,7 @@ The integration connects the secondary partition as follows:
    For a wake-up, `rstdet_enable_i`, `rstdet_i.activate` and `rstdet_i.deep_sleep` are set and the other request bits are clear; otherwise all inputs are clear.
  - `cio_rstdet_scl_i` and `cio_rstdet_sda_i`: the SCL and SDA inputs from the pads.
    They are separate from `cio_scl_i` and `cio_sda_i` of the primary partition, so that the detector does not depend upon the power domain of the primary partition.
-   Where the pads are connected through a pin multiplexer, software must route the same pads to these inputs as to `cio_scl_i` and `cio_sda_i` ([#31841](https://github.com/lowRISC/opentitan/issues/31841)).
+   Where the pads are connected through a pin multiplexer, these inputs must always observe the same pads as `cio_scl_i` and `cio_sda_i`, for example as pinmux followers of `scl` and `sda`.
  - `rstdet_wkup_req_o`: a wake-up request to the power manager; may be left unconnected if the Target need not wake the system.
  - `rstdet_target_rst_o`: a reset of the I3C IP block only ('I3C Peripheral' reset).
 
