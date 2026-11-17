@@ -1923,6 +1923,48 @@ def get_pinmux_sig_pads(sig: Dict) -> Tuple[str, ...]:
     return ()
 
 
+def add_pinmux_follower(top: ConfigT, name_to_block: IpBlocksT, sig: Dict, io: Dict,
+                        pd_default: str) -> None:
+    '''Check the follower of a pinmux signal entry and add it to the IO of the entry.
+
+    The follower is stored as given. A non-empty follower also adds the power domain of the
+    follower as follower_domain.
+    '''
+    leader = f"{sig['instance']}.{sig['port']}"
+    follower = sig['follower']
+    if not isinstance(follower, str):
+        raise SystemExit(f"Follower of pinmux signal {leader} must be a string.")
+    if (sig['connection'] != 'muxed' or io['type'] not in ['input', 'inout'] or
+            io['width'] != 1 or io['idx'] != -1):
+        raise SystemExit(f"Pinmux signal {leader} has a follower but is not a muxed 1-bit input "
+                         "or bidir signal.")
+    io['follower'] = follower
+    if follower == '':
+        return
+
+    if follower.count('.') != 1:
+        raise SystemExit(f"Follower {follower!r} of pinmux signal {leader} must be given as "
+                         "'instance.port'.")
+    inst_name, port = follower.split('.')
+    m = lib.get_module_by_name(top, inst_name)
+    if m is None:
+        raise SystemExit(f"Follower {follower} of pinmux signal {leader} names the unknown "
+                         f"instance {inst_name}.")
+    # The pinmux template needs the partition of the follower, so its IP block must be known.
+    block = name_to_block.get(m['type'])
+    if block is None:
+        raise SystemExit(f"The IP block of follower {follower} of pinmux signal {leader} is not "
+                         "available when processing the pinmux.")
+    sigs = {s['name']: s for s in block.get_signals_as_list_of_dicts(m.get('param_decl'))}
+    if port not in sigs:
+        raise SystemExit(f"Follower {follower} of pinmux signal {leader} names the unknown port "
+                         f"{port}.")
+    if sigs[port]['type'] != 'input' or sigs[port]['width'] != 1:
+        raise SystemExit(f"Follower {follower} of pinmux signal {leader} must be a 1-bit input.")
+    io['follower_domain'] = lib.get_domain_of_partition(
+        m, sigs[port].get('partition', PART_PRIMARY), pd_default)
+
+
 def amend_pinmux_io(top: ConfigT,
                     name_to_block: IpBlocksT,
                     allow_missing_blocks=False):
@@ -1989,7 +2031,14 @@ def amend_pinmux_io(top: ConfigT,
             sig_inst['name'] = mod_name + '_' + sig_inst['name']
             sig_inst['domain'] = lib.get_domain_of_partition(
                 m, sig_inst.get('partition', PART_PRIMARY), pd_default)
+            if 'follower' in sig:
+                add_pinmux_follower(top, name_to_block, sig, sig_inst, pd_default)
             append_io_signal(temp, sig_inst)
+
+        # A follower requires a 1-bit signal, which a wildcard entry cannot guarantee.
+        elif 'follower' in sig:
+            raise SystemExit(f"Pinmux signal entry of {mod_name} without a port must not have a "
+                             "follower.")
 
         # Otherwise the name is a wildcard for selecting all available IO
         # signals of this block and we need to extract them here one by one
@@ -2034,6 +2083,24 @@ def amend_pinmux_io(top: ConfigT,
         if sig['domain'] not in pinmux_domains:
             raise SystemExit(f"Pinmux IO {name} is in the power domain {sig['domain']}, which is "
                              f"not a domain of the pinmux partitions {sorted(pinmux_domains)}.")
+
+    # A follower has no signal entry of its own, follows a single signal and must reside in a power
+    # domain of a pinmux partition too.
+    followers = set()
+    for sig in pinmux['ios']:
+        follower = sig.get('follower')
+        if not follower:
+            continue
+        if (follower.replace('.', '_'), -1) in known_ios:
+            raise SystemExit(f"Follower {follower} of pinmux IO {sig['name']} must not have its "
+                             "own pinmux signal entry.")
+        if follower in followers:
+            raise SystemExit(f"Follower {follower} follows multiple pinmux IOs.")
+        followers.add(follower)
+        if sig['follower_domain'] not in pinmux_domains:
+            raise SystemExit(f"Follower {follower} of pinmux IO {sig['name']} is in the power "
+                             f"domain {sig['follower_domain']}, which is not a domain of the "
+                             f"pinmux partitions {sorted(pinmux_domains)}.")
 
     # Remember these counts to facilitate the RTL generation
     pinmux['io_counts'] = {
