@@ -327,6 +327,8 @@ module top_darjeeling #(
   tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_h2d;
   tlul_pkg::tl_d2h_t       soc_proxy_ctn_tl_d2h;
   logic       pwrmgr_wakeups;
+  pinmux_pkg::p2s_t       pinmux_p2s;
+  pinmux_pkg::s2p_t       pinmux_s2p;
   tlul_pkg::tl_h2d_t       soc_proxy_core_tl_req;
   tlul_pkg::tl_d2h_t       soc_proxy_core_tl_rsp;
   tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_req;
@@ -519,6 +521,8 @@ module top_darjeeling #(
     .soc_proxy_ctn_tl_h2d_i         (soc_proxy_ctn_tl_h2d     ),
     .soc_proxy_ctn_tl_d2h_o         (soc_proxy_ctn_tl_d2h     ),
     .pwrmgr_wakeups_o               (pwrmgr_wakeups           ),
+    .pinmux_p2s_o                   (pinmux_p2s               ),
+    .pinmux_s2p_i                   (pinmux_s2p               ),
     .soc_proxy_core_tl_req_o        (soc_proxy_core_tl_req    ),
     .soc_proxy_core_tl_rsp_i        (soc_proxy_core_tl_rsp    ),
     .soc_proxy_ctn_tl_req_o         (soc_proxy_ctn_tl_req     ),
@@ -695,6 +699,8 @@ module top_darjeeling #(
     .soc_proxy_ctn_tl_h2d_o         (soc_proxy_ctn_tl_h2d     ),
     .soc_proxy_ctn_tl_d2h_i         (soc_proxy_ctn_tl_d2h     ),
     .pwrmgr_wakeups_i               (pwrmgr_wakeups           ),
+    .pinmux_p2s_i                   (pinmux_p2s               ),
+    .pinmux_s2p_o                   (pinmux_s2p               ),
     .soc_proxy_core_tl_req_i        (soc_proxy_core_tl_req    ),
     .soc_proxy_core_tl_rsp_o        (soc_proxy_core_tl_rsp    ),
     .soc_proxy_ctn_tl_req_i         (soc_proxy_ctn_tl_req     ),

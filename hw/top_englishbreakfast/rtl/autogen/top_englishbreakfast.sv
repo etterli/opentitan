@@ -159,6 +159,8 @@ module top_englishbreakfast #(
   rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump;
   rv_core_ibex_pkg::cpu_pwrmgr_t       rv_core_ibex_pwrmgr;
   logic [1:0] pwrmgr_wakeups;
+  pinmux_pkg::p2s_t       pinmux_p2s;
+  pinmux_pkg::s2p_t       pinmux_s2p;
   tlul_pkg::tl_h2d_t       pwrmgr_tl_req;
   tlul_pkg::tl_d2h_t       pwrmgr_tl_rsp;
   tlul_pkg::tl_h2d_t       rstmgr_tl_req;
@@ -287,6 +289,8 @@ module top_englishbreakfast #(
     .rv_core_ibex_crash_dump_o(rv_core_ibex_crash_dump),
     .rv_core_ibex_pwrmgr_o    (rv_core_ibex_pwrmgr    ),
     .pwrmgr_wakeups_o         (pwrmgr_wakeups         ),
+    .pinmux_p2s_o             (pinmux_p2s             ),
+    .pinmux_s2p_i             (pinmux_s2p             ),
     .pwrmgr_tl_req_o          (pwrmgr_tl_req          ),
     .pwrmgr_tl_rsp_i          (pwrmgr_tl_rsp          ),
     .rstmgr_tl_req_o          (rstmgr_tl_req          ),
@@ -352,6 +356,8 @@ module top_englishbreakfast #(
     .rv_core_ibex_crash_dump_i(rv_core_ibex_crash_dump),
     .rv_core_ibex_pwrmgr_i    (rv_core_ibex_pwrmgr    ),
     .pwrmgr_wakeups_i         (pwrmgr_wakeups         ),
+    .pinmux_p2s_i             (pinmux_p2s             ),
+    .pinmux_s2p_o             (pinmux_s2p             ),
     .pwrmgr_tl_req_i          (pwrmgr_tl_req          ),
     .pwrmgr_tl_rsp_o          (pwrmgr_tl_rsp          ),
     .rstmgr_tl_req_i          (rstmgr_tl_req          ),

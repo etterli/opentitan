@@ -25,6 +25,8 @@ module englishbreakfast_pd_aon #(
   input  rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump_i,
   input  rv_core_ibex_pkg::cpu_pwrmgr_t       rv_core_ibex_pwrmgr_i,
   input  logic [1:0] pwrmgr_wakeups_i,
+  input  pinmux_pkg::p2s_t       pinmux_p2s_i,
+  output pinmux_pkg::s2p_t       pinmux_s2p_o,
   input  tlul_pkg::tl_h2d_t       pwrmgr_tl_req_i,
   output tlul_pkg::tl_d2h_t       pwrmgr_tl_rsp_o,
   input  tlul_pkg::tl_h2d_t       rstmgr_tl_req_i,
@@ -296,9 +298,12 @@ module englishbreakfast_pd_aon #(
   pinmux_part_secondary u_pinmux_part_secondary (
     // Clock and reset connections
     .clk_i(clkmgr_clocks.clk_io_div4_powerup),
-    .rst_ni(rstmgr_resets.rst_lc_io_div4_n[rstmgr_pkg::DomainAonSel])
+    .rst_ni(rstmgr_resets.rst_lc_io_div4_n[rstmgr_pkg::DomainAonSel]),
 
 
+    // Inter-module signals
+    .p2s_i(pinmux_p2s_i),
+    .s2p_o(pinmux_s2p_o)
   );
 
   aon_timer #(

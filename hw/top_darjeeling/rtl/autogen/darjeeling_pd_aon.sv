@@ -59,6 +59,8 @@ module darjeeling_pd_aon #(
   output tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_h2d_o,
   input  tlul_pkg::tl_d2h_t       soc_proxy_ctn_tl_d2h_i,
   input  logic       pwrmgr_wakeups_i,
+  input  pinmux_pkg::p2s_t       pinmux_p2s_i,
+  output pinmux_pkg::s2p_t       pinmux_s2p_o,
   input  tlul_pkg::tl_h2d_t       soc_proxy_core_tl_req_i,
   output tlul_pkg::tl_d2h_t       soc_proxy_core_tl_rsp_o,
   input  tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_req_i,
@@ -297,9 +299,12 @@ module darjeeling_pd_aon #(
   pinmux_part_secondary u_pinmux_part_secondary (
     // Clock and reset connections
     .clk_i(clkmgr_clocks.clk_io_powerup),
-    .rst_ni(rstmgr_resets.rst_lc_io_n[rstmgr_pkg::DomainAonSel])
+    .rst_ni(rstmgr_resets.rst_lc_io_n[rstmgr_pkg::DomainAonSel]),
 
 
+    // Inter-module signals
+    .p2s_i(pinmux_p2s_i),
+    .s2p_o(pinmux_s2p_o)
   );
 
   aon_timer #(

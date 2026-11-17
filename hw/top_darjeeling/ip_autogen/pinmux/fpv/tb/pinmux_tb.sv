@@ -39,7 +39,9 @@ module pinmux_tb
   output prim_pad_wrapper_pkg::pad_attr_t[NDioPads-1:0] dio_attr_o,
   output logic[NDioPads-1:0] dio_out_o,
   output logic[NDioPads-1:0] dio_oe_o,
-  input [NDioPads-1:0] dio_in_i
+  input [NDioPads-1:0] dio_in_i,
+  output p2s_t p2s_o,
+  input s2p_t s2p_i
 );
 
   localparam pinmux_pkg::target_cfg_t PinmuxTargetCfg = '{

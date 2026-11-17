@@ -173,6 +173,8 @@ module darjeeling_pd_main #(
   input  tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_h2d_i,
   output tlul_pkg::tl_d2h_t       soc_proxy_ctn_tl_d2h_o,
   output logic       pwrmgr_wakeups_o,
+  output pinmux_pkg::p2s_t       pinmux_p2s_o,
+  input  pinmux_pkg::s2p_t       pinmux_s2p_i,
   output tlul_pkg::tl_h2d_t       soc_proxy_core_tl_req_o,
   input  tlul_pkg::tl_d2h_t       soc_proxy_core_tl_rsp_i,
   output tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_req_o,
@@ -1425,6 +1427,8 @@ module darjeeling_pd_main #(
     // Inter-module signals
     .sleep_en_i(pwrmgr_low_power_i),
     .pin_wkup_req_o(pwrmgr_wakeups_o),
+    .p2s_o(pinmux_p2s_o),
+    .s2p_i(pinmux_s2p_i),
     .tl_i(pinmux_tl_req),
     .tl_o(pinmux_tl_rsp),
 

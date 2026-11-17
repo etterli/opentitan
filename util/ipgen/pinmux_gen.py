@@ -5,6 +5,8 @@
 
 from typing import Dict, List, Tuple
 
+from topgen.lib import PART_BOTH, PART_PRIMARY, PART_SECONDARY
+
 # Maps pad attribute names to their pad_attr_t member name and width. This is required because the
 # CSR field names and the SV code mismatch.
 PAD_ATTR_FIELDS = {
@@ -29,6 +31,15 @@ OUTSEL_NUM_CONST = 3
 INSEL_RESVAL = 0  # constant 0
 OUTSEL_RESVAL = 2  # high-Z
 
+# mux_part_e literal of the partition muxing a peripheral input. A non-split pinmux only has the
+# primary partition. An output is muxed in a single partition.
+MUX_PART = {
+    PART_PRIMARY: "MuxPartPrimary",
+    PART_SECONDARY: "MuxPartSecondary",
+    PART_BOTH: "MuxPartBoth",
+}
+OUT_PARTITIONS = [PART_PRIMARY, PART_SECONDARY]
+
 
 def check_params(n_mio_pads: int, n_dio_pads: int, n_mio_periph_in: int, n_mio_periph_out: int,
                  mio_periph_ins: List[Dict], mio_periph_outs: List[Dict],
@@ -41,9 +52,9 @@ def check_params(n_mio_pads: int, n_dio_pads: int, n_mio_periph_in: int, n_mio_p
     # The MIO pad attrs list has one entry per MIO pad, take the pad names from there.
     mio_pad_names = [name for name, _ in mio_pad_attr_resvals]
     _check_mio_periph_list(errors, "input", n_mio_pads, mio_pad_names, n_mio_periph_in,
-                           mio_periph_ins, True)
+                           mio_periph_ins, list(MUX_PART), True)
     _check_mio_periph_list(errors, "output", n_mio_pads, mio_pad_names, n_mio_periph_out,
-                           mio_periph_outs, False)
+                           mio_periph_outs, OUT_PARTITIONS, False)
     for pad in range(n_mio_pads):
         outs = [periph.get("name") for periph in mio_periph_outs
                 if periph.get("default_pad") == pad]
@@ -87,21 +98,24 @@ def _pad_indices(periph: Dict, n_mio_pads: int) -> List[int]:
 
 def _check_mio_periph_list(errors: List[str], kind: str, n_mio_pads: int,
                            mio_pad_names: List[str], n_periphs: int, periphs: List[Dict],
-                           expect_const_default: bool) -> None:
-    """Check a list of dicts defining the muxing and default selection.
+                           partitions: List[str], expect_const_default: bool) -> None:
+    """Check a list of dicts defining the muxing, partition and default selection.
 
     Each list item is for one MIO peripheral input or output.
     """
     if len(periphs) != n_periphs:
         errors.append(f"Expected {n_periphs} MIO {kind}s, got {len(periphs)}")
     for periph in periphs:
-        if not {"name", "pads"} <= set(periph):
-            errors.append(f"MIO {kind} {periph} needs a name and pads")
+        if not {"name", "pads", "partition"} <= set(periph):
+            errors.append(f"MIO {kind} {periph} needs a name, pads and partition")
             continue
         name, pads = periph["name"], periph["pads"]
-        unknown = set(periph) - {"name", "pads", "default_pad", "default_const"}
+        unknown = set(periph) - {"name", "pads", "partition", "default_pad", "default_const"}
         if unknown:
             errors.append(f"MIO {kind} {name} has unknown keys {sorted(unknown)}")
+        if periph["partition"] not in partitions:
+            errors.append(f"MIO {kind} {name} has the partition {periph['partition']!r}. Expected "
+                          f"one of {partitions}")
         if "default_pad" in periph and "default_const" in periph:
             errors.append(f"MIO {kind} {name} has more than one default")
         for pad in pads:
@@ -172,6 +186,31 @@ def mio_outsel_resvals(n_mio_pads: int, mio_periph_outs: List[Dict]) -> List[int
         if "default_pad" in periph:
             resvals[periph["default_pad"]] = idx + OUTSEL_NUM_CONST
     return resvals
+
+
+def mio_periph_in_parts(mio_periph_ins: List[Dict]) -> List[Tuple[str, str]]:
+    """(name, mux_part_e literal) of the partition muxing each MIO peripheral input."""
+    return [(periph["name"], MUX_PART[periph["partition"]]) for periph in mio_periph_ins]
+
+
+def mio_outsel_in_primary(mio_periph_outs: List[Dict]) -> List[Tuple[str, bool]]:
+    """(name, whether it is in the primary partition) of each MIO peripheral output."""
+    return [(periph["name"], periph["partition"] == PART_PRIMARY) for periph in mio_periph_outs]
+
+
+def mio_pad_muxed_in_primary(mio_pad_names: List[str],
+                             mio_periph_outs: List[Dict]) -> List[Tuple[str, bool]]:
+    """(pad name, whether the output mux of the pad is in the primary partition), one per MIO pad.
+
+    This is the case if any legal peripheral output of the pad is in the primary partition. Pads
+    without a peripheral output are muxed in the secondary partition.
+    """
+    in_primary = [False] * len(mio_pad_names)
+    for periph in mio_periph_outs:
+        if periph["partition"] == PART_PRIMARY:
+            for pad in _pad_indices(periph, len(mio_pad_names)):
+                in_primary[pad] = True
+    return list(zip(mio_pad_names, in_primary))
 
 
 def gen_index_label(items: List[Tuple], offset: int = 0) -> List[Tuple]:

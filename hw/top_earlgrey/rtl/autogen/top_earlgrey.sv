@@ -315,6 +315,8 @@ module top_earlgrey #(
   logic       i3c0_rstdet_enable;
   i3c_pkg::i3c_rstdet_req_t       i3c0_rstdet_req;
   i3c_pkg::i3c_rstdet_rsp_t       i3c0_rstdet_rsp;
+  pinmux_pkg::p2s_t       pinmux_p2s;
+  pinmux_pkg::s2p_t       pinmux_s2p;
   ast_intraip_pkg::s2p_t       ast_intraip_s2p;
   ast_intraip_pkg::p2s_t       ast_intraip_p2s;
   tlul_pkg::tl_h2d_t       pwrmgr_tl_req;
@@ -654,6 +656,8 @@ module top_earlgrey #(
     .i3c0_rstdet_enable_o              (i3c0_rstdet_enable       ),
     .i3c0_rstdet_req_o                 (i3c0_rstdet_req          ),
     .i3c0_rstdet_rsp_i                 (i3c0_rstdet_rsp          ),
+    .pinmux_p2s_i                      (pinmux_p2s               ),
+    .pinmux_s2p_o                      (pinmux_s2p               ),
     .ast_intraip_s2p_i                 (ast_intraip_s2p          ),
     .ast_intraip_p2s_o                 (ast_intraip_p2s          ),
     .pwrmgr_tl_req_o                   (pwrmgr_tl_req            ),
@@ -877,6 +881,8 @@ module top_earlgrey #(
     .i3c0_rstdet_enable_i              (i3c0_rstdet_enable       ),
     .i3c0_rstdet_req_i                 (i3c0_rstdet_req          ),
     .i3c0_rstdet_rsp_o                 (i3c0_rstdet_rsp          ),
+    .pinmux_p2s_o                      (pinmux_p2s               ),
+    .pinmux_s2p_i                      (pinmux_s2p               ),
     .ast_intraip_s2p_o                 (ast_intraip_s2p          ),
     .ast_intraip_p2s_i                 (ast_intraip_p2s          ),
     .pwrmgr_tl_req_i                   (pwrmgr_tl_req            ),

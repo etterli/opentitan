@@ -463,10 +463,10 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
     """Get the connectivity of the muxed peripheral inputs and outputs.
 
     Returns two lists of dicts, one entry per MIO peripheral input and output ordered by its
-    INSEL/OUTSEL index. Each dict has the keys name and pads and optionally default_pad (pad index)
-    or default_const (raw value) if the top defines a default muxing option. pads lists the indices
-    of the MIO pads the signal can be muxed to. An empty list means all MIO pads. The pinmux
-    template checks the values."""
+    INSEL/OUTSEL index. Each dict has the keys name, pads and partition and optionally default_pad
+    (pad index) or default_const (raw value) if the top defines a default muxing option. pads lists
+    the indices of the MIO pads the signal can be muxed to. An empty list means all MIO pads.
+    partition is the pinmux partition muxing the signal. The pinmux template checks the values."""
 
     pinmux = top["pinmux"]
     mio_pad_idx = {pad['name']: pad['idx'] for pad in top['pinout']['pads']
@@ -483,8 +483,10 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
         pads = [mio_pad_idx[pad] for pad in io['pads'] if pad in mio_pad_idx]
 
         name = io['name'] + (f"[{io['idx']}]" if io['idx'] >= 0 else '')
-        periph_in = {'name': name, 'pads': pads}
-        periph_out = {'name': name, 'pads': pads}
+        # The primary partition handles all IOs.
+        part = lib.PART_PRIMARY
+        periph_in = {'name': name, 'pads': pads, 'partition': part}
+        periph_out = {'name': name, 'pads': pads, 'partition': part}
 
         default = io.get('default')
         if isinstance(default, str):
