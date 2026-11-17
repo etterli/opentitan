@@ -551,6 +551,13 @@ package pinmux_pkg;
   parameter bit AnyMioPadMuxedInPrimary   = |MioPadMuxedInPrimary;
   parameter bit AnyMioPadMuxedInSecondary = !(&MioPadMuxedInPrimary);
 
+  // Whether the peripheral connected to each DIO pad is in the primary partition. LSB corresponds
+  // to lowest index.
+  parameter logic [NDioPads-1:0] DioPadSourceInPrimary = {
+    1'b1, // 1: usbdev_usb_dn
+    1'b1  // 0: usbdev_usb_dp
+  };
+
   // Reset values of the MIO_PAD_ATTR CSRs defined by the top. LSB corresponds to lowest index.
   parameter pad_attr_t [NMioPads-1:0] MioPadAttrResval = {
     pad_attr_t'{default: '0}, // 60: IOR13
@@ -647,6 +654,7 @@ package pinmux_pkg;
   // Intra-IP connections
   typedef struct packed {
     logic [NMioPads-1:0] mio_in;
+    logic [NDioPads-1:0] dio_to_periph;
     pinmux_reg2hw_t reg2hw;
   } p2s_t;
 
@@ -655,6 +663,8 @@ package pinmux_pkg;
     logic [NMioPeriphOut-1:0] periph_oe;
     logic [NMioPads-1:0] pad_data;
     logic [NMioPads-1:0] pad_oe;
+    logic [NDioPads-1:0] periph_to_dio;
+    logic [NDioPads-1:0] periph_to_dio_oe;
   } s2p_t;
 
 endpackage : pinmux_pkg

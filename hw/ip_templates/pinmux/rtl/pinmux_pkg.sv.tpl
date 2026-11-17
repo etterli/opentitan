@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 <%!
-  from ipgen.pinmux_gen import (INSEL_NUM_CONST, OUTSEL_NUM_CONST, check_params, gen_index_label,
-                                mio_insel_legal, mio_outsel_in_primary, mio_outsel_legal,
-                                mio_pad_muxed_in_primary, mio_periph_in_parts, pad_attr_sv, sv_hex)
+  from ipgen.pinmux_gen import (INSEL_NUM_CONST, OUTSEL_NUM_CONST, check_params,
+                                dio_pad_source_in_primary, gen_index_label, mio_insel_legal,
+                                mio_outsel_in_primary, mio_outsel_legal, mio_pad_muxed_in_primary,
+                                mio_periph_in_parts, pad_attr_sv, sv_hex)
 %>\
 package pinmux_pkg;
 
@@ -74,7 +75,7 @@ package pinmux_pkg;
 
 <%
   check_params(n_mio_pads, n_dio_pads, n_mio_periph_in, n_mio_periph_out, mio_periph_ins,
-               mio_periph_outs, mio_pad_attr_resvals, dio_pad_attr_resvals)
+               mio_periph_outs, mio_pad_attr_resvals, dio_pad_attr_resvals, dio_partitions)
   # The pad attrs list has one entry per MIO pad, take the pad names from there.
   mio_pad_names = [name for name, _ in mio_pad_attr_resvals]
   insel_w = n_mio_pads + INSEL_NUM_CONST
@@ -139,6 +140,14 @@ package pinmux_pkg;
   parameter bit AnyMioPadMuxedInPrimary   = |MioPadMuxedInPrimary;
   parameter bit AnyMioPadMuxedInSecondary = !(&MioPadMuxedInPrimary);
 
+  // Whether the peripheral connected to each DIO pad is in the primary partition. LSB corresponds
+  // to lowest index.
+  parameter logic [NDioPads-1:0] DioPadSourceInPrimary = {
+% for label, in_primary in gen_index_label(dio_pad_source_in_primary(dio_partitions))[::-1]:
+    1'b${int(in_primary)}${f"  // {label}" if loop.last else f", // {label}"}
+% endfor
+  };
+
   // Reset values of the MIO_PAD_ATTR CSRs defined by the top. LSB corresponds to lowest index.
   parameter pad_attr_t [NMioPads-1:0] MioPadAttrResval = {
 % for label, attrs in gen_index_label(mio_pad_attr_resvals)[::-1]:
@@ -178,6 +187,7 @@ package pinmux_pkg;
   // Intra-IP connections
   typedef struct packed {
     logic [NMioPads-1:0] mio_in;
+    logic [NDioPads-1:0] dio_to_periph;
     pinmux_reg2hw_t reg2hw;
   } p2s_t;
 
@@ -186,6 +196,8 @@ package pinmux_pkg;
     logic [NMioPeriphOut-1:0] periph_oe;
     logic [NMioPads-1:0] pad_data;
     logic [NMioPads-1:0] pad_oe;
+    logic [NDioPads-1:0] periph_to_dio;
+    logic [NDioPads-1:0] periph_to_dio_oe;
   } s2p_t;
 
 endpackage : pinmux_pkg

@@ -459,6 +459,11 @@ def generate_regfile_from_path(hjson_path: Path,
         sys.exit(1)
 
 
+def _pinmux_io_name(io: Dict) -> str:
+    """Name of a pinmux IO including the bit index of a multibit signal."""
+    return io['name'] + (f"[{io['idx']}]" if io['idx'] >= 0 else '')
+
+
 def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
     """Get the connectivity of the muxed peripheral inputs and outputs.
 
@@ -482,7 +487,7 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
         # misconfiguration is reported by validate, skip them here.
         pads = [mio_pad_idx[pad] for pad in io['pads'] if pad in mio_pad_idx]
 
-        name = io['name'] + (f"[{io['idx']}]" if io['idx'] >= 0 else '')
+        name = _pinmux_io_name(io)
         # The primary partition handles all IOs.
         part = lib.PART_PRIMARY
         periph_in = {'name': name, 'pads': pads, 'partition': part}
@@ -507,6 +512,16 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
             mio_periph_outs.append(periph_out)
 
     return mio_periph_ins, mio_periph_outs
+
+
+def _gen_dio_partitions(top: ConfigT) -> List[Tuple[str, str]]:
+    """Get the pinmux partition of the peripheral connected to each DIO.
+
+    Returns a list of (name, partition) tuples ordered by the DIO index."""
+    dios = sorted((io for io in top['pinmux']['ios'] if io['connection'] != 'muxed'),
+                  key=lambda io: io['glob_idx'])
+    # The primary partition handles all IOs.
+    return [(_pinmux_io_name(io), lib.PART_PRIMARY) for io in dios]
 
 
 def _gen_pad_attr_resvals(
@@ -590,6 +605,9 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
     # Determine the reset values of the pad attribute CSRs.
     mio_pad_attr_resvals, dio_pad_attr_resvals = _gen_pad_attr_resvals(top)
 
+    # Determine the partition of each DIO.
+    dio_partitions = _gen_dio_partitions(top)
+
     log.info("Generating pinmux with following info from hjson:")
     log.info("num_wkup_detect:  %d" % num_wkup_detect)
     log.info("wkup_cnt_width:   %d" % wkup_cnt_width)
@@ -614,6 +632,7 @@ def _get_pinmux_params(top: ConfigT) -> ParamsT:
         "mio_pad_attr_resvals": mio_pad_attr_resvals,
         "n_dio_pads": n_dio_pads,
         "dio_pad_attr_resvals": dio_pad_attr_resvals,
+        "dio_partitions": dio_partitions,
         "n_dio_periph_in": n_dio_periph_in,
         "n_dio_periph_out": n_dio_periph_out,
         "enable_usb_wakeup": pinmux['enable_usb_wakeup'],

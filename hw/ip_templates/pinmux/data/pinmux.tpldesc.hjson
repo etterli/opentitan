@@ -138,6 +138,19 @@
       ]
     }
     {
+      name: "dio_partitions"
+      desc: '''
+            List of (name, partition) tuples for each DIO, ordered ascending by the DIO index.
+            name is the IO name. partition is the pinmux partition of the peripheral connected to
+            the DIO ("primary" or "secondary"), a non-split pinmux only uses "primary".
+            '''
+      type: "object"
+      default: [
+        ["dio_0", "primary"], ["dio_1", "primary"], ["dio_2", "primary"], ["dio_3", "primary"],
+        ["dio_4", "primary"], ["dio_5", "primary"], ["dio_6", "primary"], ["dio_7", "primary"]
+      ]
+    }
+    {
       name: "enable_usb_wakeup"
       desc: "Enable USB wakeup"
       type: "bool"
