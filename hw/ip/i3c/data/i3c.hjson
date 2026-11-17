@@ -60,7 +60,7 @@
   ],
   available_input_list: [
     // Separate inputs so that the Target Reset Detector observes the bus in its own power domain.
-    // Software must route the same pads to these inputs as to `scl` and `sda`.
+    // These inputs must always follow `scl` and `sda`, i.e. observe the same pads.
     { name:      "rstdet_scl",
       desc:      "I3C SCL bus clock input to the Target Reset Detector",
       partition: "secondary"
