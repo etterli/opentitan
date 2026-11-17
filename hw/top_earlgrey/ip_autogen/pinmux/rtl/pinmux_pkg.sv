@@ -62,16 +62,12 @@ package pinmux_pkg;
   // Legal MIO_PERIPH_INSEL values for each MIO peripheral input. LSB corresponds to lowest index.
   // Includes static options.
   parameter logic [NMioPeriphIn-1:0][NMioPads+1:0] MioPeriphInselLegal = {
-    63'h1000000000000003, // 105: sysrst_ctrl_lid_open
-    63'h0002000000000003, // 104: sysrst_ctrl_pwrb_in
-    63'h0040000000000003, // 103: sysrst_ctrl_key2_in
-    63'h0010000000000003, // 102: sysrst_ctrl_key1_in
-    63'h0004000000000003, // 101: sysrst_ctrl_key0_in
-    63'h0008000000000003, // 100: sysrst_ctrl_ac_present
-    63'h1000000a00000003, //  99: i3c1_rstdet_sda
-    63'h0800000500000003, //  98: i3c1_rstdet_scl
-    63'h4000000800200003, //  97: i3c0_rstdet_sda
-    63'h2000000400400003, //  96: i3c0_rstdet_scl
+    63'h1000000000000003, // 101: sysrst_ctrl_lid_open
+    63'h0002000000000003, // 100: sysrst_ctrl_pwrb_in
+    63'h0040000000000003, //  99: sysrst_ctrl_key2_in
+    63'h0010000000000003, //  98: sysrst_ctrl_key1_in
+    63'h0004000000000003, //  97: sysrst_ctrl_key0_in
+    63'h0008000000000003, //  96: sysrst_ctrl_ac_present
     63'h0010000000040003, //  95: uart3_rx
     63'h0000400048000003, //  94: uart2_rx
     63'h0040000000004003, //  93: uart1_rx
@@ -246,16 +242,12 @@ package pinmux_pkg;
 
   // Partitions muxing each MIO peripheral input. LSB corresponds to lowest index.
   parameter mux_part_e [NMioPeriphIn-1:0] MioPeriphInPart = {
-    MuxPartPrimary, // 105: sysrst_ctrl_lid_open
-    MuxPartPrimary, // 104: sysrst_ctrl_pwrb_in
-    MuxPartPrimary, // 103: sysrst_ctrl_key2_in
-    MuxPartPrimary, // 102: sysrst_ctrl_key1_in
-    MuxPartPrimary, // 101: sysrst_ctrl_key0_in
-    MuxPartPrimary, // 100: sysrst_ctrl_ac_present
-    MuxPartSecondary, //  99: i3c1_rstdet_sda
-    MuxPartSecondary, //  98: i3c1_rstdet_scl
-    MuxPartPrimary, //  97: i3c0_rstdet_sda
-    MuxPartPrimary, //  96: i3c0_rstdet_scl
+    MuxPartPrimary, // 101: sysrst_ctrl_lid_open
+    MuxPartPrimary, // 100: sysrst_ctrl_pwrb_in
+    MuxPartPrimary, //  99: sysrst_ctrl_key2_in
+    MuxPartPrimary, //  98: sysrst_ctrl_key1_in
+    MuxPartPrimary, //  97: sysrst_ctrl_key0_in
+    MuxPartPrimary, //  96: sysrst_ctrl_ac_present
     MuxPartSecondary, //  95: uart3_rx
     MuxPartSecondary, //  94: uart2_rx
     MuxPartSecondary, //  93: uart1_rx
@@ -268,8 +260,8 @@ package pinmux_pkg;
     MuxPartPrimary, //  86: sysrst_ctrl_ec_rst_l
     MuxPartSecondary, //  85: i3c1_sda
     MuxPartSecondary, //  84: i3c1_scl
-    MuxPartSecondary, //  83: i3c0_sda
-    MuxPartSecondary, //  82: i3c0_scl
+    MuxPartBoth, //  83: i3c0_sda
+    MuxPartBoth, //  82: i3c0_scl
     MuxPartSecondary, //  81: i2c2_scl
     MuxPartSecondary, //  80: i2c2_sda
     MuxPartSecondary, //  79: i2c1_scl

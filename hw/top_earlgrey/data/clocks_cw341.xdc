@@ -353,34 +353,6 @@ set_case_analysis 1 [get_pins [list ${i3c1_sda_insel}\[0\]/Q ${i3c1_sda_insel}\[
 set_case_analysis 0 [get_pins [list ${i3c1_sda_insel}\[1\]/Q ${i3c1_sda_insel}\[2\]/Q \
     ${i3c1_sda_insel}\[3\]/Q ${i3c1_sda_insel}\[4\]/Q]]
 
-# The Target Reset Detectors are clocked by SCL and SDA too, through their own
-# pinmux inputs. Pin these to the same pads as the inputs of their I3C instance.
-set i3c0_rstdet_scl_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_96/q_reg
-set i3c0_rstdet_sda_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_97/q_reg
-set i3c1_rstdet_scl_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_98/q_reg
-set i3c1_rstdet_sda_insel ${u_pinmux_part_primary}/u_reg/u_mio_periph_insel_99/q_reg
-
-# insel 34 = 6'b100010
-set_case_analysis 1 [get_pins [list ${i3c0_rstdet_scl_insel}\[1\]/Q \
-    ${i3c0_rstdet_scl_insel}\[5\]/Q]]
-set_case_analysis 0 [get_pins [list ${i3c0_rstdet_scl_insel}\[0\]/Q ${i3c0_rstdet_scl_insel}\[2\]/Q \
-    ${i3c0_rstdet_scl_insel}\[3\]/Q ${i3c0_rstdet_scl_insel}\[4\]/Q]]
-# insel 35 = 6'b100011
-set_case_analysis 1 [get_pins [list ${i3c0_rstdet_sda_insel}\[0\]/Q ${i3c0_rstdet_sda_insel}\[1\]/Q \
-    ${i3c0_rstdet_sda_insel}\[5\]/Q]]
-set_case_analysis 0 [get_pins [list ${i3c0_rstdet_sda_insel}\[2\]/Q ${i3c0_rstdet_sda_insel}\[3\]/Q \
-    ${i3c0_rstdet_sda_insel}\[4\]/Q]]
-# insel 32 = 6'b100000
-set_case_analysis 1 [get_pins [list ${i3c1_rstdet_scl_insel}\[5\]/Q]]
-set_case_analysis 0 [get_pins [list ${i3c1_rstdet_scl_insel}\[0\]/Q ${i3c1_rstdet_scl_insel}\[1\]/Q \
-    ${i3c1_rstdet_scl_insel}\[2\]/Q ${i3c1_rstdet_scl_insel}\[3\]/Q \
-    ${i3c1_rstdet_scl_insel}\[4\]/Q]]
-# insel 33 = 6'b100001
-set_case_analysis 1 [get_pins [list ${i3c1_rstdet_sda_insel}\[0\]/Q \
-    ${i3c1_rstdet_sda_insel}\[5\]/Q]]
-set_case_analysis 0 [get_pins [list ${i3c1_rstdet_sda_insel}\[1\]/Q ${i3c1_rstdet_sda_insel}\[2\]/Q \
-    ${i3c1_rstdet_sda_insel}\[3\]/Q ${i3c1_rstdet_sda_insel}\[4\]/Q]]
-
 # Also fix the input inversion pad attribute of these pads (MIO pads 30 to 33) to off.
 # Otherwise, the XOR in the pad wrapper is non-unate, potentially leading Vivado to
 # propagating each clock with both polarities.

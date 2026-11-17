@@ -347,7 +347,7 @@ module earlgrey_pd_main #(
   localparam int SramCtrlMetaOutstanding = 2;
 
   // Signals
-  logic [105:0] mio_p2d;
+  logic [101:0] mio_p2d;
   logic [115:0] mio_d2p;
   logic [115:0] mio_en_d2p;
   logic [1:0] dio_p2d;
@@ -3492,7 +3492,9 @@ module earlgrey_pd_main #(
   assign cio_i3c0_scl_p2d = mio_p2d[MioInI3c0Scl];
   assign cio_i3c0_sda_p2d = mio_p2d[MioInI3c0Sda];
   assign cio_i3c1_scl_p2d = mio_p2d[MioInI3c1Scl];
+  assign cio_i3c1_rstdet_scl_p2d = mio_p2d[MioInI3c1Scl];
   assign cio_i3c1_sda_p2d = mio_p2d[MioInI3c1Sda];
+  assign cio_i3c1_rstdet_sda_p2d = mio_p2d[MioInI3c1Sda];
   assign cio_usbdev_sense_p2d = mio_p2d[MioInUsbdevSense];
   assign cio_spi_device_sck_p2d = mio_p2d[MioInSpiDeviceSck];
   assign cio_spi_device_csb_p2d = mio_p2d[MioInSpiDeviceCsb];
@@ -3501,14 +3503,10 @@ module earlgrey_pd_main #(
   assign cio_uart1_rx_p2d = mio_p2d[MioInUart1Rx];
   assign cio_uart2_rx_p2d = mio_p2d[MioInUart2Rx];
   assign cio_uart3_rx_p2d = mio_p2d[MioInUart3Rx];
-  assign cio_i3c1_rstdet_scl_p2d = mio_p2d[MioInI3c1RstdetScl];
-  assign cio_i3c1_rstdet_sda_p2d = mio_p2d[MioInI3c1RstdetSda];
   logic unused_mio_p2d;
   assign unused_mio_p2d = ^{
     mio_p2d[MioInSysrstCtrlEcRstL],
     mio_p2d[MioInSysrstCtrlFlashWpL],
-    mio_p2d[MioInI3c0RstdetScl],
-    mio_p2d[MioInI3c0RstdetSda],
     mio_p2d[MioInSysrstCtrlAcPresent],
     mio_p2d[MioInSysrstCtrlKey0In],
     mio_p2d[MioInSysrstCtrlKey1In],

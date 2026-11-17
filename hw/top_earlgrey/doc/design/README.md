@@ -388,7 +388,8 @@ The high-keeper enables and the SCL pull-up enable of the peripherals are not co
 Each I3C peripheral has a Target Reset Detector in the secondary partition of the IP (`i3c_part_secondary`, see the [I3C integration notes](../../../ip/i3c/doc/integration_notes.md#target-reset-detector)).
 The detector of `i3c0` is in the `Aon` power domain, and the detector of `i3c1` is in the `Main` power domain.
 Both wake-up requests are connected to the [power manager](../../ip_autogen/pwrmgr/README.md), but only the one from `i3c0` can wake the chip from deep sleep.
-The detectors observe SCL and SDA through their own pinmux inputs, so software shall select the same pads for them as for the SCL and SDA inputs of their I3C peripheral ([#31841](https://github.com/lowRISC/opentitan/issues/31841)).
+The detector inputs are pinmux followers of the SCL and SDA inputs of their I3C peripheral, so they always observe the same pads.
+Software only selects the pads of SCL and SDA.
 The request of the detectors to reset their I3C peripheral is not connected yet ([#31839](https://github.com/lowRISC/opentitan/issues/31839)), and they do not expose a request to reset the whole chip.
 
 See the [I3C specification](../../../ip/i3c/README.md) for more details, and its [implementation status](../../../ip/i3c/doc/implementation_status.md) for the capabilities that the RTL does not implement yet.

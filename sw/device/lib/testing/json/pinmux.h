@@ -116,10 +116,6 @@ extern "C" {
     value(_, Uart1Rx, kTopEarlgreyPinmuxPeripheralInUart1Rx) \
     value(_, Uart2Rx, kTopEarlgreyPinmuxPeripheralInUart2Rx) \
     value(_, Uart3Rx, kTopEarlgreyPinmuxPeripheralInUart3Rx) \
-    value(_, I3c0RstdetScl, kTopEarlgreyPinmuxPeripheralInI3c0RstdetScl) \
-    value(_, I3c0RstdetSda, kTopEarlgreyPinmuxPeripheralInI3c0RstdetSda) \
-    value(_, I3c1RstdetScl, kTopEarlgreyPinmuxPeripheralInI3c1RstdetScl) \
-    value(_, I3c1RstdetSda, kTopEarlgreyPinmuxPeripheralInI3c1RstdetSda) \
     value(_, SysrstCtrlAcPresent, kTopEarlgreyPinmuxPeripheralInSysrstCtrlAcPresent) \
     value(_, SysrstCtrlKey0In, kTopEarlgreyPinmuxPeripheralInSysrstCtrlKey0In) \
     value(_, SysrstCtrlKey1In, kTopEarlgreyPinmuxPeripheralInSysrstCtrlKey1In) \

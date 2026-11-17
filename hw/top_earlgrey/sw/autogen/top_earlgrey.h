@@ -1534,17 +1534,13 @@ typedef enum top_earlgrey_pinmux_peripheral_in {
   kTopEarlgreyPinmuxPeripheralInUart1Rx = 93, /**< Peripheral Input 93 */
   kTopEarlgreyPinmuxPeripheralInUart2Rx = 94, /**< Peripheral Input 94 */
   kTopEarlgreyPinmuxPeripheralInUart3Rx = 95, /**< Peripheral Input 95 */
-  kTopEarlgreyPinmuxPeripheralInI3c0RstdetScl = 96, /**< Peripheral Input 96 */
-  kTopEarlgreyPinmuxPeripheralInI3c0RstdetSda = 97, /**< Peripheral Input 97 */
-  kTopEarlgreyPinmuxPeripheralInI3c1RstdetScl = 98, /**< Peripheral Input 98 */
-  kTopEarlgreyPinmuxPeripheralInI3c1RstdetSda = 99, /**< Peripheral Input 99 */
-  kTopEarlgreyPinmuxPeripheralInSysrstCtrlAcPresent = 100, /**< Peripheral Input 100 */
-  kTopEarlgreyPinmuxPeripheralInSysrstCtrlKey0In = 101, /**< Peripheral Input 101 */
-  kTopEarlgreyPinmuxPeripheralInSysrstCtrlKey1In = 102, /**< Peripheral Input 102 */
-  kTopEarlgreyPinmuxPeripheralInSysrstCtrlKey2In = 103, /**< Peripheral Input 103 */
-  kTopEarlgreyPinmuxPeripheralInSysrstCtrlPwrbIn = 104, /**< Peripheral Input 104 */
-  kTopEarlgreyPinmuxPeripheralInSysrstCtrlLidOpen = 105, /**< Peripheral Input 105 */
-  kTopEarlgreyPinmuxPeripheralInLast = 105, /**< \internal Last valid peripheral input */
+  kTopEarlgreyPinmuxPeripheralInSysrstCtrlAcPresent = 96, /**< Peripheral Input 96 */
+  kTopEarlgreyPinmuxPeripheralInSysrstCtrlKey0In = 97, /**< Peripheral Input 97 */
+  kTopEarlgreyPinmuxPeripheralInSysrstCtrlKey1In = 98, /**< Peripheral Input 98 */
+  kTopEarlgreyPinmuxPeripheralInSysrstCtrlKey2In = 99, /**< Peripheral Input 99 */
+  kTopEarlgreyPinmuxPeripheralInSysrstCtrlPwrbIn = 100, /**< Peripheral Input 100 */
+  kTopEarlgreyPinmuxPeripheralInSysrstCtrlLidOpen = 101, /**< Peripheral Input 101 */
+  kTopEarlgreyPinmuxPeripheralInLast = 101, /**< \internal Last valid peripheral input */
 } top_earlgrey_pinmux_peripheral_in_t;
 
 /**

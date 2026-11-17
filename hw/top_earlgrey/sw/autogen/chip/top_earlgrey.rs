@@ -2691,25 +2691,17 @@ pub enum PinmuxPeripheralIn {
     /// Peripheral Input 95
     Uart3Rx = 95,
     /// Peripheral Input 96
-    I3c0RstdetScl = 96,
+    SysrstCtrlAcPresent = 96,
     /// Peripheral Input 97
-    I3c0RstdetSda = 97,
+    SysrstCtrlKey0In = 97,
     /// Peripheral Input 98
-    I3c1RstdetScl = 98,
+    SysrstCtrlKey1In = 98,
     /// Peripheral Input 99
-    I3c1RstdetSda = 99,
+    SysrstCtrlKey2In = 99,
     /// Peripheral Input 100
-    SysrstCtrlAcPresent = 100,
+    SysrstCtrlPwrbIn = 100,
     /// Peripheral Input 101
-    SysrstCtrlKey0In = 101,
-    /// Peripheral Input 102
-    SysrstCtrlKey1In = 102,
-    /// Peripheral Input 103
-    SysrstCtrlKey2In = 103,
-    /// Peripheral Input 104
-    SysrstCtrlPwrbIn = 104,
-    /// Peripheral Input 105
-    SysrstCtrlLidOpen = 105,
+    SysrstCtrlLidOpen = 101,
 }
 
 impl TryFrom<u32> for PinmuxPeripheralIn {
@@ -2812,16 +2804,12 @@ impl TryFrom<u32> for PinmuxPeripheralIn {
             93 => Ok(Self::Uart1Rx),
             94 => Ok(Self::Uart2Rx),
             95 => Ok(Self::Uart3Rx),
-            96 => Ok(Self::I3c0RstdetScl),
-            97 => Ok(Self::I3c0RstdetSda),
-            98 => Ok(Self::I3c1RstdetScl),
-            99 => Ok(Self::I3c1RstdetSda),
-            100 => Ok(Self::SysrstCtrlAcPresent),
-            101 => Ok(Self::SysrstCtrlKey0In),
-            102 => Ok(Self::SysrstCtrlKey1In),
-            103 => Ok(Self::SysrstCtrlKey2In),
-            104 => Ok(Self::SysrstCtrlPwrbIn),
-            105 => Ok(Self::SysrstCtrlLidOpen),
+            96 => Ok(Self::SysrstCtrlAcPresent),
+            97 => Ok(Self::SysrstCtrlKey0In),
+            98 => Ok(Self::SysrstCtrlKey1In),
+            99 => Ok(Self::SysrstCtrlKey2In),
+            100 => Ok(Self::SysrstCtrlPwrbIn),
+            101 => Ok(Self::SysrstCtrlLidOpen),
             _ => Err(val),
         }
     }

@@ -1741,27 +1741,18 @@ set ::i3c_cfg(board_dly_min) 0.1
 source [sdc_find_script i3c_constraints.tcl {.. .. ip i3c syn}]
 
 # Entries are {peripheral_input peripheral_output mio_pad}, using the MioIn* /
-# MioOut* / MioPad* indices of top_earlgrey_pkg.sv. The reset detectors observe
-# the same pads through their own peripheral inputs and have no peripheral
-# output of their own (hence the dashes in the middle column).
+# MioOut* / MioPad* indices of top_earlgrey_pkg.sv. The reset detectors follow
+# the SCL and SDA inputs and need no entries of their own.
 # Keep the list below as
 # {MioInI3c0Scl       MioOutI3c0Scl MioPadIob11}
 # {MioInI3c0Sda       MioOutI3c0Sda MioPadIob12}
 # {MioInI3c1Scl       MioOutI3c1Scl MioPadIob9 }
 # {MioInI3c1Sda       MioOutI3c1Sda MioPadIob10}
-# {MioInI3c0RstdetScl       -       MioPadIob11}
-# {MioInI3c0RstdetSda       -       MioPadIob12}
-# {MioInI3c1RstdetScl       -       MioPadIob9 }
-# {MioInI3c1RstdetSda       -       MioPadIob10}
 set I3C_PINMUX {
     {82 82 32}
     {83 83 33}
     {84 84 30}
     {85 85 31}
-    {96  - 32}
-    {97  - 33}
-    {98  - 30}
-    {99  - 31}
 }
 sdc_pinmux_case_analysis top_earlgrey/earlgrey_pd_aon/u_pinmux_part_primary ${I3C_PINMUX}
 

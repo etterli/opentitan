@@ -17889,6 +17889,7 @@
           IOB11
           IOR12
         ]
+        follower: i3c0.rstdet_scl
         desc: ""
         attr: ""
       }
@@ -17902,6 +17903,7 @@
           IOB12
           IOR13
         ]
+        follower: i3c0.rstdet_sda
         desc: ""
         attr: ""
       }
@@ -17919,32 +17921,6 @@
         attr: ""
       }
       {
-        instance: i3c0
-        port: rstdet_scl
-        connection: muxed
-        pads:
-        [
-          IOA8
-          IOB11
-          IOR12
-        ]
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: i3c0
-        port: rstdet_sda
-        connection: muxed
-        pads:
-        [
-          IOA7
-          IOB12
-          IOR13
-        ]
-        desc: ""
-        attr: ""
-      }
-      {
         instance: i3c1
         port: scl
         connection: muxed
@@ -17954,6 +17930,7 @@
           IOB11
           IOR10
         ]
+        follower: i3c1.rstdet_scl
         desc: ""
         attr: ""
       }
@@ -17967,6 +17944,7 @@
           IOB12
           IOR11
         ]
+        follower: i3c1.rstdet_sda
         desc: ""
         attr: ""
       }
@@ -17979,32 +17957,6 @@
           IOB7
           IOB10
           IOR2
-        ]
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: i3c1
-        port: rstdet_scl
-        connection: muxed
-        pads:
-        [
-          IOB9
-          IOB11
-          IOR10
-        ]
-        desc: ""
-        attr: ""
-      }
-      {
-        instance: i3c1
-        port: rstdet_sda
-        connection: muxed
-        pads:
-        [
-          IOB10
-          IOB12
-          IOR11
         ]
         desc: ""
         attr: ""
@@ -19552,6 +19504,8 @@
         connection: muxed
         desc: ""
         domain: Main
+        follower: i3c0.rstdet_scl
+        follower_domain: Aon
         glob_idx: 82
       }
       {
@@ -19569,6 +19523,8 @@
         connection: muxed
         desc: ""
         domain: Main
+        follower: i3c0.rstdet_sda
+        follower_domain: Aon
         glob_idx: 83
       }
       {
@@ -19586,6 +19542,8 @@
         connection: muxed
         desc: ""
         domain: Main
+        follower: i3c1.rstdet_scl
+        follower_domain: Main
         glob_idx: 84
       }
       {
@@ -19603,6 +19561,8 @@
         connection: muxed
         desc: ""
         domain: Main
+        follower: i3c1.rstdet_sda
+        follower_domain: Main
         glob_idx: 85
       }
       {
@@ -19770,78 +19730,6 @@
         glob_idx: 95
       }
       {
-        name: i3c0_rstdet_scl
-        width: 1
-        type: input
-        partition: secondary
-        idx: -1
-        pads:
-        [
-          IOA8
-          IOB11
-          IOR12
-        ]
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Aon
-        glob_idx: 96
-      }
-      {
-        name: i3c0_rstdet_sda
-        width: 1
-        type: input
-        partition: secondary
-        idx: -1
-        pads:
-        [
-          IOA7
-          IOB12
-          IOR13
-        ]
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Aon
-        glob_idx: 97
-      }
-      {
-        name: i3c1_rstdet_scl
-        width: 1
-        type: input
-        partition: secondary
-        idx: -1
-        pads:
-        [
-          IOB9
-          IOB11
-          IOR10
-        ]
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 98
-      }
-      {
-        name: i3c1_rstdet_sda
-        width: 1
-        type: input
-        partition: secondary
-        idx: -1
-        pads:
-        [
-          IOB10
-          IOB12
-          IOR11
-        ]
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Main
-        glob_idx: 99
-      }
-      {
         name: sysrst_ctrl_ac_present
         width: 1
         type: input
@@ -19854,7 +19742,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 100
+        glob_idx: 96
       }
       {
         name: sysrst_ctrl_key0_in
@@ -19869,7 +19757,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 101
+        glob_idx: 97
       }
       {
         name: sysrst_ctrl_key1_in
@@ -19884,7 +19772,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 102
+        glob_idx: 98
       }
       {
         name: sysrst_ctrl_key2_in
@@ -19899,7 +19787,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 103
+        glob_idx: 99
       }
       {
         name: sysrst_ctrl_pwrb_in
@@ -19914,7 +19802,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 104
+        glob_idx: 100
       }
       {
         name: sysrst_ctrl_lid_open
@@ -19929,7 +19817,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 105
+        glob_idx: 101
       }
       {
         name: spi_host0_sck
@@ -20377,7 +20265,7 @@
       muxed:
       {
         inouts: 88
-        inputs: 18
+        inputs: 14
         outputs: 28
         pads: 61
       }
