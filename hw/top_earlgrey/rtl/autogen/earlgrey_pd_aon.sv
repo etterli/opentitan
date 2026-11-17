@@ -180,7 +180,7 @@ module earlgrey_pd_aon #(
   localparam int SramCtrlRetOutstanding = 2;
 
   // Signals
-  logic [105:0] mio_p2d;
+  logic [101:0] mio_p2d;
   logic [115:0] mio_d2p;
   logic [115:0] mio_en_d2p;
   logic [1:0] dio_p2d;
@@ -777,10 +777,10 @@ module earlgrey_pd_aon #(
 
   // Pinmux connections
   // All muxed inputs - Inputs handled by other pinmux partition are unused.
+  assign cio_i3c0_rstdet_scl_p2d = mio_p2d[MioInI3c0Scl];
+  assign cio_i3c0_rstdet_sda_p2d = mio_p2d[MioInI3c0Sda];
   assign cio_sysrst_ctrl_ec_rst_l_p2d = mio_p2d[MioInSysrstCtrlEcRstL];
   assign cio_sysrst_ctrl_flash_wp_l_p2d = mio_p2d[MioInSysrstCtrlFlashWpL];
-  assign cio_i3c0_rstdet_scl_p2d = mio_p2d[MioInI3c0RstdetScl];
-  assign cio_i3c0_rstdet_sda_p2d = mio_p2d[MioInI3c0RstdetSda];
   assign cio_sysrst_ctrl_ac_present_p2d = mio_p2d[MioInSysrstCtrlAcPresent];
   assign cio_sysrst_ctrl_key0_in_p2d = mio_p2d[MioInSysrstCtrlKey0In];
   assign cio_sysrst_ctrl_key1_in_p2d = mio_p2d[MioInSysrstCtrlKey1In];
@@ -871,8 +871,6 @@ module earlgrey_pd_aon #(
     mio_p2d[MioInI2c1Scl],
     mio_p2d[MioInI2c2Sda],
     mio_p2d[MioInI2c2Scl],
-    mio_p2d[MioInI3c0Scl],
-    mio_p2d[MioInI3c0Sda],
     mio_p2d[MioInI3c1Scl],
     mio_p2d[MioInI3c1Sda],
     mio_p2d[MioInUsbdevSense],
@@ -882,9 +880,7 @@ module earlgrey_pd_aon #(
     mio_p2d[MioInUart0Rx],
     mio_p2d[MioInUart1Rx],
     mio_p2d[MioInUart2Rx],
-    mio_p2d[MioInUart3Rx],
-    mio_p2d[MioInI3c1RstdetScl],
-    mio_p2d[MioInI3c1RstdetSda]
+    mio_p2d[MioInUart3Rx]
   };
 
   // All muxed outputs - Tied-off signals are handled by other pinmux partition.

@@ -1030,17 +1030,13 @@ package top_earlgrey_pkg;
     MioInUart1Rx = 93,
     MioInUart2Rx = 94,
     MioInUart3Rx = 95,
-    MioInI3c0RstdetScl = 96,
-    MioInI3c0RstdetSda = 97,
-    MioInI3c1RstdetScl = 98,
-    MioInI3c1RstdetSda = 99,
-    MioInSysrstCtrlAcPresent = 100,
-    MioInSysrstCtrlKey0In = 101,
-    MioInSysrstCtrlKey1In = 102,
-    MioInSysrstCtrlKey2In = 103,
-    MioInSysrstCtrlPwrbIn = 104,
-    MioInSysrstCtrlLidOpen = 105,
-    MioInCount = 106
+    MioInSysrstCtrlAcPresent = 96,
+    MioInSysrstCtrlKey0In = 97,
+    MioInSysrstCtrlKey1In = 98,
+    MioInSysrstCtrlKey2In = 99,
+    MioInSysrstCtrlPwrbIn = 100,
+    MioInSysrstCtrlLidOpen = 101,
+    MioInCount = 102
   } mio_in_e;
 
   typedef enum {

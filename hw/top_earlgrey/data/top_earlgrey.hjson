@@ -1950,16 +1950,12 @@
       { instance: "i2c2",        port: 'sda',              connection: 'muxed',  pads: ['IOA7',  'IOB9',  'IOB10', 'IOC12'], desc: ''},
       { instance: "i2c2",        port: 'scl',              connection: 'muxed',  pads: ['IOA8',  'IOB9',  'IOB10', 'IOC9'],  desc: ''},
       // I3Cs
-      { instance: "i3c0",        port: 'scl',              connection: 'muxed',  pads: ['IOA8',  'IOB11', 'IOR12'], desc: ''},
-      { instance: "i3c0",        port: 'sda',              connection: 'muxed',  pads: ['IOA7',  'IOB12', 'IOR13'], desc: ''},
+      { instance: "i3c0",        port: 'scl',              connection: 'muxed',  pads: ['IOA8',  'IOB11', 'IOR12'], follower: 'i3c0.rstdet_scl', desc: ''},
+      { instance: "i3c0",        port: 'sda',              connection: 'muxed',  pads: ['IOA7',  'IOB12', 'IOR13'], follower: 'i3c0.rstdet_sda', desc: ''},
       { instance: "i3c0",        port: 'ctrl_sda_pu',      connection: 'muxed',  pads: ['IOA2',  'IOB8',  'IOR7'],  desc: ''},
-      { instance: "i3c0",        port: 'rstdet_scl',       connection: 'muxed',  pads: ['IOA8',  'IOB11', 'IOR12'], desc: ''}, // Same as SCL. TODO: Implement wakeup mux
-      { instance: "i3c0",        port: 'rstdet_sda',       connection: 'muxed',  pads: ['IOA7',  'IOB12', 'IOR13'], desc: ''}, // Same as SDA. TODO: Implement wakeup mux
-      { instance: "i3c1",        port: 'scl',              connection: 'muxed',  pads: ['IOB9',  'IOB11', 'IOR10'], desc: ''},
-      { instance: "i3c1",        port: 'sda',              connection: 'muxed',  pads: ['IOB10', 'IOB12', 'IOR11'], desc: ''},
+      { instance: "i3c1",        port: 'scl',              connection: 'muxed',  pads: ['IOB9',  'IOB11', 'IOR10'], follower: 'i3c1.rstdet_scl', desc: ''},
+      { instance: "i3c1",        port: 'sda',              connection: 'muxed',  pads: ['IOB10', 'IOB12', 'IOR11'], follower: 'i3c1.rstdet_sda', desc: ''},
       { instance: "i3c1",        port: 'ctrl_sda_pu',      connection: 'muxed',  pads: ['IOB7',  'IOB10', 'IOR2'],  desc: ''},
-      { instance: "i3c1",        port: 'rstdet_scl',       connection: 'muxed',  pads: ['IOB9',  'IOB11', 'IOR10'], desc: ''}, // Same as SCL. TODO: Implement wakeup mux
-      { instance: "i3c1",        port: 'rstdet_sda',       connection: 'muxed',  pads: ['IOB10', 'IOB12', 'IOR11'], desc: ''}, // Same as SDA. TODO: Implement wakeup mux
       // AST / sensor_ctrl
       { instance: "sensor_ctrl", port: 'ast_debug_out[0]', connection: 'muxed',  pads: ['IOA7'],        desc: ''},
       { instance: "sensor_ctrl", port: 'ast_debug_out[1]', connection: 'muxed',  pads: ['IOA8'],        desc: ''},

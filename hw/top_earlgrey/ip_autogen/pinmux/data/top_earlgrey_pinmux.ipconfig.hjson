@@ -8,7 +8,7 @@
     n_wkup_detect: 8
     wkup_cnt_width: 8
     n_mio_pads: 61
-    n_mio_periph_in: 106
+    n_mio_periph_in: 102
     n_mio_periph_out: 116
     mio_periph_ins:
     [
@@ -698,7 +698,7 @@
           32
           59
         ]
-        partition: secondary
+        partition: both
       }
       {
         name: i3c0_sda
@@ -708,7 +708,7 @@
           33
           60
         ]
-        partition: secondary
+        partition: both
       }
       {
         name: i3c1_scl
@@ -819,46 +819,6 @@
         [
           16
           50
-        ]
-        partition: secondary
-      }
-      {
-        name: i3c0_rstdet_scl
-        pads:
-        [
-          20
-          32
-          59
-        ]
-        partition: primary
-      }
-      {
-        name: i3c0_rstdet_sda
-        pads:
-        [
-          19
-          33
-          60
-        ]
-        partition: primary
-      }
-      {
-        name: i3c1_rstdet_scl
-        pads:
-        [
-          30
-          32
-          57
-        ]
-        partition: secondary
-      }
-      {
-        name: i3c1_rstdet_sda
-        pads:
-        [
-          31
-          33
-          58
         ]
         partition: secondary
       }
