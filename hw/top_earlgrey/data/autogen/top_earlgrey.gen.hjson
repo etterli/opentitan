@@ -6367,7 +6367,7 @@
           desc: Width of the DFT AST-to-pad output signal bus
           type: int unsigned
           partition: secondary
-          default: 9
+          default: 8
           local: "true"
           expose: "true"
           name_top: AstAst2PadOutWidth
@@ -6731,7 +6731,7 @@
             param_type: int unsigned
             unpacked_dimensions: null
             partition: secondary
-            default: 9
+            default: 8
             local: true
             expose: true
             name_top: AstAst2PadOutWidth
@@ -7377,7 +7377,7 @@
           struct: logic
           type: uni
           act: rcv
-          width: 9
+          width: 8
           inst_name: sensor_ctrl
           default: ""
           package: ""
@@ -18361,7 +18361,7 @@
       }
       {
         name: sensor_ctrl_ast_debug_out
-        width: 9
+        width: 8
         type: output
         idx: 0
         pad: ""
@@ -18373,7 +18373,7 @@
       }
       {
         name: sensor_ctrl_ast_debug_out
-        width: 9
+        width: 8
         type: output
         idx: 1
         pad: ""
@@ -18385,7 +18385,7 @@
       }
       {
         name: sensor_ctrl_ast_debug_out
-        width: 9
+        width: 8
         type: output
         idx: 2
         pad: ""
@@ -18397,7 +18397,7 @@
       }
       {
         name: sensor_ctrl_ast_debug_out
-        width: 9
+        width: 8
         type: output
         idx: 3
         pad: ""
@@ -18409,7 +18409,7 @@
       }
       {
         name: sensor_ctrl_ast_debug_out
-        width: 9
+        width: 8
         type: output
         idx: 4
         pad: ""
@@ -18421,7 +18421,7 @@
       }
       {
         name: sensor_ctrl_ast_debug_out
-        width: 9
+        width: 8
         type: output
         idx: 5
         pad: ""
@@ -18433,7 +18433,7 @@
       }
       {
         name: sensor_ctrl_ast_debug_out
-        width: 9
+        width: 8
         type: output
         idx: 6
         pad: ""
@@ -18445,7 +18445,7 @@
       }
       {
         name: sensor_ctrl_ast_debug_out
-        width: 9
+        width: 8
         type: output
         idx: 7
         pad: ""
@@ -18454,18 +18454,6 @@
         desc: ""
         domain: Aon
         glob_idx: 97
-      }
-      {
-        name: sensor_ctrl_ast_debug_out
-        width: 9
-        type: output
-        idx: 8
-        pad: ""
-        attr: ""
-        connection: muxed
-        desc: ""
-        domain: Aon
-        glob_idx: 98
       }
       {
         name: sysrst_ctrl_bat_disable
@@ -18477,7 +18465,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 99
+        glob_idx: 98
       }
       {
         name: sysrst_ctrl_key0_out
@@ -18489,7 +18477,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 100
+        glob_idx: 99
       }
       {
         name: sysrst_ctrl_key1_out
@@ -18501,7 +18489,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 101
+        glob_idx: 100
       }
       {
         name: sysrst_ctrl_key2_out
@@ -18513,7 +18501,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 102
+        glob_idx: 101
       }
       {
         name: sysrst_ctrl_pwrb_out
@@ -18525,7 +18513,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 103
+        glob_idx: 102
       }
       {
         name: sysrst_ctrl_z3_wakeup
@@ -18537,7 +18525,7 @@
         connection: muxed
         desc: ""
         domain: Aon
-        glob_idx: 104
+        glob_idx: 103
       }
     ]
     io_counts:
@@ -18553,7 +18541,7 @@
       {
         inouts: 78
         inputs: 16
-        outputs: 27
+        outputs: 26
         pads: 47
       }
     }
@@ -29379,7 +29367,7 @@
           param_type: int unsigned
           unpacked_dimensions: null
           partition: secondary
-          default: 9
+          default: 8
           local: true
           expose: true
           name_top: AstAst2PadOutWidth
@@ -29981,7 +29969,7 @@
         struct: logic
         type: uni
         act: rcv
-        width: 9
+        width: 8
         inst_name: sensor_ctrl
         default: ""
         package: ""
@@ -40811,7 +40799,7 @@
           param_type: int unsigned
           unpacked_dimensions: null
           partition: secondary
-          default: 9
+          default: 8
           local: true
           expose: true
           name_top: AstAst2PadOutWidth
