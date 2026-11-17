@@ -64,6 +64,7 @@ interface chip_if;
 `define OTP_CTRL_HIER       `PD_MAIN_HIER.u_otp_ctrl
 `define OTBN_HIER           `PD_MAIN_HIER.u_otbn
 `define PINMUX_HIER         `PD_AON_HIER.u_pinmux_part_primary
+`define PINMUX_SEC_HIER     `PD_MAIN_HIER.u_pinmux_part_secondary
 `define PWRMGR_HIER         `PD_AON_HIER.u_pwrmgr
 `define ROM_CTRL_HIER       `PD_MAIN_HIER.u_rom_ctrl
 `define RSTMGR_HIER         `PD_AON_HIER.u_rstmgr
@@ -1144,23 +1145,34 @@ interface chip_if;
   `DV_CREATE_SIGNAL_PROBE_FUNCTION(signal_probe_usbdev_sof_valid_o,
       `USBDEV_HIER.usbdev_impl.u_usb_fs_nb_pe.sof_valid_o)
 
+  // TODO: Clean this up. The pinmux probes force both partitions with the same value and OR their
+  // MIO inputs. This hides muxing in the wrong partition, so only the pad attributes are tested.
+  // Check the partition muxing separately, e.g. with per-partition stimulus and checks that are
+  // independent of the RTL constants.
+`define PINMUX_PROBE_BOTH(PORT_) \
+  `DV_CREATE_SIGNAL_PROBE_FUNCTION(signal_probe_pinmux_pri_``PORT_, `PINMUX_HIER.PORT_) \
+  `DV_CREATE_SIGNAL_PROBE_FUNCTION(signal_probe_pinmux_sec_``PORT_, `PINMUX_SEC_HIER.PORT_) \
+  function static logic [UVM_HDL_MAX_WIDTH-1:0] signal_probe_pinmux_``PORT_( \
+      dv_utils_pkg::signal_probe_e kind, logic [UVM_HDL_MAX_WIDTH-1:0] value = '0); \
+    return signal_probe_pinmux_pri_``PORT_(kind, value) | \
+           signal_probe_pinmux_sec_``PORT_(kind, value); \
+  endfunction
+
   // Signal probe function for peripheral to MIO in pinmux.
-  wire [UVM_HDL_MAX_WIDTH-1:0] mio_to_periph = `PINMUX_HIER.mio_to_periph_o;
-  `DV_CREATE_SIGNAL_PROBE_FUNCTION(signal_probe_pinmux_periph_to_mio_i,
-      `PINMUX_HIER.periph_to_mio_i)
+  wire [UVM_HDL_MAX_WIDTH-1:0] mio_to_periph = `PINMUX_HIER.mio_to_periph_o |
+                                              `PINMUX_SEC_HIER.mio_to_periph_o;
+  `PINMUX_PROBE_BOTH(periph_to_mio_i)
 
   // Signal probe function for peripheral to MIO output enable in pinmux.
-  `DV_CREATE_SIGNAL_PROBE_FUNCTION(signal_probe_pinmux_periph_to_mio_oe_i,
-      `PINMUX_HIER.periph_to_mio_oe_i)
+  `PINMUX_PROBE_BOTH(periph_to_mio_oe_i)
 
   // Signal probe function for peripheral to DIO in pinmux.
   wire [UVM_HDL_MAX_WIDTH-1:0] dio_to_periph = `PINMUX_HIER.dio_to_periph_o;
-  `DV_CREATE_SIGNAL_PROBE_FUNCTION(signal_probe_pinmux_periph_to_dio_i,
-      `PINMUX_HIER.periph_to_dio_i)
+  `PINMUX_PROBE_BOTH(periph_to_dio_i)
 
   // Signal probe function for peripheral to DIO output enable in pinmux.
-  `DV_CREATE_SIGNAL_PROBE_FUNCTION(signal_probe_pinmux_periph_to_dio_oe_i,
-      `PINMUX_HIER.periph_to_dio_oe_i)
+  `PINMUX_PROBE_BOTH(periph_to_dio_oe_i)
+`undef PINMUX_PROBE_BOTH
 
   /*
    * Signal probe functions for sampling the FSM states of the IPs
@@ -1308,6 +1320,7 @@ assign spi_host_1_state = {tb.dut.top_earlgrey.earlgrey_pd_main.u_spi_host1.u_sp
 `undef OTP_CTRL_HIER
 `undef OTBN_HIER
 `undef PINMUX_HIER
+`undef PINMUX_SEC_HIER
 `undef PWRMGR_HIER
 `undef ROM_CTRL_HIER
 `undef RSTMGR_HIER

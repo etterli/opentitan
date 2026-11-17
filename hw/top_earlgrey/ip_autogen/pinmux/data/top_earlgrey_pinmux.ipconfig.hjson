@@ -18,7 +18,7 @@
         [
           0
         ]
-        partition: primary
+        partition: secondary
         default_pad: 0
       }
       {
@@ -27,7 +27,7 @@
         [
           1
         ]
-        partition: primary
+        partition: secondary
         default_pad: 1
       }
       {
@@ -36,7 +36,7 @@
         [
           2
         ]
-        partition: primary
+        partition: secondary
         default_pad: 2
       }
       {
@@ -45,7 +45,7 @@
         [
           3
         ]
-        partition: primary
+        partition: secondary
         default_pad: 3
       }
       {
@@ -54,7 +54,7 @@
         [
           22
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_host1_sd[1]
@@ -62,7 +62,7 @@
         [
           23
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_host1_sd[2]
@@ -70,7 +70,7 @@
         [
           25
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_host1_sd[3]
@@ -78,7 +78,7 @@
         [
           27
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_device_sd[0]
@@ -86,7 +86,7 @@
         [
           6
         ]
-        partition: primary
+        partition: secondary
         default_pad: 6
       }
       {
@@ -95,7 +95,7 @@
         [
           7
         ]
-        partition: primary
+        partition: secondary
         default_pad: 7
       }
       {
@@ -104,7 +104,7 @@
         [
           8
         ]
-        partition: primary
+        partition: secondary
         default_pad: 8
       }
       {
@@ -113,7 +113,7 @@
         [
           9
         ]
-        partition: primary
+        partition: secondary
         default_pad: 9
       }
       {
@@ -122,7 +122,7 @@
         [
           0
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[1]
@@ -130,7 +130,7 @@
         [
           1
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[2]
@@ -138,7 +138,7 @@
         [
           2
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[3]
@@ -146,7 +146,7 @@
         [
           3
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[4]
@@ -154,7 +154,7 @@
         [
           4
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[5]
@@ -162,7 +162,7 @@
         [
           5
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[6]
@@ -170,7 +170,7 @@
         [
           6
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[7]
@@ -178,7 +178,7 @@
         [
           7
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[8]
@@ -186,7 +186,7 @@
         [
           8
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[9]
@@ -194,7 +194,7 @@
         [
           9
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[10]
@@ -202,7 +202,7 @@
         [
           10
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[11]
@@ -210,7 +210,7 @@
         [
           11
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[12]
@@ -218,7 +218,7 @@
         [
           12
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[13]
@@ -226,7 +226,7 @@
         [
           13
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[14]
@@ -234,7 +234,7 @@
         [
           14
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[15]
@@ -242,7 +242,7 @@
         [
           15
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[16]
@@ -250,7 +250,7 @@
         [
           16
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[17]
@@ -258,7 +258,7 @@
         [
           17
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[18]
@@ -266,7 +266,7 @@
         [
           18
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[19]
@@ -274,7 +274,7 @@
         [
           19
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[20]
@@ -282,7 +282,7 @@
         [
           20
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[21]
@@ -290,7 +290,7 @@
         [
           21
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[22]
@@ -298,7 +298,7 @@
         [
           22
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[23]
@@ -306,7 +306,7 @@
         [
           23
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[24]
@@ -314,7 +314,7 @@
         [
           24
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[25]
@@ -322,7 +322,7 @@
         [
           25
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[26]
@@ -330,7 +330,7 @@
         [
           26
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[27]
@@ -338,7 +338,7 @@
         [
           27
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[28]
@@ -346,7 +346,7 @@
         [
           28
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[29]
@@ -354,7 +354,7 @@
         [
           29
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[30]
@@ -362,7 +362,7 @@
         [
           30
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[31]
@@ -370,7 +370,7 @@
         [
           31
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[0]
@@ -378,7 +378,7 @@
         [
           32
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[1]
@@ -386,7 +386,7 @@
         [
           33
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[2]
@@ -394,7 +394,7 @@
         [
           34
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[3]
@@ -402,7 +402,7 @@
         [
           35
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[4]
@@ -410,7 +410,7 @@
         [
           36
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[5]
@@ -418,7 +418,7 @@
         [
           37
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[6]
@@ -426,7 +426,7 @@
         [
           38
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[7]
@@ -434,7 +434,7 @@
         [
           39
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[8]
@@ -442,7 +442,7 @@
         [
           40
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[9]
@@ -450,7 +450,7 @@
         [
           41
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[10]
@@ -458,7 +458,7 @@
         [
           42
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[11]
@@ -466,7 +466,7 @@
         [
           43
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[12]
@@ -474,7 +474,7 @@
         [
           44
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[13]
@@ -482,7 +482,7 @@
         [
           45
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[14]
@@ -490,7 +490,7 @@
         [
           46
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[15]
@@ -498,7 +498,7 @@
         [
           47
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[16]
@@ -506,7 +506,7 @@
         [
           48
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[17]
@@ -514,7 +514,7 @@
         [
           49
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[18]
@@ -522,7 +522,7 @@
         [
           50
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[19]
@@ -530,7 +530,7 @@
         [
           51
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[20]
@@ -538,7 +538,7 @@
         [
           52
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[21]
@@ -546,7 +546,7 @@
         [
           53
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[22]
@@ -554,7 +554,7 @@
         [
           54
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[23]
@@ -562,7 +562,7 @@
         [
           55
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[24]
@@ -570,7 +570,7 @@
         [
           56
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[25]
@@ -578,7 +578,7 @@
         [
           57
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[26]
@@ -586,7 +586,7 @@
         [
           58
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[27]
@@ -594,7 +594,7 @@
         [
           59
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[28]
@@ -602,7 +602,7 @@
         [
           60
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[29]
@@ -610,7 +610,7 @@
         [
           57
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[30]
@@ -618,7 +618,7 @@
         [
           58
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[31]
@@ -626,7 +626,7 @@
         [
           59
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c0_sda
@@ -636,7 +636,7 @@
           31
           60
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c0_scl
@@ -646,7 +646,7 @@
           30
           59
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c1_sda
@@ -656,7 +656,7 @@
           33
           58
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c1_scl
@@ -666,7 +666,7 @@
           33
           57
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c2_sda
@@ -677,7 +677,7 @@
           31
           46
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c2_scl
@@ -688,7 +688,7 @@
           31
           43
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c0_scl
@@ -698,7 +698,7 @@
           32
           59
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c0_sda
@@ -708,7 +708,7 @@
           33
           60
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c1_scl
@@ -718,7 +718,7 @@
           32
           57
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c1_sda
@@ -728,7 +728,7 @@
           33
           58
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: sysrst_ctrl_ec_rst_l
@@ -756,7 +756,7 @@
           46
           58
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_device_sck
@@ -764,7 +764,7 @@
         [
           10
         ]
-        partition: primary
+        partition: secondary
         default_pad: 10
       }
       {
@@ -773,7 +773,7 @@
         [
           11
         ]
-        partition: primary
+        partition: secondary
         default_pad: 11
       }
       {
@@ -784,7 +784,7 @@
           16
           19
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: uart0_rx
@@ -793,7 +793,7 @@
           14
           37
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: uart1_rx
@@ -802,7 +802,7 @@
           12
           52
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: uart2_rx
@@ -811,7 +811,7 @@
           25
           44
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: uart3_rx
@@ -820,7 +820,7 @@
           16
           50
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c0_rstdet_scl
@@ -850,7 +850,7 @@
           32
           57
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c1_rstdet_sda
@@ -860,7 +860,7 @@
           33
           58
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: sysrst_ctrl_ac_present
@@ -919,7 +919,7 @@
         [
           0
         ]
-        partition: primary
+        partition: secondary
         default_pad: 0
       }
       {
@@ -928,7 +928,7 @@
         [
           1
         ]
-        partition: primary
+        partition: secondary
         default_pad: 1
       }
       {
@@ -937,7 +937,7 @@
         [
           2
         ]
-        partition: primary
+        partition: secondary
         default_pad: 2
       }
       {
@@ -946,7 +946,7 @@
         [
           3
         ]
-        partition: primary
+        partition: secondary
         default_pad: 3
       }
       {
@@ -955,7 +955,7 @@
         [
           22
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_host1_sd[1]
@@ -963,7 +963,7 @@
         [
           23
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_host1_sd[2]
@@ -971,7 +971,7 @@
         [
           25
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_host1_sd[3]
@@ -979,7 +979,7 @@
         [
           27
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_device_sd[0]
@@ -987,7 +987,7 @@
         [
           6
         ]
-        partition: primary
+        partition: secondary
         default_pad: 6
       }
       {
@@ -996,7 +996,7 @@
         [
           7
         ]
-        partition: primary
+        partition: secondary
         default_pad: 7
       }
       {
@@ -1005,7 +1005,7 @@
         [
           8
         ]
-        partition: primary
+        partition: secondary
         default_pad: 8
       }
       {
@@ -1014,7 +1014,7 @@
         [
           9
         ]
-        partition: primary
+        partition: secondary
         default_pad: 9
       }
       {
@@ -1023,7 +1023,7 @@
         [
           0
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[1]
@@ -1031,7 +1031,7 @@
         [
           1
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[2]
@@ -1039,7 +1039,7 @@
         [
           2
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[3]
@@ -1047,7 +1047,7 @@
         [
           3
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[4]
@@ -1055,7 +1055,7 @@
         [
           4
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[5]
@@ -1063,7 +1063,7 @@
         [
           5
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[6]
@@ -1071,7 +1071,7 @@
         [
           6
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[7]
@@ -1079,7 +1079,7 @@
         [
           7
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[8]
@@ -1087,7 +1087,7 @@
         [
           8
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[9]
@@ -1095,7 +1095,7 @@
         [
           9
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[10]
@@ -1103,7 +1103,7 @@
         [
           10
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[11]
@@ -1111,7 +1111,7 @@
         [
           11
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[12]
@@ -1119,7 +1119,7 @@
         [
           12
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[13]
@@ -1127,7 +1127,7 @@
         [
           13
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[14]
@@ -1135,7 +1135,7 @@
         [
           14
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[15]
@@ -1143,7 +1143,7 @@
         [
           15
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[16]
@@ -1151,7 +1151,7 @@
         [
           16
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[17]
@@ -1159,7 +1159,7 @@
         [
           17
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[18]
@@ -1167,7 +1167,7 @@
         [
           18
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[19]
@@ -1175,7 +1175,7 @@
         [
           19
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[20]
@@ -1183,7 +1183,7 @@
         [
           20
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[21]
@@ -1191,7 +1191,7 @@
         [
           21
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[22]
@@ -1199,7 +1199,7 @@
         [
           22
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[23]
@@ -1207,7 +1207,7 @@
         [
           23
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[24]
@@ -1215,7 +1215,7 @@
         [
           24
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[25]
@@ -1223,7 +1223,7 @@
         [
           25
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[26]
@@ -1231,7 +1231,7 @@
         [
           26
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[27]
@@ -1239,7 +1239,7 @@
         [
           27
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[28]
@@ -1247,7 +1247,7 @@
         [
           28
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[29]
@@ -1255,7 +1255,7 @@
         [
           29
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[30]
@@ -1263,7 +1263,7 @@
         [
           30
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio0_gpio[31]
@@ -1271,7 +1271,7 @@
         [
           31
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[0]
@@ -1279,7 +1279,7 @@
         [
           32
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[1]
@@ -1287,7 +1287,7 @@
         [
           33
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[2]
@@ -1295,7 +1295,7 @@
         [
           34
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[3]
@@ -1303,7 +1303,7 @@
         [
           35
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[4]
@@ -1311,7 +1311,7 @@
         [
           36
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[5]
@@ -1319,7 +1319,7 @@
         [
           37
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[6]
@@ -1327,7 +1327,7 @@
         [
           38
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[7]
@@ -1335,7 +1335,7 @@
         [
           39
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[8]
@@ -1343,7 +1343,7 @@
         [
           40
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[9]
@@ -1351,7 +1351,7 @@
         [
           41
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[10]
@@ -1359,7 +1359,7 @@
         [
           42
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[11]
@@ -1367,7 +1367,7 @@
         [
           43
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[12]
@@ -1375,7 +1375,7 @@
         [
           44
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[13]
@@ -1383,7 +1383,7 @@
         [
           45
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[14]
@@ -1391,7 +1391,7 @@
         [
           46
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[15]
@@ -1399,7 +1399,7 @@
         [
           47
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[16]
@@ -1407,7 +1407,7 @@
         [
           48
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[17]
@@ -1415,7 +1415,7 @@
         [
           49
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[18]
@@ -1423,7 +1423,7 @@
         [
           50
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[19]
@@ -1431,7 +1431,7 @@
         [
           51
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[20]
@@ -1439,7 +1439,7 @@
         [
           52
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[21]
@@ -1447,7 +1447,7 @@
         [
           53
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[22]
@@ -1455,7 +1455,7 @@
         [
           54
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[23]
@@ -1463,7 +1463,7 @@
         [
           55
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[24]
@@ -1471,7 +1471,7 @@
         [
           56
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[25]
@@ -1479,7 +1479,7 @@
         [
           57
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[26]
@@ -1487,7 +1487,7 @@
         [
           58
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[27]
@@ -1495,7 +1495,7 @@
         [
           59
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[28]
@@ -1503,7 +1503,7 @@
         [
           60
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[29]
@@ -1511,7 +1511,7 @@
         [
           57
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[30]
@@ -1519,7 +1519,7 @@
         [
           58
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: gpio1_gpio[31]
@@ -1527,7 +1527,7 @@
         [
           59
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c0_sda
@@ -1537,7 +1537,7 @@
           31
           60
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c0_scl
@@ -1547,7 +1547,7 @@
           30
           59
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c1_sda
@@ -1557,7 +1557,7 @@
           33
           58
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c1_scl
@@ -1567,7 +1567,7 @@
           33
           57
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c2_sda
@@ -1578,7 +1578,7 @@
           31
           46
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i2c2_scl
@@ -1589,7 +1589,7 @@
           31
           43
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c0_scl
@@ -1599,7 +1599,7 @@
           32
           59
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c0_sda
@@ -1609,7 +1609,7 @@
           33
           60
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c1_scl
@@ -1619,7 +1619,7 @@
           32
           57
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c1_sda
@@ -1629,7 +1629,7 @@
           33
           58
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: sysrst_ctrl_ec_rst_l
@@ -1655,7 +1655,7 @@
         [
           4
         ]
-        partition: primary
+        partition: secondary
         default_pad: 4
       }
       {
@@ -1664,7 +1664,7 @@
         [
           5
         ]
-        partition: primary
+        partition: secondary
         default_pad: 5
       }
       {
@@ -1674,7 +1674,7 @@
           14
           17
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_host0_csb[2]
@@ -1683,7 +1683,7 @@
           15
           16
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_host1_sck
@@ -1691,7 +1691,7 @@
         [
           24
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_host1_csb[0]
@@ -1699,7 +1699,7 @@
         [
           21
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_host1_csb[1]
@@ -1707,7 +1707,7 @@
         [
           26
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: spi_host1_csb[2]
@@ -1716,7 +1716,7 @@
           28
           29
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: uart0_tx
@@ -1725,7 +1725,7 @@
           15
           38
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: uart1_tx
@@ -1734,7 +1734,7 @@
           13
           53
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: uart2_tx
@@ -1743,7 +1743,7 @@
           26
           45
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: uart3_tx
@@ -1752,7 +1752,7 @@
           17
           51
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c0_ctrl_sda_pu
@@ -1762,7 +1762,7 @@
           29
           54
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: i3c1_ctrl_sda_pu
@@ -1772,7 +1772,7 @@
           31
           49
         ]
-        partition: primary
+        partition: secondary
       }
       {
         name: sensor_ctrl_ast_debug_out[0]
@@ -2157,11 +2157,11 @@
     [
       [
         usbdev_usb_dp
-        primary
+        secondary
       ]
       [
         usbdev_usb_dn
-        primary
+        secondary
       ]
     ]
     n_dio_periph_in: 2

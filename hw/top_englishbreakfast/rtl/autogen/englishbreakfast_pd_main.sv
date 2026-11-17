@@ -1328,7 +1328,7 @@ module englishbreakfast_pd_main #(
 
 
   // Pinmux connections
-  // All muxed inputs
+  // All muxed inputs - Inputs handled by other pinmux partition are unused.
   assign cio_gpio0_gpio_p2d[0] = mio_p2d[MioInGpio0Gpio0];
   assign cio_gpio0_gpio_p2d[1] = mio_p2d[MioInGpio0Gpio1];
   assign cio_gpio0_gpio_p2d[2] = mio_p2d[MioInGpio0Gpio2];
@@ -1368,7 +1368,7 @@ module englishbreakfast_pd_main #(
   assign cio_flash_ctrl_tdi_p2d = mio_p2d[MioInFlashCtrlTdi];
   assign cio_usbdev_sense_p2d = mio_p2d[MioInUsbdevSense];
 
-  // All muxed outputs
+  // All muxed outputs - Tied-off signals are handled by other pinmux partition.
   assign mio_d2p[MioOutGpio0Gpio0] = cio_gpio0_gpio_d2p[0];
   assign mio_d2p[MioOutGpio0Gpio1] = cio_gpio0_gpio_d2p[1];
   assign mio_d2p[MioOutGpio0Gpio2] = cio_gpio0_gpio_d2p[2];
@@ -1405,7 +1405,7 @@ module englishbreakfast_pd_main #(
   assign mio_d2p[MioOutUart1Tx] = cio_uart1_tx_d2p;
   assign mio_d2p[MioOutFlashCtrlTdo] = cio_flash_ctrl_tdo_d2p;
 
-  // All muxed output enables
+  // All muxed output enables - Tied-off signals are handled by other pinmux partition.
   assign mio_en_d2p[MioOutGpio0Gpio0] = cio_gpio0_gpio_en_d2p[0];
   assign mio_en_d2p[MioOutGpio0Gpio1] = cio_gpio0_gpio_en_d2p[1];
   assign mio_en_d2p[MioOutGpio0Gpio2] = cio_gpio0_gpio_en_d2p[2];
@@ -1458,7 +1458,8 @@ module englishbreakfast_pd_main #(
   assign cio_spi_device_sck_p2d = dio_p2d[DioSpiDeviceSck];
   assign cio_spi_device_csb_p2d = dio_p2d[DioSpiDeviceCsb];
 
-  // All dedicated outputs
+  // All dedicated outputs - Tied-off signals are handled by other pinmux partition.
+  // Input-only DIOs are tied-off as well.
   assign dio_d2p[DioSpiHost0Sd0] = cio_spi_host0_sd_d2p[0];
   assign dio_d2p[DioSpiHost0Sd1] = cio_spi_host0_sd_d2p[1];
   assign dio_d2p[DioSpiHost0Sd2] = cio_spi_host0_sd_d2p[2];
@@ -1474,7 +1475,8 @@ module englishbreakfast_pd_main #(
   assign dio_d2p[DioSpiHost0Sck] = cio_spi_host0_sck_d2p;
   assign dio_d2p[DioSpiHost0Csb] = cio_spi_host0_csb_d2p;
 
-  // All dedicated output enables
+  // All dedicated output enables - Tied-off signals are handled by other pinmux partition.
+  // Input-only DIOs are tied-off as well.
   assign dio_en_d2p[DioSpiHost0Sd0] = cio_spi_host0_sd_en_d2p[0];
   assign dio_en_d2p[DioSpiHost0Sd1] = cio_spi_host0_sd_en_d2p[1];
   assign dio_en_d2p[DioSpiHost0Sd2] = cio_spi_host0_sd_en_d2p[2];

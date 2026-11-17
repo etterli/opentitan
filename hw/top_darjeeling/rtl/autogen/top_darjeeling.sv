@@ -345,9 +345,6 @@ module top_darjeeling #(
   tlul_pkg::tl_d2h_t       sram_ctrl_ret_ram_tl_rsp;
   tlul_pkg::tl_h2d_t       aon_timer_tl_req;
   tlul_pkg::tl_d2h_t       aon_timer_tl_rsp;
-  logic [15:0] cio_soc_proxy_soc_gpi_p2d;
-  logic [15:0] cio_soc_proxy_soc_gpo_d2p;
-  logic [15:0] cio_soc_proxy_soc_gpo_en_d2p;
 
 
   ///////////////////////////
@@ -539,9 +536,6 @@ module top_darjeeling #(
     .sram_ctrl_ret_ram_tl_rsp_i     (sram_ctrl_ret_ram_tl_rsp ),
     .aon_timer_tl_req_o             (aon_timer_tl_req         ),
     .aon_timer_tl_rsp_i             (aon_timer_tl_rsp         ),
-    .cio_soc_proxy_soc_gpi_p2d_o    (cio_soc_proxy_soc_gpi_p2d),
-    .cio_soc_proxy_soc_gpo_d2p_i    (cio_soc_proxy_soc_gpo_d2p),
-    .cio_soc_proxy_soc_gpo_en_d2p_i (cio_soc_proxy_soc_gpo_en_d2p),
 
     // Regular ports (auto-generated)
     .ast_lc_dft_en_o,
@@ -717,9 +711,6 @@ module top_darjeeling #(
     .sram_ctrl_ret_ram_tl_rsp_o     (sram_ctrl_ret_ram_tl_rsp ),
     .aon_timer_tl_req_i             (aon_timer_tl_req         ),
     .aon_timer_tl_rsp_o             (aon_timer_tl_rsp         ),
-    .cio_soc_proxy_soc_gpi_p2d_i    (cio_soc_proxy_soc_gpi_p2d),
-    .cio_soc_proxy_soc_gpo_d2p_o    (cio_soc_proxy_soc_gpo_d2p),
-    .cio_soc_proxy_soc_gpo_en_d2p_o (cio_soc_proxy_soc_gpo_en_d2p),
 
     // Regular ports (auto-generated)
     .sram_ctrl_ret_ram_cfg_req_i,

@@ -453,6 +453,7 @@ module pinmux_part_primary
 
   // The sense signal is taken after the MIO mux. Thus this mux must reside in this partition as
   // well. Otherwise the sense would be based upon a tied-off signal.
+  // TODO: this fails because of the required wakeup rework.
   `ASSERT_INIT(UsbSenseMuxInPrimary_A,
       MioPeriphInPart[TargetCfg.usb_sense_idx] inside {MuxPartPrimary, MuxPartBoth})
 % endif

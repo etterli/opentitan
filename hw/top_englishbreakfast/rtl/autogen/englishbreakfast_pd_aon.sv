@@ -76,6 +76,17 @@ module englishbreakfast_pd_aon #(
   // Local Parameters
 
   // Signals
+  logic [37:0] mio_p2d;
+  logic [34:0] mio_d2p;
+  logic [34:0] mio_en_d2p;
+  logic [13:0] dio_p2d;
+  logic [13:0] dio_d2p;
+  logic [13:0] dio_en_d2p;
+  // pwrmgr
+  // rstmgr
+  // clkmgr
+  // pinmux
+  // aon_timer
 
 
   // Interrupt source list
@@ -303,7 +314,15 @@ module englishbreakfast_pd_aon #(
 
     // Inter-module signals
     .p2s_i(pinmux_p2s_i),
-    .s2p_o(pinmux_s2p_o)
+    .s2p_o(pinmux_s2p_o),
+
+    .periph_to_mio_i   (mio_d2p   ),
+    .periph_to_mio_oe_i(mio_en_d2p),
+    .mio_to_periph_o   (mio_p2d   ),
+
+    .periph_to_dio_i   (dio_d2p   ),
+    .periph_to_dio_oe_i(dio_en_d2p),
+    .dio_to_periph_o   (dio_p2d   )
   );
 
   aon_timer #(
@@ -345,6 +364,161 @@ module englishbreakfast_pd_aon #(
   };
 
 
+  // Pinmux connections
+  // All muxed inputs - Inputs handled by other pinmux partition are unused.
+  logic unused_mio_p2d;
+  assign unused_mio_p2d = ^{
+    mio_p2d[MioInGpio0Gpio0],
+    mio_p2d[MioInGpio0Gpio1],
+    mio_p2d[MioInGpio0Gpio2],
+    mio_p2d[MioInGpio0Gpio3],
+    mio_p2d[MioInGpio0Gpio4],
+    mio_p2d[MioInGpio0Gpio5],
+    mio_p2d[MioInGpio0Gpio6],
+    mio_p2d[MioInGpio0Gpio7],
+    mio_p2d[MioInGpio0Gpio8],
+    mio_p2d[MioInGpio0Gpio9],
+    mio_p2d[MioInGpio0Gpio10],
+    mio_p2d[MioInGpio0Gpio11],
+    mio_p2d[MioInGpio0Gpio12],
+    mio_p2d[MioInGpio0Gpio13],
+    mio_p2d[MioInGpio0Gpio14],
+    mio_p2d[MioInGpio0Gpio15],
+    mio_p2d[MioInGpio0Gpio16],
+    mio_p2d[MioInGpio0Gpio17],
+    mio_p2d[MioInGpio0Gpio18],
+    mio_p2d[MioInGpio0Gpio19],
+    mio_p2d[MioInGpio0Gpio20],
+    mio_p2d[MioInGpio0Gpio21],
+    mio_p2d[MioInGpio0Gpio22],
+    mio_p2d[MioInGpio0Gpio23],
+    mio_p2d[MioInGpio0Gpio24],
+    mio_p2d[MioInGpio0Gpio25],
+    mio_p2d[MioInGpio0Gpio26],
+    mio_p2d[MioInGpio0Gpio27],
+    mio_p2d[MioInGpio0Gpio28],
+    mio_p2d[MioInGpio0Gpio29],
+    mio_p2d[MioInGpio0Gpio30],
+    mio_p2d[MioInGpio0Gpio31],
+    mio_p2d[MioInUart0Rx],
+    mio_p2d[MioInUart1Rx],
+    mio_p2d[MioInFlashCtrlTck],
+    mio_p2d[MioInFlashCtrlTms],
+    mio_p2d[MioInFlashCtrlTdi],
+    mio_p2d[MioInUsbdevSense]
+  };
+
+  // All muxed outputs - Tied-off signals are handled by other pinmux partition.
+  assign mio_d2p[MioOutGpio0Gpio0] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio1] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio2] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio3] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio4] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio5] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio6] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio7] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio8] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio9] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio10] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio11] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio12] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio13] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio14] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio15] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio16] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio17] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio18] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio19] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio20] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio21] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio22] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio23] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio24] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio25] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio26] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio27] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio28] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio29] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio30] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio31] = 1'b0;
+  assign mio_d2p[MioOutUart0Tx] = 1'b0;
+  assign mio_d2p[MioOutUart1Tx] = 1'b0;
+  assign mio_d2p[MioOutFlashCtrlTdo] = 1'b0;
+
+  // All muxed output enables - Tied-off signals are handled by other pinmux partition.
+  assign mio_en_d2p[MioOutGpio0Gpio0] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio1] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio2] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio3] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio4] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio5] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio6] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio7] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio8] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio9] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio10] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio11] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio12] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio13] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio14] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio15] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio16] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio17] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio18] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio19] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio20] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio21] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio22] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio23] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio24] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio25] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio26] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio27] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio28] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio29] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio30] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio31] = 1'b0;
+  assign mio_en_d2p[MioOutUart0Tx] = 1'b0;
+  assign mio_en_d2p[MioOutUart1Tx] = 1'b0;
+  assign mio_en_d2p[MioOutFlashCtrlTdo] = 1'b0;
+
+  // All dedicated inputs
+  logic [13:0] unused_dio_p2d;
+  assign unused_dio_p2d = dio_p2d;
+
+  // All dedicated outputs - Tied-off signals are handled by other pinmux partition.
+  // Input-only DIOs are tied-off as well.
+  assign dio_d2p[DioSpiHost0Sd0] = 1'b0;
+  assign dio_d2p[DioSpiHost0Sd1] = 1'b0;
+  assign dio_d2p[DioSpiHost0Sd2] = 1'b0;
+  assign dio_d2p[DioSpiHost0Sd3] = 1'b0;
+  assign dio_d2p[DioSpiDeviceSd0] = 1'b0;
+  assign dio_d2p[DioSpiDeviceSd1] = 1'b0;
+  assign dio_d2p[DioSpiDeviceSd2] = 1'b0;
+  assign dio_d2p[DioSpiDeviceSd3] = 1'b0;
+  assign dio_d2p[DioUsbdevUsbDp] = 1'b0;
+  assign dio_d2p[DioUsbdevUsbDn] = 1'b0;
+  assign dio_d2p[DioSpiDeviceSck] = 1'b0;
+  assign dio_d2p[DioSpiDeviceCsb] = 1'b0;
+  assign dio_d2p[DioSpiHost0Sck] = 1'b0;
+  assign dio_d2p[DioSpiHost0Csb] = 1'b0;
+
+  // All dedicated output enables - Tied-off signals are handled by other pinmux partition.
+  // Input-only DIOs are tied-off as well.
+  assign dio_en_d2p[DioSpiHost0Sd0] = 1'b0;
+  assign dio_en_d2p[DioSpiHost0Sd1] = 1'b0;
+  assign dio_en_d2p[DioSpiHost0Sd2] = 1'b0;
+  assign dio_en_d2p[DioSpiHost0Sd3] = 1'b0;
+  assign dio_en_d2p[DioSpiDeviceSd0] = 1'b0;
+  assign dio_en_d2p[DioSpiDeviceSd1] = 1'b0;
+  assign dio_en_d2p[DioSpiDeviceSd2] = 1'b0;
+  assign dio_en_d2p[DioSpiDeviceSd3] = 1'b0;
+  assign dio_en_d2p[DioUsbdevUsbDp] = 1'b0;
+  assign dio_en_d2p[DioUsbdevUsbDn] = 1'b0;
+  assign dio_en_d2p[DioSpiDeviceSck] = 1'b0;
+  assign dio_en_d2p[DioSpiDeviceCsb] = 1'b0;
+  assign dio_en_d2p[DioSpiHost0Sck] = 1'b0;
+  assign dio_en_d2p[DioSpiHost0Csb] = 1'b0;
 
   // Make sure scanmode_i is never X (including during reset)
   `ASSERT_KNOWN(scanmodeKnown, scanmode_i, clk_main_i, 0)
