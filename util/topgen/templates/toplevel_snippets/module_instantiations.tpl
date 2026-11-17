@@ -6,12 +6,6 @@
 <%from topgen.merge import is_unmanaged_reset%>\
 <%from topgen.merge import alert_handler_signals%>\
 <%page args="top, feature_info, domain"/>\
-<%
-if lib.find_module(top["module"], "pinmux").get("domain") == domain:
-  cio_suffix_o, cio_suffix_i = ("", "")
-else:
-  cio_suffix_o, cio_suffix_i = ("_o", "_i")
-%>\
   // Instantiation of IPs
 <% outgoing_interrupt_idx = defaultdict(int) %>\
 % for m in lib.get_all_modules(top, domain=domain):
@@ -54,9 +48,11 @@ has_cio_outputs = len(outputs + inouts) > 0
 ## partition may have neither, so find the earlier section that holds the last port and drop its
 ## trailing comma. last_section is None for every non-split instance, so their output is unchanged.
 ## Some templated IPs append their own ports after the inter-module signals, the pinmux only in
-## its primary partition.
+## the partition connecting to the CIOs of this domain.
+pinmux_connects_cios = (m.get("template_type") == "pinmux" and
+                        feature_info["pinmux_domains"].get(domain) == partition)
 has_trailing_ports = (m.get("template_type") in ["rv_plic", "alert_handler"] or
-                      (m.get("template_type") == "pinmux" and partition == lib.PART_PRIMARY))
+                      pinmux_connects_cios)
 emits_terminator = bool(inter_signals) or has_trailing_ports
 if emits_terminator:
   last_section = None
@@ -148,7 +144,7 @@ else:
 % if has_cio_inputs:
     // CIO inputs
   % for p_in in inputs + inouts:
-    .${lib.ljust("cio_"+p_in.name+"_i",max_sigwidth+9)}(cio_${m["name"]}_${p_in.name}_p2d${cio_suffix_i})${"" if (last_section == "cio_in" and loop.last) else ","}
+    .${lib.ljust("cio_"+p_in.name+"_i",max_sigwidth+9)}(cio_${m["name"]}_${p_in.name}_p2d)${"" if (last_section == "cio_in" and loop.last) else ","}
   % endfor
 
 % endif\
@@ -156,8 +152,8 @@ else:
 % if has_cio_outputs:
     // CIO outputs
   % for p_out in outputs + inouts:
-    .${lib.ljust("cio_"+p_out.name+"_o",   max_sigwidth+9)}(cio_${m["name"]}_${p_out.name}_d2p${cio_suffix_o}),
-    .${lib.ljust("cio_"+p_out.name+"_en_o",max_sigwidth+9)}(cio_${m["name"]}_${p_out.name}_en_d2p${cio_suffix_o})${"" if (last_section == "cio_out" and loop.last) else ","}
+    .${lib.ljust("cio_"+p_out.name+"_o",   max_sigwidth+9)}(cio_${m["name"]}_${p_out.name}_d2p),
+    .${lib.ljust("cio_"+p_out.name+"_en_o",max_sigwidth+9)}(cio_${m["name"]}_${p_out.name}_en_d2p)${"" if (last_section == "cio_out" and loop.last) else ","}
   % endfor
 
 % endif\
@@ -209,6 +205,15 @@ else:
     .dio_out_o,
     .dio_oe_o,
     .dio_in_i
+% elif pinmux_connects_cios:
+
+    .periph_to_mio_i   (mio_d2p   ),
+    .periph_to_mio_oe_i(mio_en_d2p),
+    .mio_to_periph_o   (mio_p2d   ),
+
+    .periph_to_dio_i   (dio_d2p   ),
+    .periph_to_dio_oe_i(dio_en_d2p),
+    .dio_to_periph_o   (dio_p2d   )
 % elif m.get("template_type") == "alert_handler":
 <% alert_tx, alert_rx = alert_handler_signals(m["type"]) %>\
 

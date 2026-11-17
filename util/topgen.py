@@ -476,6 +476,7 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
     pinmux = top["pinmux"]
     mio_pad_idx = {pad['name']: pad['idx'] for pad in top['pinout']['pads']
                    if pad['connection'] == 'muxed'}
+    pinmux_domains = lib.get_pinmux_partitions_domains(top)
 
     mio_periph_ins = []
     mio_periph_outs = []
@@ -488,8 +489,7 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
         pads = [mio_pad_idx[pad] for pad in io['pads'] if pad in mio_pad_idx]
 
         name = _pinmux_io_name(io)
-        # The primary partition handles all IOs.
-        part = lib.PART_PRIMARY
+        part = pinmux_domains[io['domain']]
         periph_in = {'name': name, 'pads': pads, 'partition': part}
         periph_out = {'name': name, 'pads': pads, 'partition': part}
 
@@ -517,11 +517,12 @@ def _gen_mio_periphs(top: ConfigT) -> Tuple[List[Dict], List[Dict]]:
 def _gen_dio_partitions(top: ConfigT) -> List[Tuple[str, str]]:
     """Get the pinmux partition of the peripheral connected to each DIO.
 
-    Returns a list of (name, partition) tuples ordered by the DIO index."""
+    Returns a list of (name, partition) tuples ordered by the DIO index. A DIO connects to a single
+    peripheral, manual DIOs included, so the peripheral defines the partition of the DIO."""
+    pinmux_domains = lib.get_pinmux_partitions_domains(top)
     dios = sorted((io for io in top['pinmux']['ios'] if io['connection'] != 'muxed'),
                   key=lambda io: io['glob_idx'])
-    # The primary partition handles all IOs.
-    return [(_pinmux_io_name(io), lib.PART_PRIMARY) for io in dios]
+    return [(_pinmux_io_name(io), pinmux_domains[io['domain']]) for io in dios]
 
 
 def _gen_pad_attr_resvals(

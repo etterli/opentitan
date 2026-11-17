@@ -71,20 +71,20 @@ package pinmux_pkg;
 
   // Partitions muxing each MIO peripheral input. LSB corresponds to lowest index.
   parameter mux_part_e [NMioPeriphIn-1:0] MioPeriphInPart = {
-    MuxPartPrimary, // 3: soc_proxy_soc_gpi[15]
-    MuxPartPrimary, // 2: soc_proxy_soc_gpi[14]
-    MuxPartPrimary, // 1: soc_proxy_soc_gpi[13]
-    MuxPartPrimary  // 0: soc_proxy_soc_gpi[12]
+    MuxPartSecondary, // 3: soc_proxy_soc_gpi[15]
+    MuxPartSecondary, // 2: soc_proxy_soc_gpi[14]
+    MuxPartSecondary, // 1: soc_proxy_soc_gpi[13]
+    MuxPartSecondary  // 0: soc_proxy_soc_gpi[12]
   };
 
   // Whether the source of each MIO_OUTSEL value is in the primary partition. LSB corresponds to
   // lowest index. Includes the static options, which exist in both partitions.
   parameter logic [AlignedMioOutMuxSize-1:0] MioOutselInPrimary = AlignedMioOutMuxSize'({
     1'b1, // 7: otp_macro_test[0]
-    1'b1, // 6: soc_proxy_soc_gpo[15]
-    1'b1, // 5: soc_proxy_soc_gpo[14]
-    1'b1, // 4: soc_proxy_soc_gpo[13]
-    1'b1, // 3: soc_proxy_soc_gpo[12]
+    1'b0, // 6: soc_proxy_soc_gpo[15]
+    1'b0, // 5: soc_proxy_soc_gpo[14]
+    1'b0, // 4: soc_proxy_soc_gpo[13]
+    1'b0, // 3: soc_proxy_soc_gpo[12]
     3'b111  // 2..0: static options
   });
 
@@ -117,33 +117,33 @@ package pinmux_pkg;
   // Whether the peripheral connected to each DIO pad is in the primary partition. LSB corresponds
   // to lowest index.
   parameter logic [NDioPads-1:0] DioPadSourceInPrimary = {
-    1'b1, // 72: soc_proxy_soc_gpo[11]
-    1'b1, // 71: soc_proxy_soc_gpo[10]
-    1'b1, // 70: soc_proxy_soc_gpo[9]
-    1'b1, // 69: soc_proxy_soc_gpo[8]
-    1'b1, // 68: soc_proxy_soc_gpo[7]
-    1'b1, // 67: soc_proxy_soc_gpo[6]
-    1'b1, // 66: soc_proxy_soc_gpo[5]
-    1'b1, // 65: soc_proxy_soc_gpo[4]
-    1'b1, // 64: soc_proxy_soc_gpo[3]
-    1'b1, // 63: soc_proxy_soc_gpo[2]
-    1'b1, // 62: soc_proxy_soc_gpo[1]
-    1'b1, // 61: soc_proxy_soc_gpo[0]
+    1'b0, // 72: soc_proxy_soc_gpo[11]
+    1'b0, // 71: soc_proxy_soc_gpo[10]
+    1'b0, // 70: soc_proxy_soc_gpo[9]
+    1'b0, // 69: soc_proxy_soc_gpo[8]
+    1'b0, // 68: soc_proxy_soc_gpo[7]
+    1'b0, // 67: soc_proxy_soc_gpo[6]
+    1'b0, // 66: soc_proxy_soc_gpo[5]
+    1'b0, // 65: soc_proxy_soc_gpo[4]
+    1'b0, // 64: soc_proxy_soc_gpo[3]
+    1'b0, // 63: soc_proxy_soc_gpo[2]
+    1'b0, // 62: soc_proxy_soc_gpo[1]
+    1'b0, // 61: soc_proxy_soc_gpo[0]
     1'b1, // 60: uart0_tx
     1'b1, // 59: spi_host0_csb
     1'b1, // 58: spi_host0_sck
-    1'b1, // 57: soc_proxy_soc_gpi[11]
-    1'b1, // 56: soc_proxy_soc_gpi[10]
-    1'b1, // 55: soc_proxy_soc_gpi[9]
-    1'b1, // 54: soc_proxy_soc_gpi[8]
-    1'b1, // 53: soc_proxy_soc_gpi[7]
-    1'b1, // 52: soc_proxy_soc_gpi[6]
-    1'b1, // 51: soc_proxy_soc_gpi[5]
-    1'b1, // 50: soc_proxy_soc_gpi[4]
-    1'b1, // 49: soc_proxy_soc_gpi[3]
-    1'b1, // 48: soc_proxy_soc_gpi[2]
-    1'b1, // 47: soc_proxy_soc_gpi[1]
-    1'b1, // 46: soc_proxy_soc_gpi[0]
+    1'b0, // 57: soc_proxy_soc_gpi[11]
+    1'b0, // 56: soc_proxy_soc_gpi[10]
+    1'b0, // 55: soc_proxy_soc_gpi[9]
+    1'b0, // 54: soc_proxy_soc_gpi[8]
+    1'b0, // 53: soc_proxy_soc_gpi[7]
+    1'b0, // 52: soc_proxy_soc_gpi[6]
+    1'b0, // 51: soc_proxy_soc_gpi[5]
+    1'b0, // 50: soc_proxy_soc_gpi[4]
+    1'b0, // 49: soc_proxy_soc_gpi[3]
+    1'b0, // 48: soc_proxy_soc_gpi[2]
+    1'b0, // 47: soc_proxy_soc_gpi[1]
+    1'b0, // 46: soc_proxy_soc_gpi[0]
     1'b1, // 45: uart0_rx
     1'b1, // 44: spi_device_tpm_csb
     1'b1, // 43: spi_device_csb

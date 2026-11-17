@@ -15,22 +15,22 @@
       {
         name: soc_proxy_soc_gpi[12]
         pads: []
-        partition: primary
+        partition: secondary
       }
       {
         name: soc_proxy_soc_gpi[13]
         pads: []
-        partition: primary
+        partition: secondary
       }
       {
         name: soc_proxy_soc_gpi[14]
         pads: []
-        partition: primary
+        partition: secondary
       }
       {
         name: soc_proxy_soc_gpi[15]
         pads: []
-        partition: primary
+        partition: secondary
       }
     ]
     mio_periph_outs:
@@ -38,22 +38,22 @@
       {
         name: soc_proxy_soc_gpo[12]
         pads: []
-        partition: primary
+        partition: secondary
       }
       {
         name: soc_proxy_soc_gpo[13]
         pads: []
-        partition: primary
+        partition: secondary
       }
       {
         name: soc_proxy_soc_gpo[14]
         pads: []
-        partition: primary
+        partition: secondary
       }
       {
         name: soc_proxy_soc_gpo[15]
         pads: []
-        partition: primary
+        partition: secondary
       }
       {
         name: otp_macro_test[0]
@@ -596,51 +596,51 @@
       ]
       [
         soc_proxy_soc_gpi[0]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpi[1]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpi[2]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpi[3]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpi[4]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpi[5]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpi[6]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpi[7]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpi[8]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpi[9]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpi[10]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpi[11]
-        primary
+        secondary
       ]
       [
         spi_host0_sck
@@ -656,51 +656,51 @@
       ]
       [
         soc_proxy_soc_gpo[0]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpo[1]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpo[2]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpo[3]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpo[4]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpo[5]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpo[6]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpo[7]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpo[8]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpo[9]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpo[10]
-        primary
+        secondary
       ]
       [
         soc_proxy_soc_gpo[11]
-        primary
+        secondary
       ]
     ]
     n_dio_periph_in: 58

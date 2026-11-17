@@ -12,6 +12,11 @@ feature_info['has_rstmgr']        = lib.find_module(top['module'], 'rstmgr') is 
 feature_info['has_gpio']          = lib.find_module(top['module'], 'gpio') is not None
 feature_info['has_usb']           = lib.find_module(top['module'], 'usbdev') is not None
 
+## The pinmux partition connecting to the CIOs of each power domain holding a pinmux partition.
+feature_info['pinmux_domains'] = {}
+if feature_info['has_pinmux']:
+  feature_info['pinmux_domains'] = lib.get_pinmux_partitions_domains(top)
+
 feature_info['ast_is_internal'] = False
 if feature_info['has_ast']:
   ast = lib.find_module(top['module'], 'ast')

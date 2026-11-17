@@ -282,9 +282,6 @@ module darjeeling_pd_main #(
   input  prim_mubi_pkg::mubi8_t       ac_range_check_overwrite_i,
   output tlul_pkg::tl_h2d_t       ctn_tl_h2d_o,
   input  tlul_pkg::tl_d2h_t       ctn_tl_d2h_i,
-  output logic [15:0] cio_soc_proxy_soc_gpi_p2d_o,
-  input  logic [15:0] cio_soc_proxy_soc_gpo_d2p_i,
-  input  logic [15:0] cio_soc_proxy_soc_gpo_en_d2p_i,
 
   // Multiplexed I/O
   input  logic [11:0] mio_in_i,
@@ -3131,24 +3128,27 @@ module darjeeling_pd_main #(
 
 
   // Pinmux connections
-  // All muxed inputs
-  assign cio_soc_proxy_soc_gpi_p2d_o[12] = mio_p2d[MioInSocProxySocGpi12];
-  assign cio_soc_proxy_soc_gpi_p2d_o[13] = mio_p2d[MioInSocProxySocGpi13];
-  assign cio_soc_proxy_soc_gpi_p2d_o[14] = mio_p2d[MioInSocProxySocGpi14];
-  assign cio_soc_proxy_soc_gpi_p2d_o[15] = mio_p2d[MioInSocProxySocGpi15];
+  // All muxed inputs - Inputs handled by other pinmux partition are unused.
+  logic unused_mio_p2d;
+  assign unused_mio_p2d = ^{
+    mio_p2d[MioInSocProxySocGpi12],
+    mio_p2d[MioInSocProxySocGpi13],
+    mio_p2d[MioInSocProxySocGpi14],
+    mio_p2d[MioInSocProxySocGpi15]
+  };
 
-  // All muxed outputs
-  assign mio_d2p[MioOutSocProxySocGpo12] = cio_soc_proxy_soc_gpo_d2p_i[12];
-  assign mio_d2p[MioOutSocProxySocGpo13] = cio_soc_proxy_soc_gpo_d2p_i[13];
-  assign mio_d2p[MioOutSocProxySocGpo14] = cio_soc_proxy_soc_gpo_d2p_i[14];
-  assign mio_d2p[MioOutSocProxySocGpo15] = cio_soc_proxy_soc_gpo_d2p_i[15];
+  // All muxed outputs - Tied-off signals are handled by other pinmux partition.
+  assign mio_d2p[MioOutSocProxySocGpo12] = 1'b0;
+  assign mio_d2p[MioOutSocProxySocGpo13] = 1'b0;
+  assign mio_d2p[MioOutSocProxySocGpo14] = 1'b0;
+  assign mio_d2p[MioOutSocProxySocGpo15] = 1'b0;
   assign mio_d2p[MioOutOtpMacroTest0] = cio_otp_macro_test_d2p[0];
 
-  // All muxed output enables
-  assign mio_en_d2p[MioOutSocProxySocGpo12] = cio_soc_proxy_soc_gpo_en_d2p_i[12];
-  assign mio_en_d2p[MioOutSocProxySocGpo13] = cio_soc_proxy_soc_gpo_en_d2p_i[13];
-  assign mio_en_d2p[MioOutSocProxySocGpo14] = cio_soc_proxy_soc_gpo_en_d2p_i[14];
-  assign mio_en_d2p[MioOutSocProxySocGpo15] = cio_soc_proxy_soc_gpo_en_d2p_i[15];
+  // All muxed output enables - Tied-off signals are handled by other pinmux partition.
+  assign mio_en_d2p[MioOutSocProxySocGpo12] = 1'b0;
+  assign mio_en_d2p[MioOutSocProxySocGpo13] = 1'b0;
+  assign mio_en_d2p[MioOutSocProxySocGpo14] = 1'b0;
+  assign mio_en_d2p[MioOutSocProxySocGpo15] = 1'b0;
   assign mio_en_d2p[MioOutOtpMacroTest0] = cio_otp_macro_test_en_d2p[0];
 
   // All dedicated inputs
@@ -3200,20 +3200,9 @@ module darjeeling_pd_main #(
   assign cio_spi_device_csb_p2d = dio_p2d[DioSpiDeviceCsb];
   assign cio_spi_device_tpm_csb_p2d = dio_p2d[DioSpiDeviceTpmCsb];
   assign cio_uart0_rx_p2d = dio_p2d[DioUart0Rx];
-  assign cio_soc_proxy_soc_gpi_p2d_o[0] = dio_p2d[DioSocProxySocGpi0];
-  assign cio_soc_proxy_soc_gpi_p2d_o[1] = dio_p2d[DioSocProxySocGpi1];
-  assign cio_soc_proxy_soc_gpi_p2d_o[2] = dio_p2d[DioSocProxySocGpi2];
-  assign cio_soc_proxy_soc_gpi_p2d_o[3] = dio_p2d[DioSocProxySocGpi3];
-  assign cio_soc_proxy_soc_gpi_p2d_o[4] = dio_p2d[DioSocProxySocGpi4];
-  assign cio_soc_proxy_soc_gpi_p2d_o[5] = dio_p2d[DioSocProxySocGpi5];
-  assign cio_soc_proxy_soc_gpi_p2d_o[6] = dio_p2d[DioSocProxySocGpi6];
-  assign cio_soc_proxy_soc_gpi_p2d_o[7] = dio_p2d[DioSocProxySocGpi7];
-  assign cio_soc_proxy_soc_gpi_p2d_o[8] = dio_p2d[DioSocProxySocGpi8];
-  assign cio_soc_proxy_soc_gpi_p2d_o[9] = dio_p2d[DioSocProxySocGpi9];
-  assign cio_soc_proxy_soc_gpi_p2d_o[10] = dio_p2d[DioSocProxySocGpi10];
-  assign cio_soc_proxy_soc_gpi_p2d_o[11] = dio_p2d[DioSocProxySocGpi11];
 
-  // All dedicated outputs
+  // All dedicated outputs - Tied-off signals are handled by other pinmux partition.
+  // Input-only DIOs are tied-off as well.
   assign dio_d2p[DioSpiHost0Sd0] = cio_spi_host0_sd_d2p[0];
   assign dio_d2p[DioSpiHost0Sd1] = cio_spi_host0_sd_d2p[1];
   assign dio_d2p[DioSpiHost0Sd2] = cio_spi_host0_sd_d2p[2];
@@ -3275,20 +3264,21 @@ module darjeeling_pd_main #(
   assign dio_d2p[DioSpiHost0Sck] = cio_spi_host0_sck_d2p;
   assign dio_d2p[DioSpiHost0Csb] = cio_spi_host0_csb_d2p;
   assign dio_d2p[DioUart0Tx] = cio_uart0_tx_d2p;
-  assign dio_d2p[DioSocProxySocGpo0] = cio_soc_proxy_soc_gpo_d2p_i[0];
-  assign dio_d2p[DioSocProxySocGpo1] = cio_soc_proxy_soc_gpo_d2p_i[1];
-  assign dio_d2p[DioSocProxySocGpo2] = cio_soc_proxy_soc_gpo_d2p_i[2];
-  assign dio_d2p[DioSocProxySocGpo3] = cio_soc_proxy_soc_gpo_d2p_i[3];
-  assign dio_d2p[DioSocProxySocGpo4] = cio_soc_proxy_soc_gpo_d2p_i[4];
-  assign dio_d2p[DioSocProxySocGpo5] = cio_soc_proxy_soc_gpo_d2p_i[5];
-  assign dio_d2p[DioSocProxySocGpo6] = cio_soc_proxy_soc_gpo_d2p_i[6];
-  assign dio_d2p[DioSocProxySocGpo7] = cio_soc_proxy_soc_gpo_d2p_i[7];
-  assign dio_d2p[DioSocProxySocGpo8] = cio_soc_proxy_soc_gpo_d2p_i[8];
-  assign dio_d2p[DioSocProxySocGpo9] = cio_soc_proxy_soc_gpo_d2p_i[9];
-  assign dio_d2p[DioSocProxySocGpo10] = cio_soc_proxy_soc_gpo_d2p_i[10];
-  assign dio_d2p[DioSocProxySocGpo11] = cio_soc_proxy_soc_gpo_d2p_i[11];
+  assign dio_d2p[DioSocProxySocGpo0] = 1'b0;
+  assign dio_d2p[DioSocProxySocGpo1] = 1'b0;
+  assign dio_d2p[DioSocProxySocGpo2] = 1'b0;
+  assign dio_d2p[DioSocProxySocGpo3] = 1'b0;
+  assign dio_d2p[DioSocProxySocGpo4] = 1'b0;
+  assign dio_d2p[DioSocProxySocGpo5] = 1'b0;
+  assign dio_d2p[DioSocProxySocGpo6] = 1'b0;
+  assign dio_d2p[DioSocProxySocGpo7] = 1'b0;
+  assign dio_d2p[DioSocProxySocGpo8] = 1'b0;
+  assign dio_d2p[DioSocProxySocGpo9] = 1'b0;
+  assign dio_d2p[DioSocProxySocGpo10] = 1'b0;
+  assign dio_d2p[DioSocProxySocGpo11] = 1'b0;
 
-  // All dedicated output enables
+  // All dedicated output enables - Tied-off signals are handled by other pinmux partition.
+  // Input-only DIOs are tied-off as well.
   assign dio_en_d2p[DioSpiHost0Sd0] = cio_spi_host0_sd_en_d2p[0];
   assign dio_en_d2p[DioSpiHost0Sd1] = cio_spi_host0_sd_en_d2p[1];
   assign dio_en_d2p[DioSpiHost0Sd2] = cio_spi_host0_sd_en_d2p[2];
@@ -3350,17 +3340,17 @@ module darjeeling_pd_main #(
   assign dio_en_d2p[DioSpiHost0Sck] = cio_spi_host0_sck_en_d2p;
   assign dio_en_d2p[DioSpiHost0Csb] = cio_spi_host0_csb_en_d2p;
   assign dio_en_d2p[DioUart0Tx] = cio_uart0_tx_en_d2p;
-  assign dio_en_d2p[DioSocProxySocGpo0] = cio_soc_proxy_soc_gpo_en_d2p_i[0];
-  assign dio_en_d2p[DioSocProxySocGpo1] = cio_soc_proxy_soc_gpo_en_d2p_i[1];
-  assign dio_en_d2p[DioSocProxySocGpo2] = cio_soc_proxy_soc_gpo_en_d2p_i[2];
-  assign dio_en_d2p[DioSocProxySocGpo3] = cio_soc_proxy_soc_gpo_en_d2p_i[3];
-  assign dio_en_d2p[DioSocProxySocGpo4] = cio_soc_proxy_soc_gpo_en_d2p_i[4];
-  assign dio_en_d2p[DioSocProxySocGpo5] = cio_soc_proxy_soc_gpo_en_d2p_i[5];
-  assign dio_en_d2p[DioSocProxySocGpo6] = cio_soc_proxy_soc_gpo_en_d2p_i[6];
-  assign dio_en_d2p[DioSocProxySocGpo7] = cio_soc_proxy_soc_gpo_en_d2p_i[7];
-  assign dio_en_d2p[DioSocProxySocGpo8] = cio_soc_proxy_soc_gpo_en_d2p_i[8];
-  assign dio_en_d2p[DioSocProxySocGpo9] = cio_soc_proxy_soc_gpo_en_d2p_i[9];
-  assign dio_en_d2p[DioSocProxySocGpo10] = cio_soc_proxy_soc_gpo_en_d2p_i[10];
-  assign dio_en_d2p[DioSocProxySocGpo11] = cio_soc_proxy_soc_gpo_en_d2p_i[11];
+  assign dio_en_d2p[DioSocProxySocGpo0] = 1'b0;
+  assign dio_en_d2p[DioSocProxySocGpo1] = 1'b0;
+  assign dio_en_d2p[DioSocProxySocGpo2] = 1'b0;
+  assign dio_en_d2p[DioSocProxySocGpo3] = 1'b0;
+  assign dio_en_d2p[DioSocProxySocGpo4] = 1'b0;
+  assign dio_en_d2p[DioSocProxySocGpo5] = 1'b0;
+  assign dio_en_d2p[DioSocProxySocGpo6] = 1'b0;
+  assign dio_en_d2p[DioSocProxySocGpo7] = 1'b0;
+  assign dio_en_d2p[DioSocProxySocGpo8] = 1'b0;
+  assign dio_en_d2p[DioSocProxySocGpo9] = 1'b0;
+  assign dio_en_d2p[DioSocProxySocGpo10] = 1'b0;
+  assign dio_en_d2p[DioSocProxySocGpo11] = 1'b0;
 
 endmodule

@@ -1935,10 +1935,13 @@ if {![info exists MIO_PERIPH_CLOCK_INPUTS]} {
   set MIO_PERIPH_CLOCK_INPUTS {}
 }
 set MIO_PERIPH_DATA_INPUTS {}
-foreach_in_collection pin [get_pins top_earlgrey/earlgrey_pd_aon/u_pinmux_part_primary/mio_to_periph_o*] {
-  if {[regexp {\[([0-9]+)\]$} [get_object_name ${pin}] -> idx] &&
-      [lsearch -exact ${MIO_PERIPH_CLOCK_INPUTS} ${idx}] < 0} {
-    lappend MIO_PERIPH_DATA_INPUTS [get_object_name ${pin}]
+# Each pinmux partition muxes the peripheral inputs of its power domain.
+foreach part {earlgrey_pd_aon/u_pinmux_part_primary earlgrey_pd_main/u_pinmux_part_secondary} {
+  foreach_in_collection pin [get_pins top_earlgrey/${part}/mio_to_periph_o*] {
+    if {[regexp {\[([0-9]+)\]$} [get_object_name ${pin}] -> idx] &&
+        [lsearch -exact ${MIO_PERIPH_CLOCK_INPUTS} ${idx}] < 0} {
+      lappend MIO_PERIPH_DATA_INPUTS [get_object_name ${pin}]
+    }
   }
 }
 puts "INFO: stopping clock propagation at [llength ${MIO_PERIPH_DATA_INPUTS}] pinmux peripheral inputs"

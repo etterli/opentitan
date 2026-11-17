@@ -130,87 +130,6 @@ module earlgrey_pd_aon #(
   output logic       usb_dp_pullup_en_o,
   output logic       usb_dn_pullup_en_o,
   output prim_pad_wrapper_pkg::pad_attr_t [3:0] sensor_ctrl_manual_pad_attr_o,
-  output logic       cio_uart0_rx_p2d_o,
-  input  logic       cio_uart0_tx_d2p_i,
-  input  logic       cio_uart0_tx_en_d2p_i,
-  output logic       cio_uart1_rx_p2d_o,
-  input  logic       cio_uart1_tx_d2p_i,
-  input  logic       cio_uart1_tx_en_d2p_i,
-  output logic       cio_uart2_rx_p2d_o,
-  input  logic       cio_uart2_tx_d2p_i,
-  input  logic       cio_uart2_tx_en_d2p_i,
-  output logic       cio_uart3_rx_p2d_o,
-  input  logic       cio_uart3_tx_d2p_i,
-  input  logic       cio_uart3_tx_en_d2p_i,
-  input  logic [31:0] cio_gpio0_gpio_d2p_i,
-  input  logic [31:0] cio_gpio0_gpio_en_d2p_i,
-  output logic [31:0] cio_gpio0_gpio_p2d_o,
-  input  logic [31:0] cio_gpio1_gpio_d2p_i,
-  input  logic [31:0] cio_gpio1_gpio_en_d2p_i,
-  output logic [31:0] cio_gpio1_gpio_p2d_o,
-  input  logic [3:0] cio_spi_device_sd_d2p_i,
-  input  logic [3:0] cio_spi_device_sd_en_d2p_i,
-  output logic [3:0] cio_spi_device_sd_p2d_o,
-  output logic       cio_spi_device_sck_p2d_o,
-  output logic       cio_spi_device_csb_p2d_o,
-  output logic       cio_spi_device_tpm_csb_p2d_o,
-  input  logic       cio_i2c0_sda_d2p_i,
-  input  logic       cio_i2c0_sda_en_d2p_i,
-  output logic       cio_i2c0_sda_p2d_o,
-  input  logic       cio_i2c0_scl_d2p_i,
-  input  logic       cio_i2c0_scl_en_d2p_i,
-  output logic       cio_i2c0_scl_p2d_o,
-  input  logic       cio_i2c1_sda_d2p_i,
-  input  logic       cio_i2c1_sda_en_d2p_i,
-  output logic       cio_i2c1_sda_p2d_o,
-  input  logic       cio_i2c1_scl_d2p_i,
-  input  logic       cio_i2c1_scl_en_d2p_i,
-  output logic       cio_i2c1_scl_p2d_o,
-  input  logic       cio_i2c2_sda_d2p_i,
-  input  logic       cio_i2c2_sda_en_d2p_i,
-  output logic       cio_i2c2_sda_p2d_o,
-  input  logic       cio_i2c2_scl_d2p_i,
-  input  logic       cio_i2c2_scl_en_d2p_i,
-  output logic       cio_i2c2_scl_p2d_o,
-  input  logic       cio_i3c0_scl_d2p_i,
-  input  logic       cio_i3c0_scl_en_d2p_i,
-  output logic       cio_i3c0_scl_p2d_o,
-  input  logic       cio_i3c0_sda_d2p_i,
-  input  logic       cio_i3c0_sda_en_d2p_i,
-  output logic       cio_i3c0_sda_p2d_o,
-  input  logic       cio_i3c0_ctrl_sda_pu_d2p_i,
-  input  logic       cio_i3c0_ctrl_sda_pu_en_d2p_i,
-  input  logic       cio_i3c1_scl_d2p_i,
-  input  logic       cio_i3c1_scl_en_d2p_i,
-  output logic       cio_i3c1_scl_p2d_o,
-  input  logic       cio_i3c1_sda_d2p_i,
-  input  logic       cio_i3c1_sda_en_d2p_i,
-  output logic       cio_i3c1_sda_p2d_o,
-  output logic       cio_i3c1_rstdet_scl_p2d_o,
-  output logic       cio_i3c1_rstdet_sda_p2d_o,
-  input  logic       cio_i3c1_ctrl_sda_pu_d2p_i,
-  input  logic       cio_i3c1_ctrl_sda_pu_en_d2p_i,
-  input  logic [3:0] cio_spi_host0_sd_d2p_i,
-  input  logic [3:0] cio_spi_host0_sd_en_d2p_i,
-  output logic [3:0] cio_spi_host0_sd_p2d_o,
-  input  logic       cio_spi_host0_sck_d2p_i,
-  input  logic       cio_spi_host0_sck_en_d2p_i,
-  input  logic [2:0] cio_spi_host0_csb_d2p_i,
-  input  logic [2:0] cio_spi_host0_csb_en_d2p_i,
-  input  logic [3:0] cio_spi_host1_sd_d2p_i,
-  input  logic [3:0] cio_spi_host1_sd_en_d2p_i,
-  output logic [3:0] cio_spi_host1_sd_p2d_o,
-  input  logic       cio_spi_host1_sck_d2p_i,
-  input  logic       cio_spi_host1_sck_en_d2p_i,
-  input  logic [2:0] cio_spi_host1_csb_d2p_i,
-  input  logic [2:0] cio_spi_host1_csb_en_d2p_i,
-  input  logic       cio_usbdev_usb_dp_d2p_i,
-  input  logic       cio_usbdev_usb_dp_en_d2p_i,
-  output logic       cio_usbdev_usb_dp_p2d_o,
-  input  logic       cio_usbdev_usb_dn_d2p_i,
-  input  logic       cio_usbdev_usb_dn_en_d2p_i,
-  output logic       cio_usbdev_usb_dn_p2d_o,
-  output logic       cio_usbdev_sense_p2d_o,
   input  logic       ast_clk_src_sys_i,
   input  logic       ast_clk_src_io_i,
   input  logic       ast_clk_src_usb_i,
@@ -857,217 +776,220 @@ module earlgrey_pd_aon #(
 
 
   // Pinmux connections
-  // All muxed inputs
-  assign cio_spi_host0_sd_p2d_o[0] = mio_p2d[MioInSpiHost0Sd0];
-  assign cio_spi_host0_sd_p2d_o[1] = mio_p2d[MioInSpiHost0Sd1];
-  assign cio_spi_host0_sd_p2d_o[2] = mio_p2d[MioInSpiHost0Sd2];
-  assign cio_spi_host0_sd_p2d_o[3] = mio_p2d[MioInSpiHost0Sd3];
-  assign cio_spi_host1_sd_p2d_o[0] = mio_p2d[MioInSpiHost1Sd0];
-  assign cio_spi_host1_sd_p2d_o[1] = mio_p2d[MioInSpiHost1Sd1];
-  assign cio_spi_host1_sd_p2d_o[2] = mio_p2d[MioInSpiHost1Sd2];
-  assign cio_spi_host1_sd_p2d_o[3] = mio_p2d[MioInSpiHost1Sd3];
-  assign cio_spi_device_sd_p2d_o[0] = mio_p2d[MioInSpiDeviceSd0];
-  assign cio_spi_device_sd_p2d_o[1] = mio_p2d[MioInSpiDeviceSd1];
-  assign cio_spi_device_sd_p2d_o[2] = mio_p2d[MioInSpiDeviceSd2];
-  assign cio_spi_device_sd_p2d_o[3] = mio_p2d[MioInSpiDeviceSd3];
-  assign cio_gpio0_gpio_p2d_o[0] = mio_p2d[MioInGpio0Gpio0];
-  assign cio_gpio0_gpio_p2d_o[1] = mio_p2d[MioInGpio0Gpio1];
-  assign cio_gpio0_gpio_p2d_o[2] = mio_p2d[MioInGpio0Gpio2];
-  assign cio_gpio0_gpio_p2d_o[3] = mio_p2d[MioInGpio0Gpio3];
-  assign cio_gpio0_gpio_p2d_o[4] = mio_p2d[MioInGpio0Gpio4];
-  assign cio_gpio0_gpio_p2d_o[5] = mio_p2d[MioInGpio0Gpio5];
-  assign cio_gpio0_gpio_p2d_o[6] = mio_p2d[MioInGpio0Gpio6];
-  assign cio_gpio0_gpio_p2d_o[7] = mio_p2d[MioInGpio0Gpio7];
-  assign cio_gpio0_gpio_p2d_o[8] = mio_p2d[MioInGpio0Gpio8];
-  assign cio_gpio0_gpio_p2d_o[9] = mio_p2d[MioInGpio0Gpio9];
-  assign cio_gpio0_gpio_p2d_o[10] = mio_p2d[MioInGpio0Gpio10];
-  assign cio_gpio0_gpio_p2d_o[11] = mio_p2d[MioInGpio0Gpio11];
-  assign cio_gpio0_gpio_p2d_o[12] = mio_p2d[MioInGpio0Gpio12];
-  assign cio_gpio0_gpio_p2d_o[13] = mio_p2d[MioInGpio0Gpio13];
-  assign cio_gpio0_gpio_p2d_o[14] = mio_p2d[MioInGpio0Gpio14];
-  assign cio_gpio0_gpio_p2d_o[15] = mio_p2d[MioInGpio0Gpio15];
-  assign cio_gpio0_gpio_p2d_o[16] = mio_p2d[MioInGpio0Gpio16];
-  assign cio_gpio0_gpio_p2d_o[17] = mio_p2d[MioInGpio0Gpio17];
-  assign cio_gpio0_gpio_p2d_o[18] = mio_p2d[MioInGpio0Gpio18];
-  assign cio_gpio0_gpio_p2d_o[19] = mio_p2d[MioInGpio0Gpio19];
-  assign cio_gpio0_gpio_p2d_o[20] = mio_p2d[MioInGpio0Gpio20];
-  assign cio_gpio0_gpio_p2d_o[21] = mio_p2d[MioInGpio0Gpio21];
-  assign cio_gpio0_gpio_p2d_o[22] = mio_p2d[MioInGpio0Gpio22];
-  assign cio_gpio0_gpio_p2d_o[23] = mio_p2d[MioInGpio0Gpio23];
-  assign cio_gpio0_gpio_p2d_o[24] = mio_p2d[MioInGpio0Gpio24];
-  assign cio_gpio0_gpio_p2d_o[25] = mio_p2d[MioInGpio0Gpio25];
-  assign cio_gpio0_gpio_p2d_o[26] = mio_p2d[MioInGpio0Gpio26];
-  assign cio_gpio0_gpio_p2d_o[27] = mio_p2d[MioInGpio0Gpio27];
-  assign cio_gpio0_gpio_p2d_o[28] = mio_p2d[MioInGpio0Gpio28];
-  assign cio_gpio0_gpio_p2d_o[29] = mio_p2d[MioInGpio0Gpio29];
-  assign cio_gpio0_gpio_p2d_o[30] = mio_p2d[MioInGpio0Gpio30];
-  assign cio_gpio0_gpio_p2d_o[31] = mio_p2d[MioInGpio0Gpio31];
-  assign cio_gpio1_gpio_p2d_o[0] = mio_p2d[MioInGpio1Gpio0];
-  assign cio_gpio1_gpio_p2d_o[1] = mio_p2d[MioInGpio1Gpio1];
-  assign cio_gpio1_gpio_p2d_o[2] = mio_p2d[MioInGpio1Gpio2];
-  assign cio_gpio1_gpio_p2d_o[3] = mio_p2d[MioInGpio1Gpio3];
-  assign cio_gpio1_gpio_p2d_o[4] = mio_p2d[MioInGpio1Gpio4];
-  assign cio_gpio1_gpio_p2d_o[5] = mio_p2d[MioInGpio1Gpio5];
-  assign cio_gpio1_gpio_p2d_o[6] = mio_p2d[MioInGpio1Gpio6];
-  assign cio_gpio1_gpio_p2d_o[7] = mio_p2d[MioInGpio1Gpio7];
-  assign cio_gpio1_gpio_p2d_o[8] = mio_p2d[MioInGpio1Gpio8];
-  assign cio_gpio1_gpio_p2d_o[9] = mio_p2d[MioInGpio1Gpio9];
-  assign cio_gpio1_gpio_p2d_o[10] = mio_p2d[MioInGpio1Gpio10];
-  assign cio_gpio1_gpio_p2d_o[11] = mio_p2d[MioInGpio1Gpio11];
-  assign cio_gpio1_gpio_p2d_o[12] = mio_p2d[MioInGpio1Gpio12];
-  assign cio_gpio1_gpio_p2d_o[13] = mio_p2d[MioInGpio1Gpio13];
-  assign cio_gpio1_gpio_p2d_o[14] = mio_p2d[MioInGpio1Gpio14];
-  assign cio_gpio1_gpio_p2d_o[15] = mio_p2d[MioInGpio1Gpio15];
-  assign cio_gpio1_gpio_p2d_o[16] = mio_p2d[MioInGpio1Gpio16];
-  assign cio_gpio1_gpio_p2d_o[17] = mio_p2d[MioInGpio1Gpio17];
-  assign cio_gpio1_gpio_p2d_o[18] = mio_p2d[MioInGpio1Gpio18];
-  assign cio_gpio1_gpio_p2d_o[19] = mio_p2d[MioInGpio1Gpio19];
-  assign cio_gpio1_gpio_p2d_o[20] = mio_p2d[MioInGpio1Gpio20];
-  assign cio_gpio1_gpio_p2d_o[21] = mio_p2d[MioInGpio1Gpio21];
-  assign cio_gpio1_gpio_p2d_o[22] = mio_p2d[MioInGpio1Gpio22];
-  assign cio_gpio1_gpio_p2d_o[23] = mio_p2d[MioInGpio1Gpio23];
-  assign cio_gpio1_gpio_p2d_o[24] = mio_p2d[MioInGpio1Gpio24];
-  assign cio_gpio1_gpio_p2d_o[25] = mio_p2d[MioInGpio1Gpio25];
-  assign cio_gpio1_gpio_p2d_o[26] = mio_p2d[MioInGpio1Gpio26];
-  assign cio_gpio1_gpio_p2d_o[27] = mio_p2d[MioInGpio1Gpio27];
-  assign cio_gpio1_gpio_p2d_o[28] = mio_p2d[MioInGpio1Gpio28];
-  assign cio_gpio1_gpio_p2d_o[29] = mio_p2d[MioInGpio1Gpio29];
-  assign cio_gpio1_gpio_p2d_o[30] = mio_p2d[MioInGpio1Gpio30];
-  assign cio_gpio1_gpio_p2d_o[31] = mio_p2d[MioInGpio1Gpio31];
-  assign cio_i2c0_sda_p2d_o = mio_p2d[MioInI2c0Sda];
-  assign cio_i2c0_scl_p2d_o = mio_p2d[MioInI2c0Scl];
-  assign cio_i2c1_sda_p2d_o = mio_p2d[MioInI2c1Sda];
-  assign cio_i2c1_scl_p2d_o = mio_p2d[MioInI2c1Scl];
-  assign cio_i2c2_sda_p2d_o = mio_p2d[MioInI2c2Sda];
-  assign cio_i2c2_scl_p2d_o = mio_p2d[MioInI2c2Scl];
-  assign cio_i3c0_scl_p2d_o = mio_p2d[MioInI3c0Scl];
-  assign cio_i3c0_sda_p2d_o = mio_p2d[MioInI3c0Sda];
-  assign cio_i3c1_scl_p2d_o = mio_p2d[MioInI3c1Scl];
-  assign cio_i3c1_sda_p2d_o = mio_p2d[MioInI3c1Sda];
+  // All muxed inputs - Inputs handled by other pinmux partition are unused.
   assign cio_sysrst_ctrl_ec_rst_l_p2d = mio_p2d[MioInSysrstCtrlEcRstL];
   assign cio_sysrst_ctrl_flash_wp_l_p2d = mio_p2d[MioInSysrstCtrlFlashWpL];
-  assign cio_usbdev_sense_p2d_o = mio_p2d[MioInUsbdevSense];
-  assign cio_spi_device_sck_p2d_o = mio_p2d[MioInSpiDeviceSck];
-  assign cio_spi_device_csb_p2d_o = mio_p2d[MioInSpiDeviceCsb];
-  assign cio_spi_device_tpm_csb_p2d_o = mio_p2d[MioInSpiDeviceTpmCsb];
-  assign cio_uart0_rx_p2d_o = mio_p2d[MioInUart0Rx];
-  assign cio_uart1_rx_p2d_o = mio_p2d[MioInUart1Rx];
-  assign cio_uart2_rx_p2d_o = mio_p2d[MioInUart2Rx];
-  assign cio_uart3_rx_p2d_o = mio_p2d[MioInUart3Rx];
   assign cio_i3c0_rstdet_scl_p2d = mio_p2d[MioInI3c0RstdetScl];
   assign cio_i3c0_rstdet_sda_p2d = mio_p2d[MioInI3c0RstdetSda];
-  assign cio_i3c1_rstdet_scl_p2d_o = mio_p2d[MioInI3c1RstdetScl];
-  assign cio_i3c1_rstdet_sda_p2d_o = mio_p2d[MioInI3c1RstdetSda];
   assign cio_sysrst_ctrl_ac_present_p2d = mio_p2d[MioInSysrstCtrlAcPresent];
   assign cio_sysrst_ctrl_key0_in_p2d = mio_p2d[MioInSysrstCtrlKey0In];
   assign cio_sysrst_ctrl_key1_in_p2d = mio_p2d[MioInSysrstCtrlKey1In];
   assign cio_sysrst_ctrl_key2_in_p2d = mio_p2d[MioInSysrstCtrlKey2In];
   assign cio_sysrst_ctrl_pwrb_in_p2d = mio_p2d[MioInSysrstCtrlPwrbIn];
   assign cio_sysrst_ctrl_lid_open_p2d = mio_p2d[MioInSysrstCtrlLidOpen];
+  logic unused_mio_p2d;
+  assign unused_mio_p2d = ^{
+    mio_p2d[MioInSpiHost0Sd0],
+    mio_p2d[MioInSpiHost0Sd1],
+    mio_p2d[MioInSpiHost0Sd2],
+    mio_p2d[MioInSpiHost0Sd3],
+    mio_p2d[MioInSpiHost1Sd0],
+    mio_p2d[MioInSpiHost1Sd1],
+    mio_p2d[MioInSpiHost1Sd2],
+    mio_p2d[MioInSpiHost1Sd3],
+    mio_p2d[MioInSpiDeviceSd0],
+    mio_p2d[MioInSpiDeviceSd1],
+    mio_p2d[MioInSpiDeviceSd2],
+    mio_p2d[MioInSpiDeviceSd3],
+    mio_p2d[MioInGpio0Gpio0],
+    mio_p2d[MioInGpio0Gpio1],
+    mio_p2d[MioInGpio0Gpio2],
+    mio_p2d[MioInGpio0Gpio3],
+    mio_p2d[MioInGpio0Gpio4],
+    mio_p2d[MioInGpio0Gpio5],
+    mio_p2d[MioInGpio0Gpio6],
+    mio_p2d[MioInGpio0Gpio7],
+    mio_p2d[MioInGpio0Gpio8],
+    mio_p2d[MioInGpio0Gpio9],
+    mio_p2d[MioInGpio0Gpio10],
+    mio_p2d[MioInGpio0Gpio11],
+    mio_p2d[MioInGpio0Gpio12],
+    mio_p2d[MioInGpio0Gpio13],
+    mio_p2d[MioInGpio0Gpio14],
+    mio_p2d[MioInGpio0Gpio15],
+    mio_p2d[MioInGpio0Gpio16],
+    mio_p2d[MioInGpio0Gpio17],
+    mio_p2d[MioInGpio0Gpio18],
+    mio_p2d[MioInGpio0Gpio19],
+    mio_p2d[MioInGpio0Gpio20],
+    mio_p2d[MioInGpio0Gpio21],
+    mio_p2d[MioInGpio0Gpio22],
+    mio_p2d[MioInGpio0Gpio23],
+    mio_p2d[MioInGpio0Gpio24],
+    mio_p2d[MioInGpio0Gpio25],
+    mio_p2d[MioInGpio0Gpio26],
+    mio_p2d[MioInGpio0Gpio27],
+    mio_p2d[MioInGpio0Gpio28],
+    mio_p2d[MioInGpio0Gpio29],
+    mio_p2d[MioInGpio0Gpio30],
+    mio_p2d[MioInGpio0Gpio31],
+    mio_p2d[MioInGpio1Gpio0],
+    mio_p2d[MioInGpio1Gpio1],
+    mio_p2d[MioInGpio1Gpio2],
+    mio_p2d[MioInGpio1Gpio3],
+    mio_p2d[MioInGpio1Gpio4],
+    mio_p2d[MioInGpio1Gpio5],
+    mio_p2d[MioInGpio1Gpio6],
+    mio_p2d[MioInGpio1Gpio7],
+    mio_p2d[MioInGpio1Gpio8],
+    mio_p2d[MioInGpio1Gpio9],
+    mio_p2d[MioInGpio1Gpio10],
+    mio_p2d[MioInGpio1Gpio11],
+    mio_p2d[MioInGpio1Gpio12],
+    mio_p2d[MioInGpio1Gpio13],
+    mio_p2d[MioInGpio1Gpio14],
+    mio_p2d[MioInGpio1Gpio15],
+    mio_p2d[MioInGpio1Gpio16],
+    mio_p2d[MioInGpio1Gpio17],
+    mio_p2d[MioInGpio1Gpio18],
+    mio_p2d[MioInGpio1Gpio19],
+    mio_p2d[MioInGpio1Gpio20],
+    mio_p2d[MioInGpio1Gpio21],
+    mio_p2d[MioInGpio1Gpio22],
+    mio_p2d[MioInGpio1Gpio23],
+    mio_p2d[MioInGpio1Gpio24],
+    mio_p2d[MioInGpio1Gpio25],
+    mio_p2d[MioInGpio1Gpio26],
+    mio_p2d[MioInGpio1Gpio27],
+    mio_p2d[MioInGpio1Gpio28],
+    mio_p2d[MioInGpio1Gpio29],
+    mio_p2d[MioInGpio1Gpio30],
+    mio_p2d[MioInGpio1Gpio31],
+    mio_p2d[MioInI2c0Sda],
+    mio_p2d[MioInI2c0Scl],
+    mio_p2d[MioInI2c1Sda],
+    mio_p2d[MioInI2c1Scl],
+    mio_p2d[MioInI2c2Sda],
+    mio_p2d[MioInI2c2Scl],
+    mio_p2d[MioInI3c0Scl],
+    mio_p2d[MioInI3c0Sda],
+    mio_p2d[MioInI3c1Scl],
+    mio_p2d[MioInI3c1Sda],
+    mio_p2d[MioInUsbdevSense],
+    mio_p2d[MioInSpiDeviceSck],
+    mio_p2d[MioInSpiDeviceCsb],
+    mio_p2d[MioInSpiDeviceTpmCsb],
+    mio_p2d[MioInUart0Rx],
+    mio_p2d[MioInUart1Rx],
+    mio_p2d[MioInUart2Rx],
+    mio_p2d[MioInUart3Rx],
+    mio_p2d[MioInI3c1RstdetScl],
+    mio_p2d[MioInI3c1RstdetSda]
+  };
 
-  // All muxed outputs
-  assign mio_d2p[MioOutSpiHost0Sd0] = cio_spi_host0_sd_d2p_i[0];
-  assign mio_d2p[MioOutSpiHost0Sd1] = cio_spi_host0_sd_d2p_i[1];
-  assign mio_d2p[MioOutSpiHost0Sd2] = cio_spi_host0_sd_d2p_i[2];
-  assign mio_d2p[MioOutSpiHost0Sd3] = cio_spi_host0_sd_d2p_i[3];
-  assign mio_d2p[MioOutSpiHost1Sd0] = cio_spi_host1_sd_d2p_i[0];
-  assign mio_d2p[MioOutSpiHost1Sd1] = cio_spi_host1_sd_d2p_i[1];
-  assign mio_d2p[MioOutSpiHost1Sd2] = cio_spi_host1_sd_d2p_i[2];
-  assign mio_d2p[MioOutSpiHost1Sd3] = cio_spi_host1_sd_d2p_i[3];
-  assign mio_d2p[MioOutSpiDeviceSd0] = cio_spi_device_sd_d2p_i[0];
-  assign mio_d2p[MioOutSpiDeviceSd1] = cio_spi_device_sd_d2p_i[1];
-  assign mio_d2p[MioOutSpiDeviceSd2] = cio_spi_device_sd_d2p_i[2];
-  assign mio_d2p[MioOutSpiDeviceSd3] = cio_spi_device_sd_d2p_i[3];
-  assign mio_d2p[MioOutGpio0Gpio0] = cio_gpio0_gpio_d2p_i[0];
-  assign mio_d2p[MioOutGpio0Gpio1] = cio_gpio0_gpio_d2p_i[1];
-  assign mio_d2p[MioOutGpio0Gpio2] = cio_gpio0_gpio_d2p_i[2];
-  assign mio_d2p[MioOutGpio0Gpio3] = cio_gpio0_gpio_d2p_i[3];
-  assign mio_d2p[MioOutGpio0Gpio4] = cio_gpio0_gpio_d2p_i[4];
-  assign mio_d2p[MioOutGpio0Gpio5] = cio_gpio0_gpio_d2p_i[5];
-  assign mio_d2p[MioOutGpio0Gpio6] = cio_gpio0_gpio_d2p_i[6];
-  assign mio_d2p[MioOutGpio0Gpio7] = cio_gpio0_gpio_d2p_i[7];
-  assign mio_d2p[MioOutGpio0Gpio8] = cio_gpio0_gpio_d2p_i[8];
-  assign mio_d2p[MioOutGpio0Gpio9] = cio_gpio0_gpio_d2p_i[9];
-  assign mio_d2p[MioOutGpio0Gpio10] = cio_gpio0_gpio_d2p_i[10];
-  assign mio_d2p[MioOutGpio0Gpio11] = cio_gpio0_gpio_d2p_i[11];
-  assign mio_d2p[MioOutGpio0Gpio12] = cio_gpio0_gpio_d2p_i[12];
-  assign mio_d2p[MioOutGpio0Gpio13] = cio_gpio0_gpio_d2p_i[13];
-  assign mio_d2p[MioOutGpio0Gpio14] = cio_gpio0_gpio_d2p_i[14];
-  assign mio_d2p[MioOutGpio0Gpio15] = cio_gpio0_gpio_d2p_i[15];
-  assign mio_d2p[MioOutGpio0Gpio16] = cio_gpio0_gpio_d2p_i[16];
-  assign mio_d2p[MioOutGpio0Gpio17] = cio_gpio0_gpio_d2p_i[17];
-  assign mio_d2p[MioOutGpio0Gpio18] = cio_gpio0_gpio_d2p_i[18];
-  assign mio_d2p[MioOutGpio0Gpio19] = cio_gpio0_gpio_d2p_i[19];
-  assign mio_d2p[MioOutGpio0Gpio20] = cio_gpio0_gpio_d2p_i[20];
-  assign mio_d2p[MioOutGpio0Gpio21] = cio_gpio0_gpio_d2p_i[21];
-  assign mio_d2p[MioOutGpio0Gpio22] = cio_gpio0_gpio_d2p_i[22];
-  assign mio_d2p[MioOutGpio0Gpio23] = cio_gpio0_gpio_d2p_i[23];
-  assign mio_d2p[MioOutGpio0Gpio24] = cio_gpio0_gpio_d2p_i[24];
-  assign mio_d2p[MioOutGpio0Gpio25] = cio_gpio0_gpio_d2p_i[25];
-  assign mio_d2p[MioOutGpio0Gpio26] = cio_gpio0_gpio_d2p_i[26];
-  assign mio_d2p[MioOutGpio0Gpio27] = cio_gpio0_gpio_d2p_i[27];
-  assign mio_d2p[MioOutGpio0Gpio28] = cio_gpio0_gpio_d2p_i[28];
-  assign mio_d2p[MioOutGpio0Gpio29] = cio_gpio0_gpio_d2p_i[29];
-  assign mio_d2p[MioOutGpio0Gpio30] = cio_gpio0_gpio_d2p_i[30];
-  assign mio_d2p[MioOutGpio0Gpio31] = cio_gpio0_gpio_d2p_i[31];
-  assign mio_d2p[MioOutGpio1Gpio0] = cio_gpio1_gpio_d2p_i[0];
-  assign mio_d2p[MioOutGpio1Gpio1] = cio_gpio1_gpio_d2p_i[1];
-  assign mio_d2p[MioOutGpio1Gpio2] = cio_gpio1_gpio_d2p_i[2];
-  assign mio_d2p[MioOutGpio1Gpio3] = cio_gpio1_gpio_d2p_i[3];
-  assign mio_d2p[MioOutGpio1Gpio4] = cio_gpio1_gpio_d2p_i[4];
-  assign mio_d2p[MioOutGpio1Gpio5] = cio_gpio1_gpio_d2p_i[5];
-  assign mio_d2p[MioOutGpio1Gpio6] = cio_gpio1_gpio_d2p_i[6];
-  assign mio_d2p[MioOutGpio1Gpio7] = cio_gpio1_gpio_d2p_i[7];
-  assign mio_d2p[MioOutGpio1Gpio8] = cio_gpio1_gpio_d2p_i[8];
-  assign mio_d2p[MioOutGpio1Gpio9] = cio_gpio1_gpio_d2p_i[9];
-  assign mio_d2p[MioOutGpio1Gpio10] = cio_gpio1_gpio_d2p_i[10];
-  assign mio_d2p[MioOutGpio1Gpio11] = cio_gpio1_gpio_d2p_i[11];
-  assign mio_d2p[MioOutGpio1Gpio12] = cio_gpio1_gpio_d2p_i[12];
-  assign mio_d2p[MioOutGpio1Gpio13] = cio_gpio1_gpio_d2p_i[13];
-  assign mio_d2p[MioOutGpio1Gpio14] = cio_gpio1_gpio_d2p_i[14];
-  assign mio_d2p[MioOutGpio1Gpio15] = cio_gpio1_gpio_d2p_i[15];
-  assign mio_d2p[MioOutGpio1Gpio16] = cio_gpio1_gpio_d2p_i[16];
-  assign mio_d2p[MioOutGpio1Gpio17] = cio_gpio1_gpio_d2p_i[17];
-  assign mio_d2p[MioOutGpio1Gpio18] = cio_gpio1_gpio_d2p_i[18];
-  assign mio_d2p[MioOutGpio1Gpio19] = cio_gpio1_gpio_d2p_i[19];
-  assign mio_d2p[MioOutGpio1Gpio20] = cio_gpio1_gpio_d2p_i[20];
-  assign mio_d2p[MioOutGpio1Gpio21] = cio_gpio1_gpio_d2p_i[21];
-  assign mio_d2p[MioOutGpio1Gpio22] = cio_gpio1_gpio_d2p_i[22];
-  assign mio_d2p[MioOutGpio1Gpio23] = cio_gpio1_gpio_d2p_i[23];
-  assign mio_d2p[MioOutGpio1Gpio24] = cio_gpio1_gpio_d2p_i[24];
-  assign mio_d2p[MioOutGpio1Gpio25] = cio_gpio1_gpio_d2p_i[25];
-  assign mio_d2p[MioOutGpio1Gpio26] = cio_gpio1_gpio_d2p_i[26];
-  assign mio_d2p[MioOutGpio1Gpio27] = cio_gpio1_gpio_d2p_i[27];
-  assign mio_d2p[MioOutGpio1Gpio28] = cio_gpio1_gpio_d2p_i[28];
-  assign mio_d2p[MioOutGpio1Gpio29] = cio_gpio1_gpio_d2p_i[29];
-  assign mio_d2p[MioOutGpio1Gpio30] = cio_gpio1_gpio_d2p_i[30];
-  assign mio_d2p[MioOutGpio1Gpio31] = cio_gpio1_gpio_d2p_i[31];
-  assign mio_d2p[MioOutI2c0Sda] = cio_i2c0_sda_d2p_i;
-  assign mio_d2p[MioOutI2c0Scl] = cio_i2c0_scl_d2p_i;
-  assign mio_d2p[MioOutI2c1Sda] = cio_i2c1_sda_d2p_i;
-  assign mio_d2p[MioOutI2c1Scl] = cio_i2c1_scl_d2p_i;
-  assign mio_d2p[MioOutI2c2Sda] = cio_i2c2_sda_d2p_i;
-  assign mio_d2p[MioOutI2c2Scl] = cio_i2c2_scl_d2p_i;
-  assign mio_d2p[MioOutI3c0Scl] = cio_i3c0_scl_d2p_i;
-  assign mio_d2p[MioOutI3c0Sda] = cio_i3c0_sda_d2p_i;
-  assign mio_d2p[MioOutI3c1Scl] = cio_i3c1_scl_d2p_i;
-  assign mio_d2p[MioOutI3c1Sda] = cio_i3c1_sda_d2p_i;
+  // All muxed outputs - Tied-off signals are handled by other pinmux partition.
+  assign mio_d2p[MioOutSpiHost0Sd0] = 1'b0;
+  assign mio_d2p[MioOutSpiHost0Sd1] = 1'b0;
+  assign mio_d2p[MioOutSpiHost0Sd2] = 1'b0;
+  assign mio_d2p[MioOutSpiHost0Sd3] = 1'b0;
+  assign mio_d2p[MioOutSpiHost1Sd0] = 1'b0;
+  assign mio_d2p[MioOutSpiHost1Sd1] = 1'b0;
+  assign mio_d2p[MioOutSpiHost1Sd2] = 1'b0;
+  assign mio_d2p[MioOutSpiHost1Sd3] = 1'b0;
+  assign mio_d2p[MioOutSpiDeviceSd0] = 1'b0;
+  assign mio_d2p[MioOutSpiDeviceSd1] = 1'b0;
+  assign mio_d2p[MioOutSpiDeviceSd2] = 1'b0;
+  assign mio_d2p[MioOutSpiDeviceSd3] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio0] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio1] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio2] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio3] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio4] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio5] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio6] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio7] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio8] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio9] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio10] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio11] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio12] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio13] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio14] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio15] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio16] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio17] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio18] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio19] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio20] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio21] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio22] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio23] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio24] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio25] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio26] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio27] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio28] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio29] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio30] = 1'b0;
+  assign mio_d2p[MioOutGpio0Gpio31] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio0] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio1] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio2] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio3] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio4] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio5] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio6] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio7] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio8] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio9] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio10] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio11] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio12] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio13] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio14] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio15] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio16] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio17] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio18] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio19] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio20] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio21] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio22] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio23] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio24] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio25] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio26] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio27] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio28] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio29] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio30] = 1'b0;
+  assign mio_d2p[MioOutGpio1Gpio31] = 1'b0;
+  assign mio_d2p[MioOutI2c0Sda] = 1'b0;
+  assign mio_d2p[MioOutI2c0Scl] = 1'b0;
+  assign mio_d2p[MioOutI2c1Sda] = 1'b0;
+  assign mio_d2p[MioOutI2c1Scl] = 1'b0;
+  assign mio_d2p[MioOutI2c2Sda] = 1'b0;
+  assign mio_d2p[MioOutI2c2Scl] = 1'b0;
+  assign mio_d2p[MioOutI3c0Scl] = 1'b0;
+  assign mio_d2p[MioOutI3c0Sda] = 1'b0;
+  assign mio_d2p[MioOutI3c1Scl] = 1'b0;
+  assign mio_d2p[MioOutI3c1Sda] = 1'b0;
   assign mio_d2p[MioOutSysrstCtrlEcRstL] = cio_sysrst_ctrl_ec_rst_l_d2p;
   assign mio_d2p[MioOutSysrstCtrlFlashWpL] = cio_sysrst_ctrl_flash_wp_l_d2p;
-  assign mio_d2p[MioOutSpiHost0Sck] = cio_spi_host0_sck_d2p_i;
-  assign mio_d2p[MioOutSpiHost0Csb0] = cio_spi_host0_csb_d2p_i[0];
-  assign mio_d2p[MioOutSpiHost0Csb1] = cio_spi_host0_csb_d2p_i[1];
-  assign mio_d2p[MioOutSpiHost0Csb2] = cio_spi_host0_csb_d2p_i[2];
-  assign mio_d2p[MioOutSpiHost1Sck] = cio_spi_host1_sck_d2p_i;
-  assign mio_d2p[MioOutSpiHost1Csb0] = cio_spi_host1_csb_d2p_i[0];
-  assign mio_d2p[MioOutSpiHost1Csb1] = cio_spi_host1_csb_d2p_i[1];
-  assign mio_d2p[MioOutSpiHost1Csb2] = cio_spi_host1_csb_d2p_i[2];
-  assign mio_d2p[MioOutUart0Tx] = cio_uart0_tx_d2p_i;
-  assign mio_d2p[MioOutUart1Tx] = cio_uart1_tx_d2p_i;
-  assign mio_d2p[MioOutUart2Tx] = cio_uart2_tx_d2p_i;
-  assign mio_d2p[MioOutUart3Tx] = cio_uart3_tx_d2p_i;
-  assign mio_d2p[MioOutI3c0CtrlSdaPu] = cio_i3c0_ctrl_sda_pu_d2p_i;
-  assign mio_d2p[MioOutI3c1CtrlSdaPu] = cio_i3c1_ctrl_sda_pu_d2p_i;
+  assign mio_d2p[MioOutSpiHost0Sck] = 1'b0;
+  assign mio_d2p[MioOutSpiHost0Csb0] = 1'b0;
+  assign mio_d2p[MioOutSpiHost0Csb1] = 1'b0;
+  assign mio_d2p[MioOutSpiHost0Csb2] = 1'b0;
+  assign mio_d2p[MioOutSpiHost1Sck] = 1'b0;
+  assign mio_d2p[MioOutSpiHost1Csb0] = 1'b0;
+  assign mio_d2p[MioOutSpiHost1Csb1] = 1'b0;
+  assign mio_d2p[MioOutSpiHost1Csb2] = 1'b0;
+  assign mio_d2p[MioOutUart0Tx] = 1'b0;
+  assign mio_d2p[MioOutUart1Tx] = 1'b0;
+  assign mio_d2p[MioOutUart2Tx] = 1'b0;
+  assign mio_d2p[MioOutUart3Tx] = 1'b0;
+  assign mio_d2p[MioOutI3c0CtrlSdaPu] = 1'b0;
+  assign mio_d2p[MioOutI3c1CtrlSdaPu] = 1'b0;
   assign mio_d2p[MioOutSensorCtrlAstDebugOut0] = cio_sensor_ctrl_ast_debug_out_d2p[0];
   assign mio_d2p[MioOutSensorCtrlAstDebugOut1] = cio_sensor_ctrl_ast_debug_out_d2p[1];
   assign mio_d2p[MioOutSensorCtrlAstDebugOut2] = cio_sensor_ctrl_ast_debug_out_d2p[2];
@@ -1083,109 +1005,109 @@ module earlgrey_pd_aon #(
   assign mio_d2p[MioOutSysrstCtrlPwrbOut] = cio_sysrst_ctrl_pwrb_out_d2p;
   assign mio_d2p[MioOutSysrstCtrlZ3Wakeup] = cio_sysrst_ctrl_z3_wakeup_d2p;
 
-  // All muxed output enables
-  assign mio_en_d2p[MioOutSpiHost0Sd0] = cio_spi_host0_sd_en_d2p_i[0];
-  assign mio_en_d2p[MioOutSpiHost0Sd1] = cio_spi_host0_sd_en_d2p_i[1];
-  assign mio_en_d2p[MioOutSpiHost0Sd2] = cio_spi_host0_sd_en_d2p_i[2];
-  assign mio_en_d2p[MioOutSpiHost0Sd3] = cio_spi_host0_sd_en_d2p_i[3];
-  assign mio_en_d2p[MioOutSpiHost1Sd0] = cio_spi_host1_sd_en_d2p_i[0];
-  assign mio_en_d2p[MioOutSpiHost1Sd1] = cio_spi_host1_sd_en_d2p_i[1];
-  assign mio_en_d2p[MioOutSpiHost1Sd2] = cio_spi_host1_sd_en_d2p_i[2];
-  assign mio_en_d2p[MioOutSpiHost1Sd3] = cio_spi_host1_sd_en_d2p_i[3];
-  assign mio_en_d2p[MioOutSpiDeviceSd0] = cio_spi_device_sd_en_d2p_i[0];
-  assign mio_en_d2p[MioOutSpiDeviceSd1] = cio_spi_device_sd_en_d2p_i[1];
-  assign mio_en_d2p[MioOutSpiDeviceSd2] = cio_spi_device_sd_en_d2p_i[2];
-  assign mio_en_d2p[MioOutSpiDeviceSd3] = cio_spi_device_sd_en_d2p_i[3];
-  assign mio_en_d2p[MioOutGpio0Gpio0] = cio_gpio0_gpio_en_d2p_i[0];
-  assign mio_en_d2p[MioOutGpio0Gpio1] = cio_gpio0_gpio_en_d2p_i[1];
-  assign mio_en_d2p[MioOutGpio0Gpio2] = cio_gpio0_gpio_en_d2p_i[2];
-  assign mio_en_d2p[MioOutGpio0Gpio3] = cio_gpio0_gpio_en_d2p_i[3];
-  assign mio_en_d2p[MioOutGpio0Gpio4] = cio_gpio0_gpio_en_d2p_i[4];
-  assign mio_en_d2p[MioOutGpio0Gpio5] = cio_gpio0_gpio_en_d2p_i[5];
-  assign mio_en_d2p[MioOutGpio0Gpio6] = cio_gpio0_gpio_en_d2p_i[6];
-  assign mio_en_d2p[MioOutGpio0Gpio7] = cio_gpio0_gpio_en_d2p_i[7];
-  assign mio_en_d2p[MioOutGpio0Gpio8] = cio_gpio0_gpio_en_d2p_i[8];
-  assign mio_en_d2p[MioOutGpio0Gpio9] = cio_gpio0_gpio_en_d2p_i[9];
-  assign mio_en_d2p[MioOutGpio0Gpio10] = cio_gpio0_gpio_en_d2p_i[10];
-  assign mio_en_d2p[MioOutGpio0Gpio11] = cio_gpio0_gpio_en_d2p_i[11];
-  assign mio_en_d2p[MioOutGpio0Gpio12] = cio_gpio0_gpio_en_d2p_i[12];
-  assign mio_en_d2p[MioOutGpio0Gpio13] = cio_gpio0_gpio_en_d2p_i[13];
-  assign mio_en_d2p[MioOutGpio0Gpio14] = cio_gpio0_gpio_en_d2p_i[14];
-  assign mio_en_d2p[MioOutGpio0Gpio15] = cio_gpio0_gpio_en_d2p_i[15];
-  assign mio_en_d2p[MioOutGpio0Gpio16] = cio_gpio0_gpio_en_d2p_i[16];
-  assign mio_en_d2p[MioOutGpio0Gpio17] = cio_gpio0_gpio_en_d2p_i[17];
-  assign mio_en_d2p[MioOutGpio0Gpio18] = cio_gpio0_gpio_en_d2p_i[18];
-  assign mio_en_d2p[MioOutGpio0Gpio19] = cio_gpio0_gpio_en_d2p_i[19];
-  assign mio_en_d2p[MioOutGpio0Gpio20] = cio_gpio0_gpio_en_d2p_i[20];
-  assign mio_en_d2p[MioOutGpio0Gpio21] = cio_gpio0_gpio_en_d2p_i[21];
-  assign mio_en_d2p[MioOutGpio0Gpio22] = cio_gpio0_gpio_en_d2p_i[22];
-  assign mio_en_d2p[MioOutGpio0Gpio23] = cio_gpio0_gpio_en_d2p_i[23];
-  assign mio_en_d2p[MioOutGpio0Gpio24] = cio_gpio0_gpio_en_d2p_i[24];
-  assign mio_en_d2p[MioOutGpio0Gpio25] = cio_gpio0_gpio_en_d2p_i[25];
-  assign mio_en_d2p[MioOutGpio0Gpio26] = cio_gpio0_gpio_en_d2p_i[26];
-  assign mio_en_d2p[MioOutGpio0Gpio27] = cio_gpio0_gpio_en_d2p_i[27];
-  assign mio_en_d2p[MioOutGpio0Gpio28] = cio_gpio0_gpio_en_d2p_i[28];
-  assign mio_en_d2p[MioOutGpio0Gpio29] = cio_gpio0_gpio_en_d2p_i[29];
-  assign mio_en_d2p[MioOutGpio0Gpio30] = cio_gpio0_gpio_en_d2p_i[30];
-  assign mio_en_d2p[MioOutGpio0Gpio31] = cio_gpio0_gpio_en_d2p_i[31];
-  assign mio_en_d2p[MioOutGpio1Gpio0] = cio_gpio1_gpio_en_d2p_i[0];
-  assign mio_en_d2p[MioOutGpio1Gpio1] = cio_gpio1_gpio_en_d2p_i[1];
-  assign mio_en_d2p[MioOutGpio1Gpio2] = cio_gpio1_gpio_en_d2p_i[2];
-  assign mio_en_d2p[MioOutGpio1Gpio3] = cio_gpio1_gpio_en_d2p_i[3];
-  assign mio_en_d2p[MioOutGpio1Gpio4] = cio_gpio1_gpio_en_d2p_i[4];
-  assign mio_en_d2p[MioOutGpio1Gpio5] = cio_gpio1_gpio_en_d2p_i[5];
-  assign mio_en_d2p[MioOutGpio1Gpio6] = cio_gpio1_gpio_en_d2p_i[6];
-  assign mio_en_d2p[MioOutGpio1Gpio7] = cio_gpio1_gpio_en_d2p_i[7];
-  assign mio_en_d2p[MioOutGpio1Gpio8] = cio_gpio1_gpio_en_d2p_i[8];
-  assign mio_en_d2p[MioOutGpio1Gpio9] = cio_gpio1_gpio_en_d2p_i[9];
-  assign mio_en_d2p[MioOutGpio1Gpio10] = cio_gpio1_gpio_en_d2p_i[10];
-  assign mio_en_d2p[MioOutGpio1Gpio11] = cio_gpio1_gpio_en_d2p_i[11];
-  assign mio_en_d2p[MioOutGpio1Gpio12] = cio_gpio1_gpio_en_d2p_i[12];
-  assign mio_en_d2p[MioOutGpio1Gpio13] = cio_gpio1_gpio_en_d2p_i[13];
-  assign mio_en_d2p[MioOutGpio1Gpio14] = cio_gpio1_gpio_en_d2p_i[14];
-  assign mio_en_d2p[MioOutGpio1Gpio15] = cio_gpio1_gpio_en_d2p_i[15];
-  assign mio_en_d2p[MioOutGpio1Gpio16] = cio_gpio1_gpio_en_d2p_i[16];
-  assign mio_en_d2p[MioOutGpio1Gpio17] = cio_gpio1_gpio_en_d2p_i[17];
-  assign mio_en_d2p[MioOutGpio1Gpio18] = cio_gpio1_gpio_en_d2p_i[18];
-  assign mio_en_d2p[MioOutGpio1Gpio19] = cio_gpio1_gpio_en_d2p_i[19];
-  assign mio_en_d2p[MioOutGpio1Gpio20] = cio_gpio1_gpio_en_d2p_i[20];
-  assign mio_en_d2p[MioOutGpio1Gpio21] = cio_gpio1_gpio_en_d2p_i[21];
-  assign mio_en_d2p[MioOutGpio1Gpio22] = cio_gpio1_gpio_en_d2p_i[22];
-  assign mio_en_d2p[MioOutGpio1Gpio23] = cio_gpio1_gpio_en_d2p_i[23];
-  assign mio_en_d2p[MioOutGpio1Gpio24] = cio_gpio1_gpio_en_d2p_i[24];
-  assign mio_en_d2p[MioOutGpio1Gpio25] = cio_gpio1_gpio_en_d2p_i[25];
-  assign mio_en_d2p[MioOutGpio1Gpio26] = cio_gpio1_gpio_en_d2p_i[26];
-  assign mio_en_d2p[MioOutGpio1Gpio27] = cio_gpio1_gpio_en_d2p_i[27];
-  assign mio_en_d2p[MioOutGpio1Gpio28] = cio_gpio1_gpio_en_d2p_i[28];
-  assign mio_en_d2p[MioOutGpio1Gpio29] = cio_gpio1_gpio_en_d2p_i[29];
-  assign mio_en_d2p[MioOutGpio1Gpio30] = cio_gpio1_gpio_en_d2p_i[30];
-  assign mio_en_d2p[MioOutGpio1Gpio31] = cio_gpio1_gpio_en_d2p_i[31];
-  assign mio_en_d2p[MioOutI2c0Sda] = cio_i2c0_sda_en_d2p_i;
-  assign mio_en_d2p[MioOutI2c0Scl] = cio_i2c0_scl_en_d2p_i;
-  assign mio_en_d2p[MioOutI2c1Sda] = cio_i2c1_sda_en_d2p_i;
-  assign mio_en_d2p[MioOutI2c1Scl] = cio_i2c1_scl_en_d2p_i;
-  assign mio_en_d2p[MioOutI2c2Sda] = cio_i2c2_sda_en_d2p_i;
-  assign mio_en_d2p[MioOutI2c2Scl] = cio_i2c2_scl_en_d2p_i;
-  assign mio_en_d2p[MioOutI3c0Scl] = cio_i3c0_scl_en_d2p_i;
-  assign mio_en_d2p[MioOutI3c0Sda] = cio_i3c0_sda_en_d2p_i;
-  assign mio_en_d2p[MioOutI3c1Scl] = cio_i3c1_scl_en_d2p_i;
-  assign mio_en_d2p[MioOutI3c1Sda] = cio_i3c1_sda_en_d2p_i;
+  // All muxed output enables - Tied-off signals are handled by other pinmux partition.
+  assign mio_en_d2p[MioOutSpiHost0Sd0] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost0Sd1] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost0Sd2] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost0Sd3] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost1Sd0] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost1Sd1] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost1Sd2] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost1Sd3] = 1'b0;
+  assign mio_en_d2p[MioOutSpiDeviceSd0] = 1'b0;
+  assign mio_en_d2p[MioOutSpiDeviceSd1] = 1'b0;
+  assign mio_en_d2p[MioOutSpiDeviceSd2] = 1'b0;
+  assign mio_en_d2p[MioOutSpiDeviceSd3] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio0] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio1] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio2] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio3] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio4] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio5] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio6] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio7] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio8] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio9] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio10] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio11] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio12] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio13] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio14] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio15] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio16] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio17] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio18] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio19] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio20] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio21] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio22] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio23] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio24] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio25] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio26] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio27] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio28] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio29] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio30] = 1'b0;
+  assign mio_en_d2p[MioOutGpio0Gpio31] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio0] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio1] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio2] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio3] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio4] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio5] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio6] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio7] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio8] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio9] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio10] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio11] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio12] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio13] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio14] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio15] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio16] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio17] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio18] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio19] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio20] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio21] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio22] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio23] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio24] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio25] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio26] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio27] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio28] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio29] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio30] = 1'b0;
+  assign mio_en_d2p[MioOutGpio1Gpio31] = 1'b0;
+  assign mio_en_d2p[MioOutI2c0Sda] = 1'b0;
+  assign mio_en_d2p[MioOutI2c0Scl] = 1'b0;
+  assign mio_en_d2p[MioOutI2c1Sda] = 1'b0;
+  assign mio_en_d2p[MioOutI2c1Scl] = 1'b0;
+  assign mio_en_d2p[MioOutI2c2Sda] = 1'b0;
+  assign mio_en_d2p[MioOutI2c2Scl] = 1'b0;
+  assign mio_en_d2p[MioOutI3c0Scl] = 1'b0;
+  assign mio_en_d2p[MioOutI3c0Sda] = 1'b0;
+  assign mio_en_d2p[MioOutI3c1Scl] = 1'b0;
+  assign mio_en_d2p[MioOutI3c1Sda] = 1'b0;
   assign mio_en_d2p[MioOutSysrstCtrlEcRstL] = cio_sysrst_ctrl_ec_rst_l_en_d2p;
   assign mio_en_d2p[MioOutSysrstCtrlFlashWpL] = cio_sysrst_ctrl_flash_wp_l_en_d2p;
-  assign mio_en_d2p[MioOutSpiHost0Sck] = cio_spi_host0_sck_en_d2p_i;
-  assign mio_en_d2p[MioOutSpiHost0Csb0] = cio_spi_host0_csb_en_d2p_i[0];
-  assign mio_en_d2p[MioOutSpiHost0Csb1] = cio_spi_host0_csb_en_d2p_i[1];
-  assign mio_en_d2p[MioOutSpiHost0Csb2] = cio_spi_host0_csb_en_d2p_i[2];
-  assign mio_en_d2p[MioOutSpiHost1Sck] = cio_spi_host1_sck_en_d2p_i;
-  assign mio_en_d2p[MioOutSpiHost1Csb0] = cio_spi_host1_csb_en_d2p_i[0];
-  assign mio_en_d2p[MioOutSpiHost1Csb1] = cio_spi_host1_csb_en_d2p_i[1];
-  assign mio_en_d2p[MioOutSpiHost1Csb2] = cio_spi_host1_csb_en_d2p_i[2];
-  assign mio_en_d2p[MioOutUart0Tx] = cio_uart0_tx_en_d2p_i;
-  assign mio_en_d2p[MioOutUart1Tx] = cio_uart1_tx_en_d2p_i;
-  assign mio_en_d2p[MioOutUart2Tx] = cio_uart2_tx_en_d2p_i;
-  assign mio_en_d2p[MioOutUart3Tx] = cio_uart3_tx_en_d2p_i;
-  assign mio_en_d2p[MioOutI3c0CtrlSdaPu] = cio_i3c0_ctrl_sda_pu_en_d2p_i;
-  assign mio_en_d2p[MioOutI3c1CtrlSdaPu] = cio_i3c1_ctrl_sda_pu_en_d2p_i;
+  assign mio_en_d2p[MioOutSpiHost0Sck] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost0Csb0] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost0Csb1] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost0Csb2] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost1Sck] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost1Csb0] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost1Csb1] = 1'b0;
+  assign mio_en_d2p[MioOutSpiHost1Csb2] = 1'b0;
+  assign mio_en_d2p[MioOutUart0Tx] = 1'b0;
+  assign mio_en_d2p[MioOutUart1Tx] = 1'b0;
+  assign mio_en_d2p[MioOutUart2Tx] = 1'b0;
+  assign mio_en_d2p[MioOutUart3Tx] = 1'b0;
+  assign mio_en_d2p[MioOutI3c0CtrlSdaPu] = 1'b0;
+  assign mio_en_d2p[MioOutI3c1CtrlSdaPu] = 1'b0;
   assign mio_en_d2p[MioOutSensorCtrlAstDebugOut0] = cio_sensor_ctrl_ast_debug_out_en_d2p[0];
   assign mio_en_d2p[MioOutSensorCtrlAstDebugOut1] = cio_sensor_ctrl_ast_debug_out_en_d2p[1];
   assign mio_en_d2p[MioOutSensorCtrlAstDebugOut2] = cio_sensor_ctrl_ast_debug_out_en_d2p[2];
@@ -1204,16 +1126,16 @@ module earlgrey_pd_aon #(
   // All dedicated inputs
   logic [1:0] unused_dio_p2d;
   assign unused_dio_p2d = dio_p2d;
-  assign cio_usbdev_usb_dp_p2d_o = dio_p2d[DioUsbdevUsbDp];
-  assign cio_usbdev_usb_dn_p2d_o = dio_p2d[DioUsbdevUsbDn];
 
-  // All dedicated outputs
-  assign dio_d2p[DioUsbdevUsbDp] = cio_usbdev_usb_dp_d2p_i;
-  assign dio_d2p[DioUsbdevUsbDn] = cio_usbdev_usb_dn_d2p_i;
+  // All dedicated outputs - Tied-off signals are handled by other pinmux partition.
+  // Input-only DIOs are tied-off as well.
+  assign dio_d2p[DioUsbdevUsbDp] = 1'b0;
+  assign dio_d2p[DioUsbdevUsbDn] = 1'b0;
 
-  // All dedicated output enables
-  assign dio_en_d2p[DioUsbdevUsbDp] = cio_usbdev_usb_dp_en_d2p_i;
-  assign dio_en_d2p[DioUsbdevUsbDn] = cio_usbdev_usb_dn_en_d2p_i;
+  // All dedicated output enables - Tied-off signals are handled by other pinmux partition.
+  // Input-only DIOs are tied-off as well.
+  assign dio_en_d2p[DioUsbdevUsbDp] = 1'b0;
+  assign dio_en_d2p[DioUsbdevUsbDn] = 1'b0;
 
   // Connect clkmgr to top-level signals for other power domains
   assign clkmgr_clocks_o = clkmgr_clocks;

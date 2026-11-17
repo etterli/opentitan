@@ -493,6 +493,8 @@ class chip_padctrl_attributes_vseq extends chip_stub_cpu_base_vseq;
   endtask
 
   // Verifies the MIO periph value against the pad input value for the insel test.
+  // TODO: chip_if ORs the MIO inputs of both pinmux partitions and forces both with the same
+  // outputs, so this test only covers the pad attributes, not the partition muxing.
   function void pinmux_mio_insel_checks();
     for (int i = 0; i < MioInCount; i++) begin
       string msg = $sformatf("on MIO_IN[%0d]", i);
