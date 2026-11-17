@@ -2752,6 +2752,74 @@
           index: -1
         }
         {
+          name: p2s
+          desc: Primary-to-secondary partition communication.
+          struct: p2s
+          package: pinmux_pkg
+          type: uni
+          act: req
+          width: 1
+          inst_name: pinmux
+          default: ""
+          end_idx: -1
+          top_type: broadcast
+          top_signame: pinmux_p2s
+          index: -1
+          external: true
+          conn_type: false
+        }
+        {
+          name: p2s
+          desc: Primary-to-secondary partition communication.
+          struct: p2s
+          package: pinmux_pkg
+          type: uni
+          act: rcv
+          width: 1
+          partition: secondary
+          inst_name: pinmux
+          default: ""
+          domain: Aon
+          top_signame: pinmux_p2s
+          index: -1
+          external: true
+          conn_type: false
+        }
+        {
+          name: s2p
+          desc: Secondary-to-primary partition communication.
+          struct: s2p
+          package: pinmux_pkg
+          type: uni
+          act: req
+          width: 1
+          partition: secondary
+          inst_name: pinmux
+          default: ""
+          end_idx: -1
+          top_type: broadcast
+          top_signame: pinmux_s2p
+          index: -1
+          external: true
+          conn_type: false
+        }
+        {
+          name: s2p
+          desc: Secondary-to-primary partition communication.
+          struct: s2p
+          package: pinmux_pkg
+          type: uni
+          act: rcv
+          width: 1
+          inst_name: pinmux
+          default: ""
+          domain: Main
+          top_signame: pinmux_s2p
+          index: -1
+          external: true
+          conn_type: false
+        }
+        {
           name: tl
           struct: tl
           package: tlul_pkg
@@ -4964,6 +5032,14 @@
       pwrmgr.rstreqs:
       [
         aon_timer.aon_timer_rst_req
+      ]
+      pinmux.p2s.primary:
+      [
+        pinmux.p2s.secondary
+      ]
+      pinmux.s2p.secondary:
+      [
+        pinmux.s2p.primary
       ]
       main.tl_rv_core_ibex__corei:
       [
@@ -9293,6 +9369,30 @@
         default: "'0"
       }
       {
+        package: pinmux_pkg
+        struct: p2s
+        domain: chip
+        signame: pinmux_p2s
+        width: 1
+        type: uni
+        end_idx: -1
+        act: req
+        suffix: ""
+        default: pinmux_pkg::P2S_DEFAULT
+      }
+      {
+        package: pinmux_pkg
+        struct: s2p
+        domain: chip
+        signame: pinmux_s2p
+        width: 1
+        type: uni
+        end_idx: -1
+        act: req
+        suffix: ""
+        default: pinmux_pkg::S2P_DEFAULT
+      }
+      {
         package: tlul_pkg
         struct: tl_h2d
         domain: chip
@@ -11552,6 +11652,74 @@
         index: -1
       }
       {
+        name: p2s
+        desc: Primary-to-secondary partition communication.
+        struct: p2s
+        package: pinmux_pkg
+        type: uni
+        act: req
+        width: 1
+        inst_name: pinmux
+        default: ""
+        end_idx: -1
+        top_type: broadcast
+        top_signame: pinmux_p2s
+        index: -1
+        external: true
+        conn_type: false
+      }
+      {
+        name: p2s
+        desc: Primary-to-secondary partition communication.
+        struct: p2s
+        package: pinmux_pkg
+        type: uni
+        act: rcv
+        width: 1
+        partition: secondary
+        inst_name: pinmux
+        default: ""
+        domain: Aon
+        top_signame: pinmux_p2s
+        index: -1
+        external: true
+        conn_type: false
+      }
+      {
+        name: s2p
+        desc: Secondary-to-primary partition communication.
+        struct: s2p
+        package: pinmux_pkg
+        type: uni
+        act: req
+        width: 1
+        partition: secondary
+        inst_name: pinmux
+        default: ""
+        end_idx: -1
+        top_type: broadcast
+        top_signame: pinmux_s2p
+        index: -1
+        external: true
+        conn_type: false
+      }
+      {
+        name: s2p
+        desc: Secondary-to-primary partition communication.
+        struct: s2p
+        package: pinmux_pkg
+        type: uni
+        act: rcv
+        width: 1
+        inst_name: pinmux
+        default: ""
+        domain: Main
+        top_signame: pinmux_s2p
+        index: -1
+        external: true
+        conn_type: false
+      }
+      {
         name: tl
         struct: tl
         package: tlul_pkg
@@ -13235,6 +13403,82 @@
           1
         ]
         netname: pwrmgr_wakeups
+      }
+      {
+        package: pinmux_pkg
+        struct: p2s
+        domain: Main
+        inter_pd: true
+        signame: pinmux_p2s_o
+        signame_chip:
+        {
+          cw305: pinmux_p2s
+          verilator: pinmux_p2s
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: pinmux_p2s
+      }
+      {
+        package: pinmux_pkg
+        struct: p2s
+        domain: Aon
+        inter_pd: true
+        signame: pinmux_p2s_i
+        signame_chip:
+        {
+          cw305: pinmux_p2s
+          verilator: pinmux_p2s
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: pinmux_p2s
+      }
+      {
+        package: pinmux_pkg
+        struct: s2p
+        domain: Aon
+        inter_pd: true
+        signame: pinmux_s2p_o
+        signame_chip:
+        {
+          cw305: pinmux_s2p
+          verilator: pinmux_s2p
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: pinmux_s2p
+      }
+      {
+        package: pinmux_pkg
+        struct: s2p
+        domain: Main
+        inter_pd: true
+        signame: pinmux_s2p_i
+        signame_chip:
+        {
+          cw305: pinmux_s2p
+          verilator: pinmux_s2p
+        }
+        width: 1
+        type: uni
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: pinmux_s2p
       }
       {
         package: tlul_pkg

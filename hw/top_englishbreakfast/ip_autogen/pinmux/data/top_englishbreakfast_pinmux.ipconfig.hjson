@@ -15,154 +15,192 @@
       {
         name: gpio0_gpio[0]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[1]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[2]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[3]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[4]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[5]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[6]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[7]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[8]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[9]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[10]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[11]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[12]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[13]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[14]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[15]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[16]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[17]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[18]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[19]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[20]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[21]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[22]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[23]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[24]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[25]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[26]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[27]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[28]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[29]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[30]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[31]
         pads: []
+        partition: primary
       }
       {
         name: uart0_rx
         pads: []
+        partition: primary
       }
       {
         name: uart1_rx
         pads: []
+        partition: primary
       }
       {
         name: flash_ctrl_tck
         pads: []
+        partition: primary
       }
       {
         name: flash_ctrl_tms
         pads: []
+        partition: primary
       }
       {
         name: flash_ctrl_tdi
         pads: []
+        partition: primary
       }
       {
         name: usbdev_sense
         pads: []
+        partition: primary
       }
     ]
     mio_periph_outs:
@@ -170,142 +208,177 @@
       {
         name: gpio0_gpio[0]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[1]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[2]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[3]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[4]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[5]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[6]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[7]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[8]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[9]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[10]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[11]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[12]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[13]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[14]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[15]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[16]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[17]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[18]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[19]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[20]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[21]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[22]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[23]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[24]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[25]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[26]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[27]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[28]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[29]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[30]
         pads: []
+        partition: primary
       }
       {
         name: gpio0_gpio[31]
         pads: []
+        partition: primary
       }
       {
         name: uart0_tx
         pads: []
+        partition: primary
       }
       {
         name: uart1_tx
         pads: []
+        partition: primary
       }
       {
         name: flash_ctrl_tdo
         pads: []
+        partition: primary
       }
     ]
     mio_pad_attr_resvals:

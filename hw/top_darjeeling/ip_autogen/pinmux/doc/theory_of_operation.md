@@ -6,8 +6,9 @@ The `pinmux` peripheral is a programmable module designed to wire arbitrary peri
 It gives much flexibility at the top level of the device, allowing most data pins to be flexibly wired and controlled by many peripherals.
 Even though the `pinmux` is referred to as one IP, it is logically split into two modules that are instantiated on the top-level and the chip-level, respectively, as can be seen in the block diagram below.
 The top-level part is a split IP with a primary and a secondary partition, which can be placed in different power domains.
-The primary partition `pinmux_part_primary` contains the CSRs accessible via the TL-UL interface, the main muxing matrix, retention registers, a set of programmable wakeup detectors, and the HW strap sampling and TAP / JTAG muxing logic.
-The secondary partition `pinmux_part_secondary` does not contain any logic yet.
+The primary partition `pinmux_part_primary` contains the CSRs accessible via the TL-UL interface, retention registers, a set of programmable wakeup detectors, and the HW strap sampling and TAP / JTAG muxing logic.
+The muxing matrix is distributed over both partitions.
+Each partition muxes the inputs and outputs of the peripherals residing in its power domain.
 The chip-level module `padring` instantiates the bidirectional pads and connects the physical pad attributes.
 
 ![Pinmux Block Diagram](../doc/pinmux_overview_block_diagram.svg)
@@ -38,7 +39,7 @@ Legal behaviors are tie low, tie high, high-Z, keeping the previous state, or dr
 The wakeup detectors can detect patterns such as rising / falling edges and pulses of a certain width up to 255 AON clock cycles.
 Each wakeup detector can listen on any one of the MIO / DIO signals that are routed through the `pinmux`, and if a pattern is detected, the power manager is informed of that event via a wakeup request.
 
-The `pinmux` module itself is in the always-on (AON) power domain, and as such does not loose configuration state when a sleep power cycle is performed.
+If the primary partition resides in the always-on (AON) power domain, the `pinmux` does not lose configuration state when a sleep power cycle is performed.
 However, only the wakeup detector logic will be actively clocked during sleep in order to save power.
 
 See the [retention logic](#retention-logic) and [wakeup detectors](#wakeup-detectors) sections for more details about the mux implementation.
@@ -72,6 +73,9 @@ Selecting a pad that is not legal for a peripheral input ties that input to 0, a
 As illustrated in the picture above, all muxing matrix and DIO outputs are routed through the retention logic, which essentially consists of a set of multiplexors and two retention registers per output (one register is for the output data and one for the output enable).
 This multiplexor can be configured to be automatically activated upon sleep entry in order to either drive the output low, high, high-Z or to the last seen value (keep).
 If no sleep behavior is specified, the retention logic will continue to drive out the value coming from the peripheral side, which can be useful for peripherals that reside in the AON domain.
+A pad without any output source in the power domain of the primary partition is muxed in the secondary partition, including the constant selections.
+If the secondary partition is powered down, such a pad outputs the isolation values of the secondary partition unless a sleep behavior is specified.
+It is recommended to define the isolation value of the output data and output enable signals from the secondary partition as 0, so that such a pad is in high-Z state.
 
 The sleep behavior of all outputs is activated in parallel via a trigger signal asserted by the power manager.
 Once activated, it is the task of SW to disable the sleep behavior for each individual pin when waking up from sleep.

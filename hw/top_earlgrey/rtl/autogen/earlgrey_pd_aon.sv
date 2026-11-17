@@ -88,6 +88,8 @@ module earlgrey_pd_aon #(
   input  logic       i3c0_rstdet_enable_i,
   input  i3c_pkg::i3c_rstdet_req_t       i3c0_rstdet_req_i,
   output i3c_pkg::i3c_rstdet_rsp_t       i3c0_rstdet_rsp_o,
+  output pinmux_pkg::p2s_t       pinmux_p2s_o,
+  input  pinmux_pkg::s2p_t       pinmux_s2p_i,
   output ast_intraip_pkg::s2p_t       ast_intraip_s2p_o,
   input  ast_intraip_pkg::p2s_t       ast_intraip_p2s_i,
   input  tlul_pkg::tl_h2d_t       pwrmgr_tl_req_i,
@@ -651,6 +653,8 @@ module earlgrey_pd_aon #(
     .usbdev_bus_reset_o(usbdev_usb_aon_bus_reset_o),
     .usbdev_sense_lost_o(usbdev_usb_aon_sense_lost_o),
     .usbdev_wake_detect_active_o(pinmux_usbdev_wake_detect_active_o),
+    .p2s_o(pinmux_p2s_o),
+    .s2p_i(pinmux_s2p_i),
     .tl_i(pinmux_tl_req_i),
     .tl_o(pinmux_tl_rsp_o),
 

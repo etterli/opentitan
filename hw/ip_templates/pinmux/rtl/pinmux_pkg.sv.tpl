@@ -4,7 +4,8 @@
 
 <%!
   from ipgen.pinmux_gen import (INSEL_NUM_CONST, OUTSEL_NUM_CONST, check_params, gen_index_label,
-                                mio_insel_legal, mio_outsel_legal, pad_attr_sv, sv_hex)
+                                mio_insel_legal, mio_outsel_in_primary, mio_outsel_legal,
+                                mio_pad_muxed_in_primary, mio_periph_in_parts, pad_attr_sv, sv_hex)
 %>\
 package pinmux_pkg;
 
@@ -65,6 +66,12 @@ package pinmux_pkg;
     mio_scan_role:     {NMioPads{NoScan}}
   };
 
+  // Widths of the dense mux vectors aligned to power of two to avoid Xes. Input has two constant
+  // options (0, 1) and output has 3 (0, 1, high-Z).
+  parameter int AlignedMioInMuxSize  = (NMioPads + 2 > NDioPads) ? 2**$clog2(NMioPads + 2) :
+                                                                  2**$clog2(NDioPads);
+  parameter int AlignedMioOutMuxSize = 2**$clog2(NMioPeriphOut + 3);
+
 <%
   check_params(n_mio_pads, n_dio_pads, n_mio_periph_in, n_mio_periph_out, mio_periph_ins,
                mio_periph_outs, mio_pad_attr_resvals, dio_pad_attr_resvals)
@@ -88,6 +95,49 @@ package pinmux_pkg;
     ${sv_hex(mask, outsel_w)}${f"  // {label}" if loop.last else f", // {label}"}
 % endfor
   };
+
+  // Partitions of a split pinmux muxing a MIO peripheral input. Bit 0: primary, bit 1: secondary.
+  // A non-split pinmux only has the primary partition.
+  typedef enum logic [1:0] {
+    MuxPartPrimary   = 2'b01,
+    MuxPartSecondary = 2'b10,
+    MuxPartBoth      = 2'b11
+  } mux_part_e;
+
+  // Partitions muxing each MIO peripheral input. LSB corresponds to lowest index.
+  parameter mux_part_e [NMioPeriphIn-1:0] MioPeriphInPart = {
+% for label, part in gen_index_label(mio_periph_in_parts(mio_periph_ins))[::-1]:
+    ${part}${f"  // {label}" if loop.last else f", // {label}"}
+% endfor
+  };
+
+  // Whether the source of each MIO_OUTSEL value is in the primary partition. LSB corresponds to
+  // lowest index. Includes the static options, which exist in both partitions.
+  parameter logic [AlignedMioOutMuxSize-1:0] MioOutselInPrimary = AlignedMioOutMuxSize'({
+<% labels = gen_index_label(mio_outsel_in_primary(mio_periph_outs), OUTSEL_NUM_CONST) %>\
+% for label, in_primary in labels[::-1]:
+    1'b${int(in_primary)}, // ${label}
+% endfor
+    ${OUTSEL_NUM_CONST}'b${"1" * OUTSEL_NUM_CONST}  // ${OUTSEL_NUM_CONST - 1}..0: static options
+  });
+
+  // Whether the output mux of each MIO pad is in the primary partition. This is the case if any
+  // legal peripheral output of the pad is in the primary partition. LSB corresponds to lowest
+  // index.
+  parameter logic [NMioPads-1:0] MioPadMuxedInPrimary = {
+<% labels = gen_index_label(mio_pad_muxed_in_primary(mio_pad_names, mio_periph_outs)) %>\
+% for label, in_primary in labels[::-1]:
+    1'b${int(in_primary)}${f"  // {label}" if loop.last else f", // {label}"}
+% endfor
+  };
+
+  // Whether any MIO peripheral input is muxed in the primary or secondary partition.
+  parameter bit AnyMioInMuxedInPrimary   = |(MioPeriphInPart & {NMioPeriphIn{MuxPartPrimary}});
+  parameter bit AnyMioInMuxedInSecondary = |(MioPeriphInPart & {NMioPeriphIn{MuxPartSecondary}});
+
+  // Whether any MIO pad is muxed in the primary or secondary partition.
+  parameter bit AnyMioPadMuxedInPrimary   = |MioPadMuxedInPrimary;
+  parameter bit AnyMioPadMuxedInSecondary = !(&MioPadMuxedInPrimary);
 
   // Reset values of the MIO_PAD_ATTR CSRs defined by the top. LSB corresponds to lowest index.
   parameter pad_attr_t [NMioPads-1:0] MioPadAttrResval = {
@@ -124,5 +174,18 @@ package pinmux_pkg;
     RvTapSel  = 2'b10,
     DftTapSel = 2'b11
   } tap_strap_t;
+
+  // Intra-IP connections
+  typedef struct packed {
+    logic [NMioPads-1:0] mio_in;
+    pinmux_reg2hw_t reg2hw;
+  } p2s_t;
+
+  typedef struct packed {
+    logic [NMioPeriphOut-1:0] periph_data;
+    logic [NMioPeriphOut-1:0] periph_oe;
+    logic [NMioPads-1:0] pad_data;
+    logic [NMioPads-1:0] pad_oe;
+  } s2p_t;
 
 endpackage : pinmux_pkg

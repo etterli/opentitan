@@ -36,7 +36,7 @@
   ]
   notes:              "Use FPV to perform block level verification.",
   // The pinmux is split into a primary and a secondary partition, which can be placed in different
-  // power domains. The secondary partition does not contain any logic yet.
+  // power domains. The pads, CSRs and retention logic reside in the primary partition.
   is_split_ip: true,
   clocking: {
     primary: [
@@ -88,6 +88,39 @@
                Wakeup request from wakeup detectors, to the power manager, running on the AON clock.
                ''',
       default: "1'b0"
+    },
+    // Intra-IP connections between the partitions.
+    { struct:    "p2s",
+      type:      "uni",
+      name:      "p2s",
+      act:       "req",
+      package:   "pinmux_pkg",
+      partition: "primary",
+      desc:      "Primary-to-secondary partition communication."
+    },
+    { struct:    "p2s",
+      type:      "uni",
+      name:      "p2s",
+      act:       "rcv",
+      package:   "pinmux_pkg",
+      partition: "secondary",
+      desc:      "Primary-to-secondary partition communication."
+    },
+    { struct:    "s2p",
+      type:      "uni",
+      name:      "s2p",
+      act:       "req",
+      package:   "pinmux_pkg",
+      partition: "secondary",
+      desc:      "Secondary-to-primary partition communication."
+    },
+    { struct:    "s2p",
+      type:      "uni",
+      name:      "s2p",
+      act:       "rcv",
+      package:   "pinmux_pkg",
+      partition: "primary",
+      desc:      "Secondary-to-primary partition communication."
     },
   ]
 

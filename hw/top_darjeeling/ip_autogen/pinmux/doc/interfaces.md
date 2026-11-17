@@ -15,6 +15,10 @@ Referring to the [Comportable guideline for peripheral device functionality](htt
 |:-------------|:------------------|:--------|:------|--------:|:--------------------------------------------------------------------------------------|
 | sleep_en     | logic             | uni     | rcv   |       1 | Level signal that is asserted when the power manager enters sleep.                    |
 | pin_wkup_req | logic             | uni     | req   |       1 | Wakeup request from wakeup detectors, to the power manager, running on the AON clock. |
+| p2s          | pinmux_pkg::p2s   | uni     | req   |       1 | Primary-to-secondary partition communication.                                         |
+| p2s          | pinmux_pkg::p2s   | uni     | rcv   |       1 | Primary-to-secondary partition communication.                                         |
+| s2p          | pinmux_pkg::s2p   | uni     | req   |       1 | Secondary-to-primary partition communication.                                         |
+| s2p          | pinmux_pkg::s2p   | uni     | rcv   |       1 | Secondary-to-primary partition communication.                                         |
 | tl           | tlul_pkg::tl      | req_rsp | rsp   |       1 |                                                                                       |
 
 ## Security Alerts

@@ -243,6 +243,8 @@ module earlgrey_pd_main #(
   output logic       i3c0_rstdet_enable_o,
   output i3c_pkg::i3c_rstdet_req_t       i3c0_rstdet_req_o,
   input  i3c_pkg::i3c_rstdet_rsp_t       i3c0_rstdet_rsp_i,
+  input  pinmux_pkg::p2s_t       pinmux_p2s_i,
+  output pinmux_pkg::s2p_t       pinmux_s2p_o,
   input  ast_intraip_pkg::s2p_t       ast_intraip_s2p_i,
   output ast_intraip_pkg::p2s_t       ast_intraip_p2s_o,
   output tlul_pkg::tl_h2d_t       pwrmgr_tl_req_o,
@@ -2021,9 +2023,12 @@ module earlgrey_pd_main #(
   pinmux_part_secondary u_pinmux_part_secondary (
     // Clock and reset connections
     .clk_i(clkmgr_clocks_i.clk_io_div4_secure),
-    .rst_ni(rstmgr_resets_i.rst_lc_io_div4_n[rstmgr_pkg::DomainMainSel])
+    .rst_ni(rstmgr_resets_i.rst_lc_io_div4_n[rstmgr_pkg::DomainMainSel]),
 
 
+    // Inter-module signals
+    .p2s_i(pinmux_p2s_i),
+    .s2p_o(pinmux_s2p_o)
   );
 
   ast_part_primary #(

@@ -15,18 +15,22 @@
       {
         name: soc_proxy_soc_gpi[12]
         pads: []
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpi[13]
         pads: []
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpi[14]
         pads: []
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpi[15]
         pads: []
+        partition: primary
       }
     ]
     mio_periph_outs:
@@ -34,22 +38,27 @@
       {
         name: soc_proxy_soc_gpo[12]
         pads: []
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpo[13]
         pads: []
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpo[14]
         pads: []
+        partition: primary
       }
       {
         name: soc_proxy_soc_gpo[15]
         pads: []
+        partition: primary
       }
       {
         name: otp_macro_test[0]
         pads: []
+        partition: primary
       }
     ]
     mio_pad_attr_resvals:

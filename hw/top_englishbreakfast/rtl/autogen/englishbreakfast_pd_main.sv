@@ -87,6 +87,8 @@ module englishbreakfast_pd_main #(
   output rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump_o,
   output rv_core_ibex_pkg::cpu_pwrmgr_t       rv_core_ibex_pwrmgr_o,
   output logic [1:0] pwrmgr_wakeups_o,
+  output pinmux_pkg::p2s_t       pinmux_p2s_o,
+  input  pinmux_pkg::s2p_t       pinmux_s2p_i,
   output tlul_pkg::tl_h2d_t       pwrmgr_tl_req_o,
   input  tlul_pkg::tl_d2h_t       pwrmgr_tl_rsp_i,
   output tlul_pkg::tl_h2d_t       rstmgr_tl_req_o,
@@ -798,6 +800,8 @@ module englishbreakfast_pd_main #(
     .usbdev_bus_reset_o(usbdev_usb_aon_bus_reset),
     .usbdev_sense_lost_o(usbdev_usb_aon_sense_lost),
     .usbdev_wake_detect_active_o(pinmux_usbdev_wake_detect_active),
+    .p2s_o(pinmux_p2s_o),
+    .s2p_i(pinmux_s2p_i),
     .tl_i(pinmux_tl_req),
     .tl_o(pinmux_tl_rsp),
 
