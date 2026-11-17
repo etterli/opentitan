@@ -756,7 +756,7 @@
           46
           58
         ]
-        partition: secondary
+        partition: both
       }
       {
         name: spi_device_sck

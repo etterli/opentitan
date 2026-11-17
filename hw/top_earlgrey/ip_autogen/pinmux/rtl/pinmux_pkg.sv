@@ -263,7 +263,7 @@ package pinmux_pkg;
     MuxPartSecondary, //  91: spi_device_tpm_csb
     MuxPartSecondary, //  90: spi_device_csb
     MuxPartSecondary, //  89: spi_device_sck
-    MuxPartSecondary, //  88: usbdev_sense
+    MuxPartBoth, //  88: usbdev_sense
     MuxPartPrimary, //  87: sysrst_ctrl_flash_wp_l
     MuxPartPrimary, //  86: sysrst_ctrl_ec_rst_l
     MuxPartSecondary, //  85: i3c1_sda
