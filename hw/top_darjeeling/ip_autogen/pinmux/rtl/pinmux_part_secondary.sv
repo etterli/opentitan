@@ -19,6 +19,10 @@ module pinmux_part_secondary
   input        [NMioPeriphOut-1:0] periph_to_mio_i,
   input        [NMioPeriphOut-1:0] periph_to_mio_oe_i,
   output logic [NMioPeriphIn-1:0]  mio_to_periph_o,
+  // Dedicated Peripheral side
+  input        [NDioPads-1:0]      periph_to_dio_i,
+  input        [NDioPads-1:0]      periph_to_dio_oe_i,
+  output logic [NDioPads-1:0]      dio_to_periph_o,
   // Intra-IP connections
   input  p2s_t p2s_i,
   output s2p_t s2p_o
@@ -108,6 +112,15 @@ module pinmux_part_secondary
   assign s2p_o.periph_oe   = periph_to_mio_oe_i;
   assign s2p_o.pad_data    = periph_data_muxed;
   assign s2p_o.pad_oe      = periph_oe_muxed;
+
+  /////////////////////
+  // DIO connections //
+  /////////////////////
+  // Inputs are just forwarded from the pads via the other partition.
+  // Outputs are forwarded to the other partition.
+  assign dio_to_periph_o        = p2s_i.dio_to_periph;
+  assign s2p_o.periph_to_dio    = periph_to_dio_i;
+  assign s2p_o.periph_to_dio_oe = periph_to_dio_oe_i;
 
   ///////////////////////////
   // Unused reg2hw signals //

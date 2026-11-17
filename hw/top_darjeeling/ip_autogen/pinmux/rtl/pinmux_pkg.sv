@@ -114,6 +114,84 @@ package pinmux_pkg;
   parameter bit AnyMioPadMuxedInPrimary   = |MioPadMuxedInPrimary;
   parameter bit AnyMioPadMuxedInSecondary = !(&MioPadMuxedInPrimary);
 
+  // Whether the peripheral connected to each DIO pad is in the primary partition. LSB corresponds
+  // to lowest index.
+  parameter logic [NDioPads-1:0] DioPadSourceInPrimary = {
+    1'b1, // 72: soc_proxy_soc_gpo[11]
+    1'b1, // 71: soc_proxy_soc_gpo[10]
+    1'b1, // 70: soc_proxy_soc_gpo[9]
+    1'b1, // 69: soc_proxy_soc_gpo[8]
+    1'b1, // 68: soc_proxy_soc_gpo[7]
+    1'b1, // 67: soc_proxy_soc_gpo[6]
+    1'b1, // 66: soc_proxy_soc_gpo[5]
+    1'b1, // 65: soc_proxy_soc_gpo[4]
+    1'b1, // 64: soc_proxy_soc_gpo[3]
+    1'b1, // 63: soc_proxy_soc_gpo[2]
+    1'b1, // 62: soc_proxy_soc_gpo[1]
+    1'b1, // 61: soc_proxy_soc_gpo[0]
+    1'b1, // 60: uart0_tx
+    1'b1, // 59: spi_host0_csb
+    1'b1, // 58: spi_host0_sck
+    1'b1, // 57: soc_proxy_soc_gpi[11]
+    1'b1, // 56: soc_proxy_soc_gpi[10]
+    1'b1, // 55: soc_proxy_soc_gpi[9]
+    1'b1, // 54: soc_proxy_soc_gpi[8]
+    1'b1, // 53: soc_proxy_soc_gpi[7]
+    1'b1, // 52: soc_proxy_soc_gpi[6]
+    1'b1, // 51: soc_proxy_soc_gpi[5]
+    1'b1, // 50: soc_proxy_soc_gpi[4]
+    1'b1, // 49: soc_proxy_soc_gpi[3]
+    1'b1, // 48: soc_proxy_soc_gpi[2]
+    1'b1, // 47: soc_proxy_soc_gpi[1]
+    1'b1, // 46: soc_proxy_soc_gpi[0]
+    1'b1, // 45: uart0_rx
+    1'b1, // 44: spi_device_tpm_csb
+    1'b1, // 43: spi_device_csb
+    1'b1, // 42: spi_device_sck
+    1'b1, // 41: gpio0_gpio[31]
+    1'b1, // 40: gpio0_gpio[30]
+    1'b1, // 39: gpio0_gpio[29]
+    1'b1, // 38: gpio0_gpio[28]
+    1'b1, // 37: gpio0_gpio[27]
+    1'b1, // 36: gpio0_gpio[26]
+    1'b1, // 35: gpio0_gpio[25]
+    1'b1, // 34: gpio0_gpio[24]
+    1'b1, // 33: gpio0_gpio[23]
+    1'b1, // 32: gpio0_gpio[22]
+    1'b1, // 31: gpio0_gpio[21]
+    1'b1, // 30: gpio0_gpio[20]
+    1'b1, // 29: gpio0_gpio[19]
+    1'b1, // 28: gpio0_gpio[18]
+    1'b1, // 27: gpio0_gpio[17]
+    1'b1, // 26: gpio0_gpio[16]
+    1'b1, // 25: gpio0_gpio[15]
+    1'b1, // 24: gpio0_gpio[14]
+    1'b1, // 23: gpio0_gpio[13]
+    1'b1, // 22: gpio0_gpio[12]
+    1'b1, // 21: gpio0_gpio[11]
+    1'b1, // 20: gpio0_gpio[10]
+    1'b1, // 19: gpio0_gpio[9]
+    1'b1, // 18: gpio0_gpio[8]
+    1'b1, // 17: gpio0_gpio[7]
+    1'b1, // 16: gpio0_gpio[6]
+    1'b1, // 15: gpio0_gpio[5]
+    1'b1, // 14: gpio0_gpio[4]
+    1'b1, // 13: gpio0_gpio[3]
+    1'b1, // 12: gpio0_gpio[2]
+    1'b1, // 11: gpio0_gpio[1]
+    1'b1, // 10: gpio0_gpio[0]
+    1'b1, //  9: i2c0_sda
+    1'b1, //  8: i2c0_scl
+    1'b1, //  7: spi_device_sd[3]
+    1'b1, //  6: spi_device_sd[2]
+    1'b1, //  5: spi_device_sd[1]
+    1'b1, //  4: spi_device_sd[0]
+    1'b1, //  3: spi_host0_sd[3]
+    1'b1, //  2: spi_host0_sd[2]
+    1'b1, //  1: spi_host0_sd[1]
+    1'b1  //  0: spi_host0_sd[0]
+  };
+
   // Reset values of the MIO_PAD_ATTR CSRs defined by the top. LSB corresponds to lowest index.
   parameter pad_attr_t [NMioPads-1:0] MioPadAttrResval = {
     pad_attr_t'{default: '0}, // 11: MIO11
@@ -232,6 +310,7 @@ package pinmux_pkg;
   // Intra-IP connections
   typedef struct packed {
     logic [NMioPads-1:0] mio_in;
+    logic [NDioPads-1:0] dio_to_periph;
     pinmux_reg2hw_t reg2hw;
   } p2s_t;
 
@@ -240,6 +319,8 @@ package pinmux_pkg;
     logic [NMioPeriphOut-1:0] periph_oe;
     logic [NMioPads-1:0] pad_data;
     logic [NMioPads-1:0] pad_oe;
+    logic [NDioPads-1:0] periph_to_dio;
+    logic [NDioPads-1:0] periph_to_dio_oe;
   } s2p_t;
 
 endpackage : pinmux_pkg

@@ -503,18 +503,31 @@ module pinmux_part_primary
   // DIO connections //
   /////////////////////
 
-  // Inputs are just fed through
+  // Inputs are just fed through / forwarded.
   assign dio_to_periph_o = dio_in;
+  assign p2s_o.dio_to_periph = dio_in;
 
   for (genvar k = 0; k < NDioPads; k++) begin : gen_dio_out
+    // Select source domain for output direction
+    logic periph_to_dio;
+    logic periph_to_dio_oe;
+
+    assign periph_to_dio   = DioPadSourceInPrimary[k] ?
+                             periph_to_dio_i[k]       :
+                             s2p_i.periph_to_dio[k];
+
+    assign periph_to_dio_oe = DioPadSourceInPrimary[k] ?
+                              periph_to_dio_oe_i[k]    :
+                              s2p_i.periph_to_dio_oe[k];
+
     // Check individual sleep enable status bits
     assign dio_out[k] = reg2hw.dio_pad_sleep_status[k].q ?
                         dio_out_retreg_q[k]              :
-                        periph_to_dio_i[k];
+                        periph_to_dio;
 
     assign dio_oe[k]  = reg2hw.dio_pad_sleep_status[k].q ?
                         dio_oe_retreg_q[k]               :
-                        periph_to_dio_oe_i[k];
+                        periph_to_dio_oe;
 
     // latch state when going to sleep
     // 0: drive low

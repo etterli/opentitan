@@ -32,29 +32,31 @@ INSEL_RESVAL = 0  # constant 0
 OUTSEL_RESVAL = 2  # high-Z
 
 # mux_part_e literal of the partition muxing a peripheral input. A non-split pinmux only has the
-# primary partition. An output is muxed in a single partition.
+# primary partition. An output and a DIO are handled in a single partition.
 MUX_PART = {
     PART_PRIMARY: "MuxPartPrimary",
     PART_SECONDARY: "MuxPartSecondary",
     PART_BOTH: "MuxPartBoth",
 }
-OUT_PARTITIONS = [PART_PRIMARY, PART_SECONDARY]
+SINGLE_PARTITIONS = [PART_PRIMARY, PART_SECONDARY]
 
 
 def check_params(n_mio_pads: int, n_dio_pads: int, n_mio_periph_in: int, n_mio_periph_out: int,
                  mio_periph_ins: List[Dict], mio_periph_outs: List[Dict],
                  mio_pad_attr_resvals: List[Tuple[str, Dict]],
-                 dio_pad_attr_resvals: List[Tuple[str, Dict]]) -> None:
+                 dio_pad_attr_resvals: List[Tuple[str, Dict]],
+                 dio_partitions: List[Tuple[str, str]]) -> None:
     """Check the parameters passed to the pinmux template."""
     errors: List[str] = []
     _check_pad_attrs(errors, "mio_pad_attr_resvals", n_mio_pads, mio_pad_attr_resvals)
     _check_pad_attrs(errors, "dio_pad_attr_resvals", n_dio_pads, dio_pad_attr_resvals)
+    _check_dio_partitions(errors, n_dio_pads, dio_partitions)
     # The MIO pad attrs list has one entry per MIO pad, take the pad names from there.
     mio_pad_names = [name for name, _ in mio_pad_attr_resvals]
     _check_mio_periph_list(errors, "input", n_mio_pads, mio_pad_names, n_mio_periph_in,
                            mio_periph_ins, list(MUX_PART), True)
     _check_mio_periph_list(errors, "output", n_mio_pads, mio_pad_names, n_mio_periph_out,
-                           mio_periph_outs, OUT_PARTITIONS, False)
+                           mio_periph_outs, SINGLE_PARTITIONS, False)
     for pad in range(n_mio_pads):
         outs = [periph.get("name") for periph in mio_periph_outs
                 if periph.get("default_pad") == pad]
@@ -82,6 +84,17 @@ def _check_pad_attrs(errors: List[str], param: str, n_pads: int,
             if type(value) is not int or not 0 <= value <= max_value:
                 errors.append(f"pad attrs of {name} has {field}: {value!r}. Expected an int in "
                               f"[0, {max_value}]")
+
+
+def _check_dio_partitions(errors: List[str], n_dio_pads: int,
+                          dio_partitions: List[Tuple[str, str]]) -> None:
+    """Validate that each DIO is handled in a single partition."""
+    if len(dio_partitions) != n_dio_pads:
+        errors.append(f"dio_partitions needs {n_dio_pads} entries, got {len(dio_partitions)}")
+    for name, part in dio_partitions:
+        if part not in SINGLE_PARTITIONS:
+            errors.append(f"DIO {name} has the partition {part!r}. Expected one of "
+                          f"{SINGLE_PARTITIONS}")
 
 
 def _pad_name(mio_pad_names: List[str], pad: object) -> str:
@@ -211,6 +224,11 @@ def mio_pad_muxed_in_primary(mio_pad_names: List[str],
             for pad in _pad_indices(periph, len(mio_pad_names)):
                 in_primary[pad] = True
     return list(zip(mio_pad_names, in_primary))
+
+
+def dio_pad_source_in_primary(dio_partitions: List[Tuple[str, str]]) -> List[Tuple[str, bool]]:
+    """(name, whether the peripheral of the DIO is in the primary partition), one per DIO."""
+    return [(name, part == PART_PRIMARY) for name, part in dio_partitions]
 
 
 def gen_index_label(items: List[Tuple], offset: int = 0) -> List[Tuple]:

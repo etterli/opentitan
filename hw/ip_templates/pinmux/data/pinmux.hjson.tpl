@@ -19,6 +19,8 @@
 ##  - n_dio_pads:           Number of dedicated IO pads
 ##  - dio_pad_attr_resvals: A list of (name, attrs) tuples for each DIO pad. attrs can map
 ##                          DIO_PAD_ATTR fields to non-default reset values.
+##  - dio_partitions:       A list of (name, partition) tuples for each DIO pad. partition is the
+##                          pinmux partition of the peripheral connected to the DIO.
 ##  - n_wkup_detect:        Number of wakeup condition detectors
 ##  - wkup_cnt_width:       Width of wakeup counters
 <%!
@@ -27,7 +29,7 @@
 %>\
 <%
   check_params(n_mio_pads, n_dio_pads, n_mio_periph_in, n_mio_periph_out, mio_periph_ins,
-               mio_periph_outs, mio_pad_attr_resvals, dio_pad_attr_resvals)
+               mio_periph_outs, mio_pad_attr_resvals, dio_pad_attr_resvals, dio_partitions)
 %>\
 {
   name:               "pinmux",

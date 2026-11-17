@@ -2154,6 +2154,17 @@
         {}
       ]
     ]
+    dio_partitions:
+    [
+      [
+        usbdev_usb_dp
+        primary
+      ]
+      [
+        usbdev_usb_dn
+        primary
+      ]
+    ]
     n_dio_periph_in: 2
     n_dio_periph_out: 2
     enable_usb_wakeup: true
