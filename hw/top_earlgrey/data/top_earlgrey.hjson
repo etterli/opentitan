@@ -1836,9 +1836,9 @@
     //
     signals: [
       // USB
-      { instance: 'usbdev',      port: 'usb_dp',           connection: 'manual', pads: [],                         desc: ''},
-      { instance: 'usbdev',      port: 'usb_dn',           connection: 'manual', pads: [],                         desc: ''},
-      { instance: 'usbdev',      port: 'sense',            connection: 'muxed',  pads: ['IOC7', 'IOC12', 'IOR11'], desc: ''},
+      { instance: 'usbdev',      port: 'usb_dp',           connection: 'manual', pads: [],                                       desc: ''},
+      { instance: 'usbdev',      port: 'usb_dn',           connection: 'manual', pads: [],                                       desc: ''},
+      { instance: 'usbdev',      port: 'sense',            connection: 'muxed',  pads: ['IOC7', 'IOC12', 'IOR11'], follower: '', desc: ''},
       // SPI Host0
       { instance: 'spi_host0',   port: 'sck',              connection: 'muxed',  pads: ['SPI_HOST_CLK'],  default: 'SPI_HOST_CLK',  desc: ''},
       { instance: 'spi_host0',   port: 'csb[0]',           connection: 'muxed',  pads: ['SPI_HOST_CS_L'], default: 'SPI_HOST_CS_L', desc: ''},

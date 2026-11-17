@@ -16724,6 +16724,7 @@
           IOC12
           IOR11
         ]
+        follower: ""
         desc: ""
         attr: ""
       }
@@ -19651,6 +19652,7 @@
         connection: muxed
         desc: ""
         domain: Main
+        follower: ""
         glob_idx: 88
       }
       {
