@@ -2123,14 +2123,19 @@ def amend_pinmux_io(top: ConfigT,
     # list, and calculate MIO/DIO global indices.
     pinmux['ios'] = (temp['inouts'] + temp['inputs'] + temp['outputs'])
 
-    # Each IO must be covered by exactly one pinmux signal entry.
+    # Each IO must be covered by exactly one pinmux signal entry. It must reside in a power domain
+    # of a pinmux partition, which then handles the IO.
+    pinmux_domains = lib.get_pinmux_partitions_domains(top)
     known_ios = set()
     for sig in pinmux['ios']:
         key = (sig['name'], sig['idx'])
+        name = sig['name'] if sig['idx'] < 0 else f"{sig['name']}[{sig['idx']}]"
         if key in known_ios:
-            name = sig['name'] if sig['idx'] < 0 else f"{sig['name']}[{sig['idx']}]"
             raise SystemExit(f"Pinmux IO {name} is covered by multiple pinmux signal entries.")
         known_ios.add(key)
+        if sig['domain'] not in pinmux_domains:
+            raise SystemExit(f"Pinmux IO {name} is in the power domain {sig['domain']}, which is "
+                             f"not a domain of the pinmux partitions {sorted(pinmux_domains)}.")
 
     # Remember these counts to facilitate the RTL generation
     pinmux['io_counts'] = {
