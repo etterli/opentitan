@@ -51,13 +51,15 @@ cc_library(
     ],
 )
 
+# TODO: The trigger GPIOs on IOB0/IOB1 meet the HyperDebug SPI2 outputs in the
+# reinit window on the CW340, so this binary is not built for the CW340.
+# Re-enable the CW340 build with a dedicated setup.
 opentitan_binary(
     name = "otbn_vertical_serial",
     testonly = True,
     srcs = ["otbn_vertical_serial.c"],
     exec_env = [
         "//hw/top_earlgrey:fpga_cw305",
-        "//hw/top_earlgrey:fpga_cw340",
     ],
     target_compatible_with = opentitan_require_top("earlgrey"),
     deps = [

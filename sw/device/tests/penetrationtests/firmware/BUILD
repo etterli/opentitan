@@ -19,6 +19,9 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+# TODO: The trigger GPIOs on IOB0/IOB1 meet the HyperDebug SPI2 outputs in the
+# reinit window on the CW340, so the CW340 targets are tagged broken. Re-enable
+# them with a dedicated setup.
 PENTEST_EXEC_ENVS = dicts.add(
     {
         "//hw/top_earlgrey:fpga_cw340_sival_rom_ext": None,
@@ -217,6 +220,7 @@ opentitan_test(
     exec_env = PENTEST_EXEC_ENVS,
     # Tags are manual since these are not actually tests, but these create binaries to run the pentest framework
     fpga = fpga_params(tags = [
+        "broken",
         "manual",
         "skip_in_ci",
     ]),
@@ -242,6 +246,7 @@ opentitan_test(
     exec_env = PENTEST_EXEC_ENVS,
     # Tags are manual since these are not actually tests, but these create binaries to run the pentest framework
     fpga = fpga_params(tags = [
+        "broken",
         "manual",
         "skip_in_ci",
     ]),
@@ -267,6 +272,7 @@ opentitan_test(
     exec_env = PENTEST_EXEC_ENVS,
     # Tags are manual since these are not actually tests, but these create binaries to run the pentest framework
     fpga = fpga_params(tags = [
+        "broken",
         "manual",
         "skip_in_ci",
     ]),
@@ -292,6 +298,7 @@ opentitan_test(
     exec_env = PENTEST_EXEC_ENVS,
     # Tags are manual since these are not actually tests, but these create binaries to run the pentest framework
     fpga = fpga_params(tags = [
+        "broken",
         "manual",
         "skip_in_ci",
     ]),
@@ -317,6 +324,7 @@ opentitan_test(
     exec_env = PENTEST_EXEC_ENVS,
     # Tags are manual since these are not actually tests, but these create binaries to run the pentest framework
     fpga = fpga_params(tags = [
+        "broken",
         "manual",
         "skip_in_ci",
     ]),
@@ -342,6 +350,7 @@ opentitan_test(
     exec_env = PENTEST_EXEC_ENVS,
     # Tags are manual since these are not actually tests, but these create binaries to run the pentest framework
     fpga = fpga_params(tags = [
+        "broken",
         "manual",
         "skip_in_ci",
     ]),
@@ -367,6 +376,7 @@ opentitan_test(
     exec_env = PENTEST_EXEC_ENVS,
     # Tags are manual since these are not actually tests, but these create binaries to run the pentest framework
     fpga = fpga_params(tags = [
+        "broken",
         "manual",
         "skip_in_ci",
     ]),
@@ -392,6 +402,7 @@ opentitan_test(
     exec_env = PENTEST_EXEC_ENVS,
     # Tags are manual since these are not actually tests, but these create binaries to run the pentest framework
     fpga = fpga_params(tags = [
+        "broken",
         "manual",
         "skip_in_ci",
     ]),
@@ -417,6 +428,7 @@ opentitan_test(
     exec_env = PENTEST_EXEC_ENVS,
     # Tags are manual since these are not actually tests, but these create binaries to run the pentest framework
     fpga = fpga_params(tags = [
+        "broken",
         "manual",
         "skip_in_ci",
     ]),
@@ -442,6 +454,7 @@ opentitan_test(
     exec_env = PENTEST_EXEC_ENVS,
     # Tags are manual since these are not actually tests, but these create binaries to run the pentest framework
     fpga = fpga_params(tags = [
+        "broken",
         "manual",
         "skip_in_ci",
     ]),

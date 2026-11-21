@@ -17,13 +17,15 @@ alias(
     visibility = ["//visibility:private"],
 )
 
+# TODO: The trigger GPIOs on IOB0/IOB1 meet the HyperDebug SPI2 outputs in the
+# reinit window on the CW340, so the binaries below are not built for the
+# CW340. Re-enable the CW340 build with a dedicated setup.
 opentitan_binary(
     name = "aes_serial",
     testonly = True,
     srcs = ["aes_serial.c"],
     exec_env = [
         "//hw/top_earlgrey:fpga_cw305",
-        "//hw/top_earlgrey:fpga_cw340",
     ],
     target_compatible_with = opentitan_require_top(("earlgrey", "englishbreakfast")),
     deps = [
@@ -48,7 +50,6 @@ opentitan_binary(
     srcs = ["kmac_serial.c"],
     exec_env = [
         "//hw/top_earlgrey:fpga_cw305",
-        "//hw/top_earlgrey:fpga_cw340",
     ],
     target_compatible_with = opentitan_require_top("earlgrey"),
     deps = [
@@ -70,7 +71,6 @@ opentitan_binary(
     srcs = ["sha3_serial.c"],
     exec_env = [
         "//hw/top_earlgrey:fpga_cw305",
-        "//hw/top_earlgrey:fpga_cw340",
     ],
     target_compatible_with = opentitan_require_top("earlgrey"),
     deps = [
@@ -92,7 +92,6 @@ opentitan_binary(
     srcs = ["ecc384_serial.c"],
     exec_env = [
         "//hw/top_earlgrey:fpga_cw305",
-        "//hw/top_earlgrey:fpga_cw340",
     ],
     target_compatible_with = opentitan_require_top("earlgrey"),
     deps = [
@@ -117,7 +116,6 @@ opentitan_binary(
     srcs = ["ecc256_sign_serial.c"],
     exec_env = [
         "//hw/top_earlgrey:fpga_cw305",
-        "//hw/top_earlgrey:fpga_cw340",
     ],
     target_compatible_with = opentitan_require_top("earlgrey"),
     deps = [
