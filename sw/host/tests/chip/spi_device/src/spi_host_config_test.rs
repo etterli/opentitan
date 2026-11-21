@@ -129,8 +129,12 @@ fn main() -> Result<()> {
         cpha: 0,
     };
     for pin in ctx.gpio_pins {
-        pin.set_mode(PinMode::OpenDrain)?;
-        pin.set_pull_mode(PullMode::PullUp)?;
+        pin.set(
+            Some(PinMode::OpenDrain),
+            Some(true),
+            Some(PullMode::PullUp),
+            None,
+        )?;
     }
     ctx.cpol = 0;
     ctx.cpha = 0;
