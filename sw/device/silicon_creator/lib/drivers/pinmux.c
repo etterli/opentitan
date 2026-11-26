@@ -109,8 +109,8 @@ static const pinmux_input_t kInputUsbdevSense = {
  * insel).
  */
 void pinmux_configure_input(uint32_t periph, uint32_t insel) {
-  // TODO: what is the consequence of an illegal insel value?  The legal range
-  // is [0..48], but there are enough bits for [0..63].
+  // An illegal insel value will still be written but the pinmux will set the
+  // input to a static 0.
   abs_mmio_write32(
       kBase + PINMUX_MIO_PERIPH_INSEL_0_REG_OFFSET + periph * sizeof(uint32_t),
       insel);
@@ -224,7 +224,8 @@ uint32_t pinmux_read_straps(void) {
 }
 
 bool pinmux_read_gpio(uint32_t gpio) {
-  uint32_t val =
-      abs_mmio_read32(TOP_EARLGREY_GPIO0_BASE_ADDR + GPIO_DATA_IN_REG_OFFSET);
-  return bitfield_bit32_read(val, gpio);
+  uint32_t base =
+      gpio < 32 ? TOP_EARLGREY_GPIO0_BASE_ADDR : TOP_EARLGREY_GPIO1_BASE_ADDR;
+  uint32_t val = abs_mmio_read32(base + GPIO_DATA_IN_REG_OFFSET);
+  return bitfield_bit32_read(val, gpio % 32);
 }
