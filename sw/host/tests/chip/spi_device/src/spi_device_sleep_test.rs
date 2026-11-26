@@ -49,7 +49,7 @@ fn spi_sleep_test(opts: &Opts, transport: &TransportWrapper) -> Result<()> {
     const DATA_SIZE: usize = 10;
     sleep_pin.write(SLEEP)?;
     wait_sleep(&*sleep_indicator, &*uart, opts.timeout)?;
-    /* Test the spi dev in sleep with the SD0 in high. */
+    /* Test the spi dev in sleep with the SD1 in high. */
     let mut buf = [0x55u8; DATA_SIZE];
     spi.run_transaction(&mut [Transfer::Write(&[0x55; 1]), Transfer::Read(&mut buf)])?;
     assert_eq!(&buf, &[0xffu8; DATA_SIZE]);
@@ -58,7 +58,7 @@ fn spi_sleep_test(opts: &Opts, transport: &TransportWrapper) -> Result<()> {
 
     sleep_pin.write(SLEEP)?;
     wait_sleep(&*sleep_indicator, &*uart, opts.timeout)?;
-    /* Test the spi dev in sleep with the SD0 in low. */
+    /* Test the spi dev in sleep with the SD1 in low. */
     let mut buf = [0x55u8; DATA_SIZE];
     spi.run_transaction(&mut [Transfer::Write(&[0x55; 1]), Transfer::Read(&mut buf)])?;
     assert_eq!(&buf, &[0x00u8; DATA_SIZE]);

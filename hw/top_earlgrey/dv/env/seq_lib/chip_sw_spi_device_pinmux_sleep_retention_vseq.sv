@@ -42,12 +42,12 @@ class chip_sw_spi_device_pinmux_sleep_retention_vseq extends chip_sw_base_vseq;
     // Check chip is sleeping after IOA7 is set low
     `DV_WAIT(cfg.chip_vif.mios_if.sample_pin(top_earlgrey_pkg::MioPadIoa7) == 0)
 
-    // Check the values are 1s
+    // Check the value is 1
     check_spi_outputs(1);
 
     `DV_WAIT(cfg.sw_logger_vif.printed_log == "SYNC: Awaked")
 
-    // Same as above but with all outputs to 0s
+    // Same as above but with the output at 0
     `DV_WAIT(cfg.sw_logger_vif.printed_log == "Setting SPI_DIO1 to low when sleeping")
     // Request chip to sleep via assertion IOA8
     cfg.chip_vif.mios_if.drive_pin(top_earlgrey_pkg::MioPadIoa8, 1);
@@ -61,7 +61,7 @@ class chip_sw_spi_device_pinmux_sleep_retention_vseq extends chip_sw_base_vseq;
     // Check chip is sleeping after IOA7 is set low
     `DV_WAIT(cfg.chip_vif.mios_if.sample_pin(top_earlgrey_pkg::MioPadIoa7) == 0)
 
-    // Check the values are 0s
+    // Check the value is 0
     check_spi_outputs(0);
 
     // Enabling the interface via `chip_vif` function
@@ -127,16 +127,10 @@ class chip_sw_spi_device_pinmux_sleep_retention_vseq extends chip_sw_base_vseq;
     // Check spi transactions work as they should after device is awoken
   endtask : body
 
-  // Checks the spi_output are set to value
+  // Checks the retained SPI device output (SD1) is set to value
   function void check_spi_outputs(bit value);
-    `DV_CHECK_EQ_FATAL(cfg.chip_vif.mios_if.sample_pin(top_earlgrey_pkg::MioPadSpiDevD3), value,
-      $sformatf("MioPadSpiDevD3 not %0d",value))
-    `DV_CHECK_EQ_FATAL(cfg.chip_vif.mios_if.sample_pin(top_earlgrey_pkg::MioPadSpiDevD2), value,
-      $sformatf("MioPadSpiDevD2 not %0d",value))
     `DV_CHECK_EQ_FATAL(cfg.chip_vif.mios_if.sample_pin(top_earlgrey_pkg::MioPadSpiDevD1), value,
       $sformatf("MioPadSpiDevD1 not %0d",value))
-    `DV_CHECK_EQ_FATAL(cfg.chip_vif.mios_if.sample_pin(top_earlgrey_pkg::MioPadSpiDevD0), value,
-      $sformatf("MioPadSpiDevD0 not %0d",value))
   endfunction
 
 endclass : chip_sw_spi_device_pinmux_sleep_retention_vseq
