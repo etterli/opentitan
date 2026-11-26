@@ -96,6 +96,11 @@ package chip_common_pkg;
     JtagTapDft = 2'b11
   } chip_jtag_tap_e;
 
+  // The pins of each GPIO instance that chip_if.gpio_pads_vifs connects. gpio1 pins 29-31 share
+  // their pads with pins 25-27 and are not tested.
+  // TODO: Find a way how to include these as well.
+  parameter bit [NUM_GPIOS-1:0] GpioPadsMask[NUM_GPIO_INSTS] = '{32'hffff_ffff, 32'h1fff_ffff};
+
   // This maps the DIO on the pinmux / peripheral side to the DIO on the pad side, both of
   // which have different enum numbering in top_earlgrey_pkg.sv.
   parameter top_earlgrey_pkg::dio_pad_e DioToDioPadMap [top_earlgrey_pkg::DioCount] = '{
