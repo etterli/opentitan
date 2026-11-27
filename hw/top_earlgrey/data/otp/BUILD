@@ -71,7 +71,7 @@ otp_json(
                 # value of 10 cycles is useful for test code which verifies
                 # the path through the ROM.  This value is not useful for a
                 # real chip.
-                "CREATOR_SW_CFG_RMA_SPIN_EN": otp_hex(CONST.HARDENED_TRUE),
+                "CREATOR_SW_CFG_RMA_SPIN_EN": otp_hex(CONST.HARDENED_FALSE),
                 "CREATOR_SW_CFG_RMA_SPIN_CYCLES": "10",
                 # Entropy source health check default values. This needs to be
                 # populated when `CREATOR_SW_CFG_RNG_EN` is set to true.
