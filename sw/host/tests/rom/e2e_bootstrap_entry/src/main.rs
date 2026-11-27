@@ -52,6 +52,35 @@ struct Opts {
     nvm_size: u32,
 }
 
+/// DEBUG: Checks that the chip entered bootstrap after a strapped reset. On failure, it dumps
+/// the console output since the reset, retries the SFDP read and then retries with a new
+/// strapped reset, so the CI log shows why the chip did not enter bootstrap.
+fn debug_check_bootstrap(transport: &TransportWrapper, step: &str) {
+    let spi = transport.spi("BOOTSTRAP").unwrap();
+    let err = match SpiFlash::read_sfdp(&*spi) {
+        Ok(_) => return,
+        Err(e) => e,
+    };
+    log::error!("DEBUG {step}: no bootstrap after reset: {err}");
+    log::error!("DEBUG {step}: console output since the reset:");
+    let uart = transport.uart("console").unwrap();
+    let mut console = UartConsole::new(Some(Duration::from_millis(500)), None, None);
+    let _ = console.interact(&*uart, false);
+    match SpiFlash::read_sfdp(&*spi) {
+        Ok(_) => log::error!("DEBUG {step}: SFDP read OK after a 500 ms delay"),
+        Err(e) => log::error!("DEBUG {step}: SFDP read still fails after a 500 ms delay: {e}"),
+    }
+    transport.pin_strapping("ROM_BOOTSTRAP").unwrap().apply().unwrap();
+    transport.reset(UartRx::Clear).unwrap();
+    match SpiFlash::read_sfdp(&*spi) {
+        Ok(_) => log::error!("DEBUG {step}: SFDP read OK after a second strapped reset"),
+        Err(e) => log::error!("DEBUG {step}: SFDP read fails after a second strapped reset: {e}"),
+    }
+    log::error!("DEBUG {step}: console output after the second reset:");
+    let mut console = UartConsole::new(Some(Duration::from_millis(500)), None, None);
+    let _ = console.interact(&*uart, false);
+}
+
 /// A struct for isolating individual test points.
 ///
 /// This is basically an example of the RAII technique.
@@ -67,6 +96,7 @@ impl<'a> BootstrapTest<'a> {
         let b = BootstrapTest { transport };
         transport.pin_strapping("ROM_BOOTSTRAP")?.apply()?;
         transport.reset(UartRx::Clear)?;
+        debug_check_bootstrap(transport, "start");
         let spi = transport.spi("BOOTSTRAP").unwrap();
         SpiFlash::from_spi(&*spi)
             .unwrap()
@@ -82,6 +112,7 @@ impl<'a> Drop for BootstrapTest<'a> {
         let bootstrapping = self.transport.pin_strapping("ROM_BOOTSTRAP").unwrap();
         bootstrapping.apply().unwrap();
         self.transport.reset(UartRx::Clear).unwrap();
+        debug_check_bootstrap(self.transport, "drop");
         let spi = self.transport.spi("BOOTSTRAP").unwrap();
         SpiFlash::from_spi(&*spi)
             .unwrap()
